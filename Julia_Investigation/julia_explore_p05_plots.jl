@@ -4,6 +4,15 @@
 using Markdown
 using InteractiveUtils
 
+# This Pluto notebook uses @bind for interactivity. When running this notebook outside of Pluto, the following 'mock version' of @bind gives bound variables a default value (instead of an error).
+macro bind(def, element)
+    quote
+        local el = $(esc(element))
+        global $(esc(def)) = Core.applicable(Base.get, el) ? Base.get(el) : missing
+        el
+    end
+end
+
 # ╔═╡ 12333bc8-68ca-11eb-2e89-ab9b76b0595b
 using Plots
 
@@ -26,12 +35,17 @@ begin
 	end
 end
 
+# ╔═╡ e63cdbe2-68cb-11eb-20db-4dd54383d017
+# pluto interaction
+
+@bind vx html"<input type='range' min='1' max='50' step='0.5' />"
+
 # ╔═╡ 4807bf12-68ca-11eb-37e6-81504bbf1eae
 begin
-	gr()                ## Activate the GR backend for use with Plots
-	plot(f, -4, 3)      ## plot f over [-4,3]
+	gr()                  ## Activate the GR backend for use with Plots
+	plot(f, -vx, vx)      ## plot f over [-4,3]
 
-	plot!(zero, -4, 3)  ## horizontal line at y = 0
+	plot!(zero, -vx, vx)  ## horizontal line at y = 0
 end
 
 # ╔═╡ 7109711c-68ca-11eb-2c1e-5d0feb06d4cd
@@ -105,6 +119,7 @@ plot(nx, ny, leg=false, title="A sample plot")
 # ╠═12333bc8-68ca-11eb-2e89-ab9b76b0595b
 # ╠═27b37bc0-68ca-11eb-0c16-914e5a5ec540
 # ╠═2c7cfabe-68ca-11eb-1bee-338af63e7e37
+# ╠═e63cdbe2-68cb-11eb-20db-4dd54383d017
 # ╠═4807bf12-68ca-11eb-37e6-81504bbf1eae
 # ╠═7109711c-68ca-11eb-2c1e-5d0feb06d4cd
 # ╠═a2dc225c-68ca-11eb-14b9-3be05028c029
