@@ -16,8 +16,6 @@ begin
     import DecisionTree
     using MLJ
     import MLJLinearModels
-    import MultivariateStats
-	import Distributions
     using Plots
     using Test
 end
@@ -468,5 +466,5 @@ md"""
 # ╟─9774caee-87a0-11eb-29d8-f928c2cdc209
 # ╠═97499ccc-87a0-11eb-1465-f1f8a0a2ca75
 # ╠═9aedc7fc-879f-11eb-1cc3-af422dcfdc05
-# ╠═ed04718c-87a0-11eb-346c-3b459bf27916
+# ╟─ed04718c-87a0-11eb-346c-3b459bf27916
 # ╟─0a291696-87a1-11eb-1640-f13435ec21ac
