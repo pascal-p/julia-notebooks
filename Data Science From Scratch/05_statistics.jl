@@ -13,11 +13,33 @@ end
 
 # ╔═╡ 36396ea6-814e-11eb-0d9a-9b4ac175c109
 md"""
-## 01 - Statistics
+## Statistics
 
-ref. from book "Data Science from Scratch", Chap 5
+ref. from book **"Data Science from Scratch"**, Chap 5
+"""
 
+# ╔═╡ 6ff0dd16-8836-11eb-3683-573a27674dff
+html"""
+<a id='toc'></a> 
+"""
 
+# ╔═╡ ae9bcffe-8835-11eb-0dd2-c3d39f0ae10e
+md"""
+#### TOC
+  - [Describing a Single Set of Data](#describe)
+    - [Central Tendencies](#central-tendencies)
+    - [Dispersion](#dispersion)
+  - [Correlation](#correlation)
+"""
+
+# ╔═╡ 0cba28ec-8836-11eb-3dba-df3987947923
+html"""
+<a id='describe'></a>
+"""
+
+# ╔═╡ c8a24b96-8835-11eb-22f2-954d90b6ca80
+md"""
+### Describing a Single Set of Data
 """
 
 # ╔═╡ accc7d4e-815b-11eb-03e6-053884a6d2f2
@@ -107,9 +129,17 @@ begin
 	(second_smallest_value, second_largest_value)
 end
 
+# ╔═╡ 2d07f7f0-8836-11eb-3fe7-010ea1a62e11
+html"""
+<p style="text-align: right;">
+  <a id='central-tendencies'></a>
+  <a href="#toc">back to TOC</a>
+</p>
+"""
+
 # ╔═╡ 72f52228-815c-11eb-135e-cd8437424521
 md"""
-### General Tendencies
+#### Central Tendencies
 
 Usually, we will want some notion of where our data is centered. Most commonly we will use the mean (or average), which is just the sum of the data divided by its count:
 """
@@ -211,6 +241,14 @@ end
 # ╔═╡ d6beae9c-816a-11eb-05fa-092969ea79fd
 @test mode(num_friends) == Float64[1.0, 6.0]
 
+# ╔═╡ 533f5418-8836-11eb-00d4-1d1e2dcb878a
+html"""
+<p style="text-align: right;">
+  <a id='dispersion'></a>
+  <a href="#toc">back to TOC</a>
+</p>
+"""
+
 # ╔═╡ 3c8002a8-816b-11eb-2697-6356a438995d
 md"""
 #### Dispersion
@@ -264,7 +302,7 @@ Now, whatever units our data is in (e.g., “friends”), all of our measures of
 σ(v::Vector{T}) where T <: Real = √(variance(v))
 
 # ╔═╡ 3c2e2d48-816b-11eb-347f-4564c2ab7d11
-@test 81.54 < σ(num_friends) < 81.55
+@test 9.0 < σ(num_friends) < 9.1
 
 # ╔═╡ 28d4fd42-816d-11eb-3ffc-d753aca1fae0
 @test 9.02 < σ(num_friends) < 9.04
@@ -287,9 +325,17 @@ end
 # ╔═╡ 2885d1fe-816d-11eb-0845-8d7c3aa1e1ba
 @test interquartile_range(num_friends) == 6.
 
+# ╔═╡ ca1377ae-8836-11eb-2366-6355fd427373
+html"""
+<p style="text-align: right;">
+  <a id='correlation'></a>
+  <a href="#toc">back to TOC</a>
+</p>
+"""
+
 # ╔═╡ 285912ac-816d-11eb-1359-d5ee97622b95
 md"""
-#### Correlation
+### Correlation
 
 We’ll first look at covariance, the paired analogue of variance. Whereas variance measures how a single variable deviates from its mean, covariance measures how two variables vary in tandem from their means:
 """
@@ -379,7 +425,11 @@ Without the outlier, there is a much stronger correlation.
 
 # ╔═╡ Cell order:
 # ╟─36396ea6-814e-11eb-0d9a-9b4ac175c109
+# ╟─6ff0dd16-8836-11eb-3683-573a27674dff
+# ╟─ae9bcffe-8835-11eb-0dd2-c3d39f0ae10e
 # ╠═a5df7598-814e-11eb-03c8-b1450e513104
+# ╟─0cba28ec-8836-11eb-3dba-df3987947923
+# ╟─c8a24b96-8835-11eb-22f2-954d90b6ca80
 # ╟─accc7d4e-815b-11eb-03e6-053884a6d2f2
 # ╠═a5b5ebba-814e-11eb-3945-7d6d1fc6aa1f
 # ╟─d56f5f5c-816b-11eb-1bf0-bd5824f9bd63
@@ -393,6 +443,7 @@ Without the outlier, there is a much stronger correlation.
 # ╠═095cc486-815c-11eb-0a10-c16a401a3c03
 # ╟─27f992c2-815c-11eb-31d0-49d06a6b3d39
 # ╠═37c684ee-815c-11eb-0710-273f93e7da14
+# ╟─2d07f7f0-8836-11eb-3fe7-010ea1a62e11
 # ╟─72f52228-815c-11eb-135e-cd8437424521
 # ╠═8dbdd82a-815c-11eb-3cf9-11b411dc5255
 # ╠═c1fbc854-815c-11eb-2e11-37a579e958f1
@@ -407,6 +458,7 @@ Without the outlier, there is a much stronger correlation.
 # ╠═ad124582-8169-11eb-2a3e-f7060063b756
 # ╠═4935696c-8160-11eb-07ef-059b429dbc9a
 # ╠═d6beae9c-816a-11eb-05fa-092969ea79fd
+# ╟─533f5418-8836-11eb-00d4-1d1e2dcb878a
 # ╟─3c8002a8-816b-11eb-2697-6356a438995d
 # ╠═3c636418-816b-11eb-2e8d-23bddb884230
 # ╠═3c4a8c9a-816b-11eb-24b8-430fadbee06c
@@ -420,6 +472,7 @@ Without the outlier, there is a much stronger correlation.
 # ╟─28ba2e5e-816d-11eb-09a4-35e5a7314a2e
 # ╠═289f7136-816d-11eb-3b5c-e917eef9e556
 # ╠═2885d1fe-816d-11eb-0845-8d7c3aa1e1ba
+# ╟─ca1377ae-8836-11eb-2366-6355fd427373
 # ╟─285912ac-816d-11eb-1359-d5ee97622b95
 # ╠═2e768c6a-816e-11eb-303a-f9c19225cadc
 # ╠═2e5a7f2a-816e-11eb-157b-212c9167835d
