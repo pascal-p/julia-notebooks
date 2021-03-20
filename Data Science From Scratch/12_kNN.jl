@@ -7,6 +7,11 @@ using InteractiveUtils
 # ╔═╡ 5eebac68-891b-11eb-37ba-c1d9481c6134
 begin
 	using Test
+	using Random
+	using RDatasets
+	using DataFrames
+	using Plots
+	# using Gadfly
 	
 	push!(LOAD_PATH, "./src")
 	using YaLinearAlgebra
@@ -123,13 +128,13 @@ Let us now create our classifer applying knn.
 
 # ╔═╡ 516d69f0-891e-11eb-0f7a-3f05981cc1e1
 begin
-	const VF = Vector{AbstractFloat}
+	const VF = AbstractVector{T} where T <: AbstractFloat
 
 	struct LabeledPoint
 		point::VF
 		label::Symbol
 	
-		LabeldPoint(point::VF, sym::Symbol) = new(point, label)
+		LabeledPoint(point::VF, sym::Symbol) = new(point, sym)
 	end
 
 	function knn(k::Integer, dataset::Vector{LabeledPoint}, qpoint::VF)::Symbol
@@ -161,20 +166,128 @@ html"""
 md"""
 ### Example with this Iris Dataset
 
-TODO ...
+We will use the Iris dataset which is kind of the "hello wolrd" of machine learning. It contains a set of measurements for 150 flowers representing three species of iris. For each flower we have its petal length, petal width, sepal length, and sepal width,
+as well as its species.
 """
 
 # ╔═╡ dbd86924-8915-11eb-351f-8362f09ba984
+begin
+	iris_ds = dataset("datasets", "iris");
+	DataFrames.describe(iris_ds, :eltype, :first => first)
+end
 
+# ╔═╡ d32b86e0-8928-11eb-193c-e3d7c85d23dd
+measurements_mx = convert(Matrix, select(iris_ds, Not(:Species)))
 
-# ╔═╡ 582837d4-8916-11eb-0d89-bd391a60224d
+# ╔═╡ d2d8c676-8928-11eb-2e4a-557f5f9fa1c3
+begin
+	# [row[1:end] for row ∈ eachrow(measurements)] # copy => Vector{Vector}... slow
+	# Vector{Float64}[row for row ∈ eachrow(measurements)] # view
+	measurements = [row[1:end] for row ∈ eachrow(measurements_mx)]
+	labels = Symbol.(iris_ds[!, :Species])
+	iris_data = [
+		LabeledPoint(p, l) for (p, l) ∈ zip(measurements, labels)
+	]
+	N = length(iris_data);
+end
 
+# ╔═╡ 9eb1ef78-8953-11eb-3046-331119a0dc9b
+@test N == size(iris_ds)[1]
 
 # ╔═╡ 5809f59e-8916-11eb-1c09-6fa00c043e7a
+md"""
+let us start with some visual exploration
+"""
+
+# ╔═╡ 4ffc3b48-895a-11eb-1ed2-f78b522d0ae9
+begin
+	points_by_species = Dict{Symbol, Vector{VF}}()
+	for iris ∈ iris_data
+		ary = get(points_by_species, iris.label, VF[])
+		push!(ary, iris.point)
+		points_by_species[iris.label] = ary
+	end
+	points_by_species
+end
+
+# ╔═╡ 90f58d04-8958-11eb-170e-0f17904c9f2c
+begin
+	metrics = names(iris_ds)[1:end-1]
+	pairs = [(i, j) for i ∈ 1:4 for j ∈ (i+1):4]
+	marks = [:v, :o, :^] # we have 3 classes, so 3 markers
+	ps = []
+	for row ∈ 1:2, col ∈ 1:3
+		i, j = pairs[3 * (row - 1) + col]
+		k = 0
+		for (mark, (species, points)) ∈ zip(marks, points_by_species)
+			xs = [p[i] for p ∈ points]
+			ys = [p[j] for p ∈ points]
+			if k % 3 == 0
+				push!(ps, scatter(xs, ys, marker=mark,
+						label=string(species),
+						legend=false,
+						titlefontsize=8, title="$(metrics[i]) vs $(metrics[j])"))
+			elseif row == 2 && col == 3
+				ps[end] = scatter!(xs, ys, marker=mark,
+					label=string(species),
+					legendfontsize=6,
+					legend=:bottomright)
+			else
+				ps[end] = scatter!(xs, ys, marker=mark, label=string(species))
+			end
+			k += 1
+		end
+	end
+end
+
+# ╔═╡ 90d83cae-8958-11eb-2d5c-bd298437f953
+begin
+	lg = grid(2, 3, widths=[0.33, 0.33, 0.33], heights=[0.5, 0.5, 0.5])
+	plot(ps..., layout=lg)
+end
 
 
-# ╔═╡ 57eda95c-8916-11eb-24c1-7f950c322cdf
+# ╔═╡ ab9ac56e-8969-11eb-3340-337957fd81b7
+# TODO comments
 
+# ╔═╡ 5f5e6d02-892a-11eb-32d8-dfc1a7f259fa
+names(iris_ds)
+
+# ╔═╡ 073f6442-892e-11eb-0fc2-bbeb1d12619e
+function train_test_split(ds::Vector{LabeledPoint};
+		split=0.8, seed=42, shuffled=true)
+	Random.seed!(seed)
+	nr = length(ds)
+	row_ixes = shuffled ? shuffle(1:nr) : collect(1:nr)
+	nrp = round(Int, length(row_ixes) * split)
+	(ds[row_ixes[1:nrp]], ds[row_ixes[nrp+1:nr]])
+end
+
+# ╔═╡ 25fb8f9a-8952-11eb-35bb-b173ac466835
+iris_train, iris_test = train_test_split(iris_data; split=0.70)
+
+# ╔═╡ 65ec8554-8953-11eb-3973-b56039754312
+begin
+	@test length(iris_train) == round(Int, 0.7 * N)
+	@test length(iris_test) == round(Int, (1 - 0.7) * N)
+end
+
+# ╔═╡ d728d526-8956-11eb-3c22-e788d025e8b4
+function run_knn(iris_train, iris_test; k=5)
+	num_correct = 0
+	confusion_matrix = Dict{Tuple{Symbol, Symbol}, Integer}()
+	for iris ∈ iris_test
+		ŷ = knn(k, iris_train, iris.point)
+		y = iris.label
+		ŷ == y && (num_correct += 1)
+		confusion_matrix[(ŷ, y)] = get(confusion_matrix, (ŷ, y), 0) + 1
+	end
+	perc_correct = num_correct / length(iris_test)
+	(perc_correct, confusion_matrix)
+end
+
+# ╔═╡ ad388bba-8955-11eb-34ee-4db60fb0db8a
+perc_correct, confusion_matrix = run_knn(iris_train, iris_test)
 
 # ╔═╡ dbbf22a2-8915-11eb-00eb-4b0278c0283d
 html"""
@@ -190,15 +303,6 @@ md"""
 
 TODO ...
 """
-
-# ╔═╡ 5996f2f4-8916-11eb-390e-7d4e4bcbd394
-
-
-# ╔═╡ 59756f76-8916-11eb-1a95-05445d906d2c
-
-
-# ╔═╡ db8c02b6-8915-11eb-1283-c7803529cff3
-
 
 # ╔═╡ ca91a0d6-8915-11eb-36cc-a18fc8efaf40
 
@@ -219,14 +323,22 @@ TODO ...
 # ╠═516d69f0-891e-11eb-0f7a-3f05981cc1e1
 # ╟─50fe5114-891e-11eb-18ee-35d98ad32b7b
 # ╟─dc0c5a5e-8915-11eb-2c62-5328b42add69
-# ╠═dbefe77a-8915-11eb-39f1-5d0c84729739
+# ╟─dbefe77a-8915-11eb-39f1-5d0c84729739
 # ╠═dbd86924-8915-11eb-351f-8362f09ba984
-# ╠═582837d4-8916-11eb-0d89-bd391a60224d
-# ╠═5809f59e-8916-11eb-1c09-6fa00c043e7a
-# ╠═57eda95c-8916-11eb-24c1-7f950c322cdf
+# ╠═d32b86e0-8928-11eb-193c-e3d7c85d23dd
+# ╠═d2d8c676-8928-11eb-2e4a-557f5f9fa1c3
+# ╠═9eb1ef78-8953-11eb-3046-331119a0dc9b
+# ╟─5809f59e-8916-11eb-1c09-6fa00c043e7a
+# ╠═4ffc3b48-895a-11eb-1ed2-f78b522d0ae9
+# ╠═90f58d04-8958-11eb-170e-0f17904c9f2c
+# ╠═90d83cae-8958-11eb-2d5c-bd298437f953
+# ╠═ab9ac56e-8969-11eb-3340-337957fd81b7
+# ╠═5f5e6d02-892a-11eb-32d8-dfc1a7f259fa
+# ╠═073f6442-892e-11eb-0fc2-bbeb1d12619e
+# ╠═25fb8f9a-8952-11eb-35bb-b173ac466835
+# ╠═65ec8554-8953-11eb-3973-b56039754312
+# ╠═d728d526-8956-11eb-3c22-e788d025e8b4
+# ╠═ad388bba-8955-11eb-34ee-4db60fb0db8a
 # ╟─dbbf22a2-8915-11eb-00eb-4b0278c0283d
 # ╠═dba976a2-8915-11eb-0ff0-b38952cbc38b
-# ╠═5996f2f4-8916-11eb-390e-7d4e4bcbd394
-# ╠═59756f76-8916-11eb-1a95-05445d906d2c
-# ╠═db8c02b6-8915-11eb-1283-c7803529cff3
 # ╠═ca91a0d6-8915-11eb-36cc-a18fc8efaf40
