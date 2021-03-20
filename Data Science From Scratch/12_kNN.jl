@@ -248,7 +248,9 @@ end
 
 
 # ╔═╡ ab9ac56e-8969-11eb-3340-337957fd81b7
-# TODO comments
+md"""
+The measurement seem to really cluster by species. Looking at sepal length vs sepal width alone (top left graph) does not allow for a clean spearation between versiclor and virgina, but adding petal length and width help in the separation. Our nearest neighbors should be able to predict the species. Let us see...
+"""
 
 # ╔═╡ 5f5e6d02-892a-11eb-32d8-dfc1a7f259fa
 names(iris_ds)
@@ -272,6 +274,9 @@ begin
 	@test length(iris_test) == round(Int, (1 - 0.7) * N)
 end
 
+# ╔═╡ 0c8055b8-89b2-11eb-3046-331119a0dc9b
+length(iris_test)
+
 # ╔═╡ d728d526-8956-11eb-3c22-e788d025e8b4
 function run_knn(iris_train, iris_test; k=5)
 	num_correct = 0
@@ -289,6 +294,11 @@ end
 # ╔═╡ ad388bba-8955-11eb-34ee-4db60fb0db8a
 perc_correct, confusion_matrix = run_knn(iris_train, iris_test)
 
+# ╔═╡ ad036de6-89b1-11eb-3973-b56039754312
+md"""
+Not bad, we have two mis-matches: versicolor/virginica (and conversely), otherwise the rest looks good.
+"""
+
 # ╔═╡ dbbf22a2-8915-11eb-00eb-4b0278c0283d
 html"""
 <p style="text-align: right;">
@@ -301,11 +311,61 @@ html"""
 md"""
 ### The Curse of Dimensionality
 
-TODO ...
+The k-nearest neighbors algorithm has problems in high dimensions due to a phenomena called the “curse of dimensionality”.
+In a nutshell high-dimensional spaces are large (tautology) and points in such high-dimensional spaces tend to be far to one another. 
+
+One way to see this is by randomly generating pairs of points in a n-dimensional “unit cube” varying the dimensions and calculating the distances between them.
 """
 
 # ╔═╡ ca91a0d6-8915-11eb-36cc-a18fc8efaf40
+random_point(n::Integer) = rand(Float64, n)
 
+# ╔═╡ 194958a6-89b4-11eb-3340-337957fd81b7
+function random_distances(dim::Integer, num_pairs::Integer)
+	[distance(random_point(dim), random_point(dim)) for _ ∈ 1:num_pairs]
+end
+
+# ╔═╡ fa1fe202-89b7-11eb-34ee-4db60fb0db8a
+begin
+	const NS = 100
+	const M = 10_000
+	avg_dist, min_dist, min_avg_ratio = [], [], []
+	Random.seed!(42)
+	for dim ∈ 1:NS
+		d = random_distances(dim, M)
+		sum_d, min_d = sum(d) / M, minimum(d)
+		push!(avg_dist, sum_d)
+		push!(min_dist, min_d)
+		push!(min_avg_ratio, min_d / sum_d);
+	end
+	# avg_dist, min_dist, min_avg_ratio;
+end
+
+# ╔═╡ 432cd594-89b9-11eb-2d4a-6f46f08a511d
+begin
+	plot(1:NS, avg_dist, legendfontsize=7, legend=:topleft,
+		label="avg. dist.",
+		title="$(M) random distances",
+		titlefontsize=9,
+		xlabel="# of dimensions"
+	)
+	plot!(1:NS, min_dist, label="min. dist.")
+end
+
+# ╔═╡ d0692f3c-89bb-11eb-2c0b-15edb9044d52
+plot(1:NS, min_avg_ratio, legend=false, xlabel="# of dimensions",
+	title="min. dist. / avg. dist.",
+	titlefontsize=9)
+
+# ╔═╡ 2ddeec6c-89bc-11eb-0796-f7dc9885b0de
+md"""
+In low-dimensional datasets, the nearest points tend to be much closer than
+average.
+
+The closeness of two points depends on how close thes points are in each dimension and note that every extra dimension is an opportunity for each point to be farther away from each other.
+
+Thus when we have a lot of dimensions, the likelihood is that the closest points are not much closer than average (unless there is a lot of structure in the data)...
+"""
 
 # ╔═╡ Cell order:
 # ╟─87e5e2ec-8915-11eb-362b-6bf13a36b8e4
@@ -332,13 +392,20 @@ TODO ...
 # ╠═4ffc3b48-895a-11eb-1ed2-f78b522d0ae9
 # ╠═90f58d04-8958-11eb-170e-0f17904c9f2c
 # ╠═90d83cae-8958-11eb-2d5c-bd298437f953
-# ╠═ab9ac56e-8969-11eb-3340-337957fd81b7
+# ╟─ab9ac56e-8969-11eb-3340-337957fd81b7
 # ╠═5f5e6d02-892a-11eb-32d8-dfc1a7f259fa
 # ╠═073f6442-892e-11eb-0fc2-bbeb1d12619e
 # ╠═25fb8f9a-8952-11eb-35bb-b173ac466835
 # ╠═65ec8554-8953-11eb-3973-b56039754312
+# ╠═0c8055b8-89b2-11eb-3046-331119a0dc9b
 # ╠═d728d526-8956-11eb-3c22-e788d025e8b4
 # ╠═ad388bba-8955-11eb-34ee-4db60fb0db8a
+# ╟─ad036de6-89b1-11eb-3973-b56039754312
 # ╟─dbbf22a2-8915-11eb-00eb-4b0278c0283d
-# ╠═dba976a2-8915-11eb-0ff0-b38952cbc38b
+# ╟─dba976a2-8915-11eb-0ff0-b38952cbc38b
 # ╠═ca91a0d6-8915-11eb-36cc-a18fc8efaf40
+# ╠═194958a6-89b4-11eb-3340-337957fd81b7
+# ╠═fa1fe202-89b7-11eb-34ee-4db60fb0db8a
+# ╠═432cd594-89b9-11eb-2d4a-6f46f08a511d
+# ╠═d0692f3c-89bb-11eb-2c0b-15edb9044d52
+# ╟─2ddeec6c-89bc-11eb-0796-f7dc9885b0de
