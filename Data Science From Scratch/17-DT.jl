@@ -64,7 +64,7 @@ This means the entropy will be small when every pᵢ is close to 0 or 1 (*i.e.* 
 
 # ╔═╡ dc3b7280-8915-11eb-258a-1789476897b9
 function entropy(class_prob::VF)::F
-	λ = p -> p > zero(F) ? -p * log(p) / log(2.) : zero(F)
+	λ = p -> p > zero(F) ? -p * log(2, p) : zero(F)
 	sum(λ.(class_prob))
 end
 
@@ -110,6 +110,15 @@ begin
 	@test data_entropy([2, 1, 2, 2]) == entropy([0.25, 0.75])
 end
 
+# ╔═╡ 13e3ccb6-8aae-11eb-3a9e-85b5afc74097
+ class_prob([1, 1, 1, 1, 1])
+
+# ╔═╡ 13c729da-8aae-11eb-29aa-b171020ad8dd
+class_prob([0, 0, 0, 1, 1]), class_prob([1, 1, 0, 1, 0])
+
+# ╔═╡ 13b2940c-8aae-11eb-2dd2-8dec30dd4881
+data_entropy([0, 0, 0, 1, 1]), data_entropy([1, 1, 0, 1, 0])
+
 # ╔═╡ dc0c5a5e-8915-11eb-2c62-5328b42add69
 html"""
 <p style="text-align: right;">
@@ -130,7 +139,9 @@ $$H = \sum_{i=1}^m q_i \times H(S_i)$$
 # ╔═╡ dbd86924-8915-11eb-351f-8362f09ba984
 function partition_entropy(subsets::Vector{VT})::F
 	"""Given the partition into subsets, calc. its entropy"""
+	# @show subsets
 	tot_cnt = sum(length.(subsets))
+	# @show tot_cnt
 	λ = s -> data_entropy(s) * length(s) / tot_cnt
 	sum(λ.(subsets))
 end
@@ -138,16 +149,8 @@ end
 # ╔═╡ d32b86e0-8928-11eb-193c-e3d7c85d23dd
 begin
 	a_ = BitArray{1}[[1, 1, 1, 1], [0, 0, 0, 1, 1], [1, 1, 0, 1, 0]]
-	typeof(a_)
- 	# partition_entropy(a_)
+ 	@test abs(partition_entropy(VT[a_...]) - 0.69353613) ≤ 1e-6 
 end
-
-# ╔═╡ 98dbf98a-8a99-11eb-269e-3f6a5b3cd8c3
-# typeof(a_) <: AbstractVector{AbstractVector{T}} where {T <: Any}
-
-# BitArray <: AbstractArray  # true
-
-AbstractVector{BitArray} <: AbstractVector{AbstractArray}
 
 # ╔═╡ dbbf22a2-8915-11eb-00eb-4b0278c0283d
 html"""
@@ -165,16 +168,25 @@ md"""
 """
 
 # ╔═╡ 073f6442-892e-11eb-0fc2-bbeb1d12619e
+begin
+const NB = Union{Nothing, Bool}
+
 struct Candidate
 	level::Symbol
 	lang::Symbol
 	tweets::Bool
 	phd::Bool
-	did_well::Union{Nothing, Bool}
+	did_well::NB
+	function Candidate(level::Symbol, lang::Symbol, tweets::Bool, phd::Bool, did_well::NB=nothing)
+		new(level, lang, tweets, phd, did_well)
+	end
+end
+	
 end
 
 # ╔═╡ 2ec41c48-8a95-11eb-13b6-61f4a07a31db
-inputs = [ 
+inputs = [
+	#         level    lang     tweets phd    did_well                  
 	Candidate(:Senior, :Java,   false, false, false),
 	Candidate(:Senior, :Java,   false, true,  false),
 	Candidate(:Mid,    :Python, false, false, true),
@@ -189,7 +201,7 @@ inputs = [
 	Candidate(:Mid,    :Python, false, true,  true),
 	Candidate(:Mid,    :Java,   true,  false, true),
 	Candidate(:Junior, :Python, false, true,  false)
-]
+];
 
 # ╔═╡ 25fb8f9a-8952-11eb-35bb-b173ac466835
 md"""
@@ -197,12 +209,20 @@ We will build a decision tree (DT) following ID3 algorithm, which works as follo
   - if the data have all the same label, create a leaf node that predicts that label and stops.
   - if the list of attributes is empty (*i.e* no more questions to split the data on), create a leaf that predicts the most common lable and stops
   - otherwise try partitionning the data by each of the attributes
-  - Choose the partition with the lowest entropy
-  - Add a decision node based on the chosen attribute
-  - Using the remaining attributes, recursively apply previous steps on each subset
+  - choose the partition with the lowest entropy
+  - add a decision node based on the chosen attribute
+  - using the remaining attributes, recursively apply previous steps on each subset
 
 First let's go manually through those steps using our toy dataset.
 """
+
+# ╔═╡ 045023be-8aac-11eb-29c1-3f4da066ff9b
+## Tuple
+fieldnames(Candidate)[1:end-1]
+
+# ╔═╡ b1c0a416-8aba-11eb-140a-9f3c4eb93346
+## Vector
+Symbol[fieldnames(Candidate)[1:end-1]...]
 
 # ╔═╡ 65ec8554-8953-11eb-3973-b56039754312
 function partition_by(inputs::VT, attr::Symbol)::Dict{T, VT}
@@ -215,67 +235,44 @@ function partition_by(inputs::VT, attr::Symbol)::Dict{T, VT}
 end
 
 # ╔═╡ 0c8055b8-89b2-11eb-3046-331119a0dc9b
-function partition_entropy_by(inputs::VT, attr::Symbol, label::Symbol)::F
+function partition_entropy_by(inputs::VT, attr::Symbol, label_attr::Symbol)::F
 	"""Given the partition, calc. its entropy"""
 	parts = partition_by(inputs, attr)
-	@show parts
+	# @show(parts, attr) 
+	# println("-----------------------")
 	
-	λ = inp -> getfield(inp, label)
+	λ = inp -> getfield(inp, label_attr)
 	labels = [λ.(p) for p ∈ values(parts)]
-	println("FOUND: $(labels) / $(typeof(labels))")
-	# partition_entropy(labels)
-	0.
+	# @show(labels)
+	# println("-----------------------")
+	
+	partition_entropy(VT[labels...])
 end
-
-# ╔═╡ fded51da-8a98-11eb-1cff-b34716e09a75
-
 
 # ╔═╡ d728d526-8956-11eb-3c22-e788d025e8b4
 with_terminal() do
-	
 	for key ∈ fieldnames(Candidate)[1:end-1]
 		r = partition_entropy_by(inputs, key, :did_well)
-		# r = 0
 		println("$(key) => $(r)")
 	end
 end
 
 # ╔═╡ 17768334-8a98-11eb-1172-3d5079435dcf
-fieldnames(Candidate)[1:end-1]
+begin
+	@test 0.69 ≤ partition_entropy_by(inputs, :level, :did_well) < 0.7
+	@test 0.86 ≤ partition_entropy_by(inputs, :lang, :did_well) < 0.87
+	@test 0.78 ≤ partition_entropy_by(inputs, :tweets, :did_well) < 0.79
+	@test 0.89 ≤ partition_entropy_by(inputs, :phd, :did_well) < 0.90
+end
 
-# ╔═╡ ad388bba-8955-11eb-34ee-4db60fb0db8a
-md"""
-Generate predictions
-"""
-
-# ╔═╡ ad036de6-89b1-11eb-3973-b56039754312
-# code for predictions
-
-## ================================
-
-# ╔═╡ dba976a2-8915-11eb-0ff0-b38952cbc38b
-md"""
-This gives 84 true positives (spam classified as “spam”), 25 false positives (ham
-classified as “spam”), 703 true negatives (ham classified as “ham”), and 44 false
-negatives (spam classified as “ham”). This means our precision is 84 / (84 + 25) =
-77%, and our recall is 84 / (84 + 44) = 65%, which are not bad numbers for such a
-simple model. (Presumably we’d do better if we looked at more than the subject
-lines.)
-"""
-
-# ╔═╡ ca91a0d6-8915-11eb-36cc-a18fc8efaf40
-# p_spam_given_token
-
-
-# ╔═╡ 194958a6-89b4-11eb-3340-337957fd81b7
-md"""
-The spammiest words include things like sale, mortgage, money, and rates...
-"""
-
-# ╔═╡ fa1fe202-89b7-11eb-34ee-4db60fb0db8a
-md"""
-using stemmer...
-"""
+# ╔═╡ 8365f5cc-8aaf-11eb-1928-b3a201b840a0
+begin
+	senior_inputs = filter(c -> getfield(c, :level) == :Senior, inputs)
+	
+	@test partition_entropy_by(senior_inputs, :lang, :did_well) ≈ 0.4
+	@test partition_entropy_by(senior_inputs, :tweets, :did_well) ≈ 0.0
+	@test 0.95 ≤ partition_entropy_by(senior_inputs, :phd, :did_well) ≤ 0.96
+end
 
 # ╔═╡ 432cd594-89b9-11eb-2d4a-6f46f08a511d
 html"""
@@ -292,10 +289,94 @@ md"""
 """
 
 # ╔═╡ 48ba469c-8a8e-11eb-0016-d784d1f60eb0
+md"""
+We are going to define out tree as either:
+  - a :leaf that predicts a single value xor
+  - a :split containing an attribute to split on, subtrees for specific values of that attribute and possibly a default value (if we see an unknown value)
+"""
 
+# ╔═╡ 704c988e-8ab3-11eb-2882-7bdab634fdb4
+struct Leaf
+	value::T
+end
+
+# ╔═╡ 702fd9e2-8ab3-11eb-0ac9-590fd1e3ca02
+struct Split
+	attr::Symbol
+	subtrees::Dict
+	defval::T
+end
+
+# ╔═╡ 7014500a-8ab3-11eb-13bc-69adb8a72f13
+const DT = Union{Leaf, Split}
+
+# ╔═╡ 6ff9bd6c-8ab3-11eb-1346-f1b274ec7283
+function classify(dt::DT, input::T)::T
+	"""
+	Classify given input using given decision tree (dt)
+	"""
+	typeof(dt) == Leaf && (return dt.value)
+
+	## Otherwise this tree consists of an attr to split on and a 
+	## dictionary whose keys are values of that attribute and whose
+	## values are subtrees to consider next
+	sdt_key = getfield(input, dt.attr)
+
+	if !haskey(dt.subtrees, sdt_key)
+		return dt.defval       ## no subtree for key => default value 
+	end	
+
+	sdt = dt.subtrees[sdt_key] ## choose appropriate subtree and
+	classify(sdt, input)       ## use it to classify the input
+end
+
+# ╔═╡ 6fdb83ce-8ab3-11eb-03a2-bf78a195426b
+function build_tree_id3(inputs::VT, split_attrs::Vector{Symbol}, 
+		target::Symbol)::DT
+	λ₁ = inp -> getfield(inp, target)
+	label_cnt = λ₁.(inputs) |> counter
+
+	most_common_label = reduce((m, x) -> m = x[2] > m[2] ? x : m, label_cnt;
+		init=(nothing, -1))[1]
+	# sort(collect(label_cnt), by=t -> t[2], rev=true)[1][1] 
+
+	## If unique label, predict it
+	length(label_cnt) == 1 && (return Leaf(most_common_label))
+
+	## no split attributes left => return the majority label
+	length(split_attrs) == 0 && (return Leaf(most_common_label))
+
+	## otherwise split by best attribute
+	best_attr = reduce(
+		(t_attr, c_attr) -> (p = partition_entropy_by(inputs, c_attr, target); 
+		t_attr = p < t_attr[2] ? (c_attr, p) : t_attr), split_attrs; 
+		init=(nothing, Inf)
+	)[1]
+
+	parts = partition_by(inputs, best_attr)
+	new_attrs = filter(a -> a ≠ best_attr, split_attrs)
+
+	## Recursively build the subtrees
+	subtrees = Dict(attr_val => build_tree_id3(subset, new_attrs, target) 
+		for (attr_val, subset) ∈ parts)
+
+	return Split(best_attr, subtrees, most_common_label)
+end
+
+# ╔═╡ f21e8240-8ab9-11eb-1223-cbc0f2b1aa8c
+dtree = build_tree_id3(inputs, Symbol[fieldnames(Candidate)[1:end-1]...], :did_well)
 
 # ╔═╡ 4891273a-8a8e-11eb-32a5-5b7fb191b833
+@test classify(dtree, Candidate(:Junior, :Java, true, false))
+## Should predict true
 
+# ╔═╡ 2a823d90-8abd-11eb-0e52-d53dfd7d28af
+@test !classify(dtree, Candidate(:Junior, :Java, true, true))
+## Should predict false
+
+# ╔═╡ 2a68888e-8abd-11eb-396d-2dbac68b7419
+@test classify(dtree, Candidate(:Intern, :Java, true, true))
+## Should predict true - :Intern is unknwon to decison tree
 
 # ╔═╡ Cell order:
 # ╟─87e5e2ec-8915-11eb-362b-6bf13a36b8e4
@@ -310,28 +391,34 @@ md"""
 # ╟─d7aade44-891b-11eb-00d3-abe7406c4b09
 # ╠═9ae99efe-891c-11eb-3d1f-89182e3f9ff8
 # ╠═ea1f4a2c-891d-11eb-3027-bd447dd9d1e1
+# ╠═13e3ccb6-8aae-11eb-3a9e-85b5afc74097
+# ╠═13c729da-8aae-11eb-29aa-b171020ad8dd
+# ╠═13b2940c-8aae-11eb-2dd2-8dec30dd4881
 # ╟─dc0c5a5e-8915-11eb-2c62-5328b42add69
 # ╟─dbefe77a-8915-11eb-39f1-5d0c84729739
 # ╠═dbd86924-8915-11eb-351f-8362f09ba984
 # ╠═d32b86e0-8928-11eb-193c-e3d7c85d23dd
-# ╠═98dbf98a-8a99-11eb-269e-3f6a5b3cd8c3
 # ╟─dbbf22a2-8915-11eb-00eb-4b0278c0283d
 # ╟─5f5e6d02-892a-11eb-32d8-dfc1a7f259fa
 # ╠═073f6442-892e-11eb-0fc2-bbeb1d12619e
 # ╠═2ec41c48-8a95-11eb-13b6-61f4a07a31db
 # ╟─25fb8f9a-8952-11eb-35bb-b173ac466835
+# ╠═045023be-8aac-11eb-29c1-3f4da066ff9b
+# ╠═b1c0a416-8aba-11eb-140a-9f3c4eb93346
 # ╠═65ec8554-8953-11eb-3973-b56039754312
 # ╠═0c8055b8-89b2-11eb-3046-331119a0dc9b
-# ╠═fded51da-8a98-11eb-1cff-b34716e09a75
 # ╠═d728d526-8956-11eb-3c22-e788d025e8b4
 # ╠═17768334-8a98-11eb-1172-3d5079435dcf
-# ╠═ad388bba-8955-11eb-34ee-4db60fb0db8a
-# ╟─ad036de6-89b1-11eb-3973-b56039754312
-# ╟─dba976a2-8915-11eb-0ff0-b38952cbc38b
-# ╠═ca91a0d6-8915-11eb-36cc-a18fc8efaf40
-# ╠═194958a6-89b4-11eb-3340-337957fd81b7
-# ╠═fa1fe202-89b7-11eb-34ee-4db60fb0db8a
+# ╠═8365f5cc-8aaf-11eb-1928-b3a201b840a0
 # ╟─432cd594-89b9-11eb-2d4a-6f46f08a511d
 # ╟─48db121e-8a8e-11eb-189f-d9f41e4b1d9d
-# ╠═48ba469c-8a8e-11eb-0016-d784d1f60eb0
+# ╟─48ba469c-8a8e-11eb-0016-d784d1f60eb0
+# ╠═704c988e-8ab3-11eb-2882-7bdab634fdb4
+# ╠═702fd9e2-8ab3-11eb-0ac9-590fd1e3ca02
+# ╠═7014500a-8ab3-11eb-13bc-69adb8a72f13
+# ╠═6ff9bd6c-8ab3-11eb-1346-f1b274ec7283
+# ╠═6fdb83ce-8ab3-11eb-03a2-bf78a195426b
+# ╠═f21e8240-8ab9-11eb-1223-cbc0f2b1aa8c
 # ╠═4891273a-8a8e-11eb-32a5-5b7fb191b833
+# ╠═2a823d90-8abd-11eb-0e52-d53dfd7d28af
+# ╠═2a68888e-8abd-11eb-396d-2dbac68b7419
