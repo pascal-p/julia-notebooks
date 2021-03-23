@@ -57,24 +57,25 @@ end
 function mean(t::Tensor; dims::Integer=0, keep_shape=false)
   """
   Compute mean of tensor up to order 3
-
-  FIXME: how to generalize this?
+    FIXME: how to generalize this?
   """
-    @assert 0 ≤ dims ≤ length(size(t))
+  @assert 0 ≤ dims ≤ length(size(t))
   p = size(t) |> length
 
-    if dims == 0
-      return sum(t)/*(size(t)...)
+  if dims == 0
+    return sum(t)/*(size(t)...)
 
   elseif p == 2
     d, n = dims, size(t)[dims]
-      xr, yc = size(t)
-    return  sum.([view(t, ((d == 1 ? i : 1:xr), (d == 2 ? i : 1:yc))...) for i ∈ 1:n]) / n
+    xr, yc = size(t)
+    sum.([view(t, ((d == 1 ? i : 1:xr),
+            (d == 2 ? i : 1:yc))...) for i ∈ 1:n]) / n
 
-    elseif dims ≤ length(size(t))
-      d, n = dims, size(t)[dims]
-      xr, yc, zd = size(t)
-      return  sum.([view(t, ((d == 1 ? i : 1:xr), (d == 2 ? i : 1:yc), (d == 3 ? i : 1:zd))...) for i ∈ 1:n]) / n
+  elseif dims ≤ length(size(t))
+    d, n = dims, size(t)[dims]
+    xr, yc, zd = size(t)
+    sum.([view(t, ((d == 1 ? i : 1:xr),
+            (d == 2 ? i : 1:yc), (d == 3 ? i : 1:zd))...) for i ∈ 1:n]) / n
     else
       throws(ArgumentError("Not Implemented"))
     end
@@ -266,9 +267,8 @@ end
 # ╔═╡ 18a07872-8b84-11eb-3046-331119a0dc9b
 begin
   function forward(self::Activation, input::Tensor)::Tensor
-    self.store[self.name] = self.fn(input)
-    # @show "A / F ====> ", a, size(a)
-    # a
+    self.store[self.name] = self.fn.(input)
+    self.store[self.name]
   end
 
   function backward(self::Activation, ∇::Tensor)::Tensor
@@ -280,28 +280,58 @@ begin
   ∇(self::Activation) = []
 end
 
+# ╔═╡ 23b693ca-8c21-11eb-3340-337957fd81b7
+
+
+# ╔═╡ e9a11fde-8c20-11eb-3046-331119a0dc9b
+
+
 # ╔═╡ 879291b6-8b7a-11eb-3340-337957fd81b7
 md"""
 ###### Sigmoid function
 """
 
 # ╔═╡ 325b5476-8b75-11eb-0867-739680374b56
-begin
+Sigmoid = let
   σ = z -> 1. ./ (1. .+ exp.(-z))
-  der_σ = z -> σ(z) .* (1 .- σ(z))
-  Sigmoid = Activation(:sigmoid, σ, der_σ)
+    der_σ = z -> σ(z) .* (1 .- σ(z))
+  Activation(:sigmoid, σ, der_σ)
 end
 
-# ╔═╡ 2b953c54-8b86-11eb-3c22-e788d025e8b4
-md"""
-###### Tanh function
-"""
+# ╔═╡ 9337d830-8c17-11eb-397c-c56dc9ffeea4
+begin
+  @test Sigmoid.name == :sigmoid
+
+  @test Sigmoid.fn(0.) ≈ 0.5
+  @test Sigmoid.fn(1.) ≈ 0.73105857863
+  @test Sigmoid.fn(5.) ≈ 0.9933071490757
+  @test Sigmoid.fn([5. 1. 0.]) ≈ [0.9933071490757 0.73105857863 0.5]
+
+  @test Sigmoid.der_fn(0.) ≈ 0.25
+  @test Sigmoid.der_fn(1.) ≈ 0.1966119332414841
+  @test Sigmoid.der_fn(5.) ≈ 0.0066480566708051
+end
 
 # ╔═╡ 323ad930-8b75-11eb-315c-5398adedfb78
-begin
+Tanh = let
   tanₕ = z -> (x = exp.(z); y = exp.(-z); (x .- y) ./ (x .+ y))
-  der_tanₕ = z -> 1 .- tanhₕ.(z) .^ 2
-  Tanh = Activation(:tanh, tanₕ, der_tanₕ)
+    der_tanₕ = z -> 1 .- tanₕ.(z) .^ 2
+  Activation(:tanh, tanₕ, der_tanₕ)
+end
+
+# ╔═╡ 2e1816d2-8c19-11eb-3046-331119a0dc9b
+begin
+  @test Tanh.name == :tanh
+
+  @test Tanh.fn(0.) ≈ 0.
+  @test Tanh.fn(1.) ≈ 0.7615941559557649
+  @test Tanh.fn(1.) ≈ -Tanh.fn(-1.)
+  @test Tanh.fn(5.) ≈ 0.999909204262595
+  @test Tanh.fn(5.) ≈ -Tanh.fn(-5.)
+
+  @test Tanh.der_fn(0.) ≈ 1.0
+  @test Tanh.der_fn(1.) ≈ 0.41997434161402614
+  @test Tanh.der_fn(5.) ≈ 0.00018158323094408235
 end
 
 # ╔═╡ 41080436-8b86-11eb-2d5c-bd298437f953
@@ -310,10 +340,26 @@ md"""
 """
 
 # ╔═╡ 321c84bc-8b75-11eb-3869-5b3dfd0fcba7
+ReLU = let
+  relu_fn = z -> max(zero(eltype(z)), z)
+  der_relu = z -> (z₀ =	zero(eltype(z)); z .< z₀ ? z₀ : one(eltype(z)))
+  Activation(:relu, relu_fn, der_relu)
+end
+
+# ╔═╡ 04a96d56-8c1a-11eb-1de6-fd84daec8930
 begin
-  relu_fn = z -> maximum(0, z...)            ## FIXME: Check this
-  der_relu = z -> z .< 0. ? 0. : z
-  ReLU = Activation(:relu, relu_fn, der_relu)
+  @test ReLU.name == :relu
+
+  @test ReLU.fn(0.) ≈ 0.
+  @test ReLU.fn(1.) ≈ 1.
+  @test ReLU.fn(-1.) ≈ 0.
+  @test ReLU.fn.([-1. 1]) ≈ [0. 1.]
+
+  @test ReLU.der_fn(0.1) ≈ 1.0
+  @test ReLU.der_fn(1.) ≈ 1.0
+  @test ReLU.der_fn(5.) ≈ 1.0
+  @test ReLU.der_fn(-5.) ≈ 0.0
+>>>>>>> fix-backprop
 end
 
 # ╔═╡ a6305b04-8b63-11eb-25ea-fd23665f9606
@@ -353,24 +399,18 @@ end
 # ╔═╡ 86d2aac4-8b64-11eb-2ce3-554d89f33f35
 function forward(self::Linear, input::Tensor)::Tensor
   self.store[:input] = input  ## Storing the input for backward pass
-  # @show "..........STORE INPUT at :input):", self.store[:input]
-  println()
-  # @show "L/F ", size(self.w), size(input), size(self.b)
-  r = self.w * input + self.b
-  # @show "L/F ==> ", r, size(r)
-  r
+  self.w * input + self.b
 end
 
 # ╔═╡ 964d2ac2-8b72-11eb-28b5-ddc35ed07aa9
 function backward(self::Linear, ∇::Tensor)::Tensor
   ## as each bᵢ is added to output oᵢ, ∇b is the same as output ∇
   self.store[:∇b] = ∇
-  # @show "..........GET INPUT at :input:", self.store[:input]
-  # @show "B / ∇ <<", size(self.store[:input]), size(∇)
-  self.store[:∇w] = self.store[:input] * ∇' ## was self.store[:input] * ∇
-  sum.(self.w' * ∇)  # sum.(∇ * self.w) ## ?
-  # @show "B / s <<", size(∇), size(self.w), size(s), s
-  # s
+  self.store[:∇w] = ∇ * self.store[:input]' # self.store[:input] * ∇'
+  r = sum.(self.w' * ∇)
+  @assert size(self.w) == size(self.store[:∇w]) "w and ∇w should have same shape: $(size(self.w)) == $(size(self.store[:∇w]))"
+  @assert size(self.b) == size(self.store[:∇b]) "b and ∇b should have same shape: $(size(self.b)) == $(size(self.store[:∇b]))"
+  r
 end
 
 # ╔═╡ a928209e-8b74-11eb-192c-8d53b41fb0a0
@@ -397,7 +437,8 @@ We can think of a neural network as a sequence of layers (Linear/Dense, Activati
 # ╔═╡ bfe7710e-8b74-11eb-0cc5-4946d943c398
 struct Sequential <: AbstractLayer
   layers::Vector{AbstractLayer}
-  #
+  _type::Symbol
+
   function Sequential(layers::Vector{AbstractLayer})
     ## output of prev. layer == input of curr layer
     @assert length(layers) > 0
@@ -407,13 +448,14 @@ struct Sequential <: AbstractLayer
       @assert pl.odim == cl.idim
       pl = cl
     end
-    new(layers)
+
+    new(layers, :sequentiaL)
   end
 end
 
 # ╔═╡ bfc98a2a-8b74-11eb-3458-153202bf0b91
 function forward(self::Sequential, input::Tensor)::Tensor
-  for l ∈ self.layers
+  for (ix, l) ∈ enumerate(self.layers)
     input = forward(l, input)
   end
   input
@@ -421,42 +463,17 @@ end
 
 # ╔═╡ bfb091d4-8b74-11eb-0850-ab7a2e10ff52
 function backward(self::Sequential, ∇::Tensor)::Tensor
-  for l ∈ reverse(self.layers)
+  for (ix, l) ∈ enumerate(reverse(self.layers))
     ∇ = backward(l, ∇)
   end
   ∇
 end
 
 # ╔═╡ bf95bfd0-8b74-11eb-115e-0fc0dd1bc84f
-function parms(self::Sequential) # =
-  # @show self
-  r = []
-
-  for l_ ∈ self.layers
-    for p ∈ parms(l_)
-      push!(r, p)
-    end
-  end
-
-  r
-
-  # (
-  #   p for l_ ∈ self.layers, p ∈ parms(l_)
-  # ) # Generator
-end
+parms(self::Sequential) = [p for l ∈ self.layers for p ∈ parms(l)]
 
 # ╔═╡ a9082e56-8b74-11eb-2359-d91cbb8c5e23
-function ∇(self::Sequential) # = (
-  #	∇p for l_ ∈ self.layers, ∇p ∈ ∇(l_)
-  #	)  # Generator
-  r = []
-  for l_ ∈ self.layers
-    for ∇p  ∈ parms(l_)
-      push!(r, ∇p)
-    end
-  end
-  r
-end
+∇(self::Sequential) = [∇p for l ∈ self.layers for ∇p ∈ ∇(l)]
 
 # ╔═╡ 5b0074ac-8b88-11eb-397a-4971fb64f900
 md"""
@@ -519,8 +536,6 @@ begin
 
   function ∇loss(self::AbstractLoss, ŷ::Tensor, y::Tensor)::Tensor
     2 * (ŷ .- y)
-    # @show "∇loss >> ", size(ŷ), size(y), size(r), r
-    # r
   end
 end
 
@@ -548,8 +563,9 @@ begin
     η::F
   end
 
-  function step(self::GD, nl::AbstractLayer)
-    for (_parms, _∇parms) ∈ zip(parms(nl), ∇(nl))
+  function step(self::GD, sl::AbstractLayer)
+    ## sl ≡ seq. layer
+    for (_parms, _∇parms) ∈ zip(parms(sl), ∇(sl))
       _parms[:] = _parms - self.η .* _∇parms
     end
   end
@@ -574,6 +590,8 @@ TODO...
 # ╔═╡ 212a4800-8b8c-11eb-0b29-659a3be01512
 md"""
 #### XOR example
+
+We will use xor_net as defined above
 """
 
 # ╔═╡ 2111ca94-8b8c-11eb-0307-d932886e4b10
@@ -583,77 +601,46 @@ begin
   ys = [0.; 1.; 1.; 0.]
 end
 
-# ╔═╡ 3293e642-8b8e-11eb-170e-0f17904c9f2c
-with_terminal() do
-  for (_x, _y) ∈ zip(xs, ys)
-    @show _x, _y
-  end
-  @show size(xs)[1]
-  @show xs[1, :]
-  @show ys[1, :]
-end
-
 # ╔═╡ 61904ed8-8b96-11eb-3046-331119a0dc9b
-size(reshape(xs[1, :], 2, :))
-
-# ╔═╡ 7f32b8a4-8b96-11eb-3340-337957fd81b7
-
-
-# ╔═╡ 4598c63a-8b96-11eb-397a-4971fb64f900
-size(reshape(ys[1, :], 1, 1))
-
-# ╔═╡ 593b765e-8b8c-11eb-397a-4971fb64f900
-## We'll use xor_net as defined above
+size(xs[1, :]), size(reshape(xs[1, :], 2, :)), size(ys[1, :]), size(reshape(ys[1, :], 1, 1))
 
 # ╔═╡ 7d8504f8-8b8c-11eb-3c22-e788d025e8b4
 begin
-  ya_optimizer = GD(0.1)
-  ya_loss = SSE()
+  ya_optimizer = GD(0.05)
+  ya_loss = SSE();
 end
 
 # ╔═╡ 7d69f7f8-8b8c-11eb-1de6-fd84daec8930
-begin
-  for epoch ∈ 1:3000
-    epoch_loss = 0.
+for epoch ∈ 1:10000
+  epoch_loss = 0.
 
-    for ix ∈ 1:size(xs)[1]
-      _xs, _ys = xs[ix, :], ys[ix, :]
-      (x, y) = (reshape(_xs, size(_xs)[1], :), reshape(_ys, size(_ys)[1], :))
-      #x, y = view(xs, ix, :), view(ys, ix, :)
-      #x, y = xs[ix, :], ys[ix, :]
-      ŷ = forward(xor_net, x)
-      #
-      # print("\t")
-      # @show "MAIN >>> ŷ: ", size(ŷ), ŷ, size(y), y
-      #
-      epoch_loss += loss(ya_loss, ŷ, y)
-      ∇p = ∇loss(ya_loss, ŷ, y)
-      backward(xor_net, ∇p)
-      step(ya_optimizer, xor_net)
+  for ix ∈ 1:size(xs)[1]
+    _xs, _ys = xs[ix, :], ys[ix, :]
+    (x, y) = (reshape(_xs, size(_xs)[1], :), reshape(_ys, size(_ys)[1], :))
+    #x, y = view(xs, ix, :), view(ys, ix, :)
+    #x, y = xs[ix, :], ys[ix, :]
+    ŷ = forward(xor_net, x)
+    epoch_loss += loss(ya_loss, ŷ, y)
+    ∇p = ∇loss(ya_loss, ŷ, y)
+    backward(xor_net, ∇p)
+    step(ya_optimizer, xor_net)
     end
 
-    @show epoch_loss
-  end
+    epoch % 100 == 0 && (@show epoch, epoch_loss)
 end
 
-# ╔═╡ 7d516e7c-8b8c-11eb-34ee-4db60fb0db8a
+# ╔═╡ 276897b0-8c27-11eb-3046-331119a0dc9b
 with_terminal() do
-  for p ∈ parms(xor_net)
+  for p in parms(xor_net)
     println(p)
   end
 end
-
-# ╔═╡ 7d37e306-8b8c-11eb-3340-337957fd81b7
-l3 = Linear(4, 3)
-
-# ╔═╡ 7d1da344-8b8c-11eb-3046-331119a0dc9b
-typeof(objectid(l3))
 
 # ╔═╡ Cell order:
 # ╟─8c80e072-8b59-11eb-3c21-a18fe43c4536
 # ╠═ac463e7a-8b59-11eb-229e-db560e17c5f5
 # ╟─e7373726-8b59-11eb-2a2b-b5138e4f5268
-# ╠═f5ee64b2-8b59-11eb-2751-0778efd589cd
+# ╟─f5ee64b2-8b59-11eb-2751-0778efd589cd
 # ╟─164b4054-8b5a-11eb-03cc-9fc52eed5937
 # ╟─31d3fa52-8b5d-11eb-017f-4308a2a06930
 # ╠═d783876e-8b59-11eb-3ec1-39663403c77d
@@ -682,12 +669,16 @@ typeof(objectid(l3))
 # ╟─3276d728-8b75-11eb-3bcb-95a228498748
 # ╠═d2d26a08-8b83-11eb-3975-57c2a8e1fd58
 # ╠═18a07872-8b84-11eb-3046-331119a0dc9b
+# ╠═23b693ca-8c21-11eb-3340-337957fd81b7
+# ╠═e9a11fde-8c20-11eb-3046-331119a0dc9b
 # ╟─879291b6-8b7a-11eb-3340-337957fd81b7
 # ╠═325b5476-8b75-11eb-0867-739680374b56
-# ╟─2b953c54-8b86-11eb-3c22-e788d025e8b4
+# ╠═9337d830-8c17-11eb-397c-c56dc9ffeea4
 # ╠═323ad930-8b75-11eb-315c-5398adedfb78
+# ╠═2e1816d2-8c19-11eb-3046-331119a0dc9b
 # ╟─41080436-8b86-11eb-2d5c-bd298437f953
 # ╠═321c84bc-8b75-11eb-3869-5b3dfd0fcba7
+# ╠═04a96d56-8c1a-11eb-1de6-fd84daec8930
 # ╟─a6305b04-8b63-11eb-25ea-fd23665f9606
 # ╠═0a8f0468-8b63-11eb-2e53-9fa288538f73
 # ╠═6657fdee-8bb1-11eb-397c-c56dc9ffeea4
@@ -721,13 +712,7 @@ typeof(objectid(l3))
 # ╠═21614b5a-8b8c-11eb-01e9-bd2517364992
 # ╟─212a4800-8b8c-11eb-0b29-659a3be01512
 # ╠═2111ca94-8b8c-11eb-0307-d932886e4b10
-# ╠═3293e642-8b8e-11eb-170e-0f17904c9f2c
 # ╠═61904ed8-8b96-11eb-3046-331119a0dc9b
-# ╠═7f32b8a4-8b96-11eb-3340-337957fd81b7
-# ╠═4598c63a-8b96-11eb-397a-4971fb64f900
-# ╠═593b765e-8b8c-11eb-397a-4971fb64f900
 # ╠═7d8504f8-8b8c-11eb-3c22-e788d025e8b4
 # ╠═7d69f7f8-8b8c-11eb-1de6-fd84daec8930
-# ╠═7d516e7c-8b8c-11eb-34ee-4db60fb0db8a
-# ╠═7d37e306-8b8c-11eb-3340-337957fd81b7
-# ╠═7d1da344-8b8c-11eb-3046-331119a0dc9b
+# ╠═276897b0-8c27-11eb-3046-331119a0dc9b
