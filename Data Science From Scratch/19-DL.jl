@@ -6,10 +6,11 @@ using InteractiveUtils
 
 # ╔═╡ ac463e7a-8b59-11eb-229e-db560e17c5f5
 begin
-  using Test
-  using Random
-  using Distributions
-  using PlutoUI
+	using Test
+	using Random
+	using Distributions
+	using PlutoUI
+	using Plots
 end
 
 # ╔═╡ 8c80e072-8b59-11eb-3c21-a18fe43c4536
@@ -31,6 +32,8 @@ md"""
   - [The Layer Abstraction](#abstraction-layer)
   - [Neural Network as a sequence of layers](#nn-a-seq-of-layers)
   - [Loss and Optimization](#loss-n-optimization)
+  - [XOR example](#xor-example)
+  - [FizzBuzz example](#fizzbuzz-example)
   - [...](#...)
 """
 
@@ -245,9 +248,9 @@ md"""
 ##### Activation functions
 
 We will implement the follwoing activation funtions:
-  - sigmoid
-  - tanh
-  - relu
+  - Sigmoid
+  - Tanh
+  - ReLU
 """
 
 # ╔═╡ d2d26a08-8b83-11eb-3975-57c2a8e1fd58
@@ -279,12 +282,6 @@ begin
 
   ∇(self::Activation) = []
 end
-
-# ╔═╡ 23b693ca-8c21-11eb-3340-337957fd81b7
-
-
-# ╔═╡ e9a11fde-8c20-11eb-3046-331119a0dc9b
-
 
 # ╔═╡ 879291b6-8b7a-11eb-3340-337957fd81b7
 md"""
@@ -359,7 +356,6 @@ begin
   @test ReLU.der_fn(1.) ≈ 1.0
   @test ReLU.der_fn(5.) ≈ 1.0
   @test ReLU.der_fn(-5.) ≈ 0.0
->>>>>>> fix-backprop
 end
 
 # ╔═╡ a6305b04-8b63-11eb-25ea-fd23665f9606
@@ -406,7 +402,7 @@ end
 function backward(self::Linear, ∇::Tensor)::Tensor
   ## as each bᵢ is added to output oᵢ, ∇b is the same as output ∇
   self.store[:∇b] = ∇
-  self.store[:∇w] = ∇ * self.store[:input]' # self.store[:input] * ∇'
+  self.store[:∇w] = ∇ * self.store[:input]'
   r = sum.(self.w' * ∇)
   @assert size(self.w) == size(self.store[:∇w]) "w and ∇w should have same shape: $(size(self.w)) == $(size(self.store[:∇w]))"
   @assert size(self.b) == size(self.store[:∇b]) "b and ∇b should have same shape: $(size(self.b)) == $(size(self.store[:∇b]))"
@@ -585,14 +581,55 @@ TODO...
 
 
 # ╔═╡ 21614b5a-8b8c-11eb-01e9-bd2517364992
-
+html"""
+<p style="text-align: right;">
+  <a id='xor-example'></a>
+  <a href="#toc">back to TOC</a>
+</p>
+"""
 
 # ╔═╡ 212a4800-8b8c-11eb-0b29-659a3be01512
 md"""
 #### XOR example
 
-We will use xor_net as defined above
+We will use xor_net as defined above. But first le us defien a generic training loop.
 """
+
+# ╔═╡ 3e135428-8c39-11eb-0307-d932886e4b10
+begin
+	const AL = AbstractLayer
+	const AA = AbstractArray
+	const ALoss = AbstractLoss
+	const AOpt = AbstractOptimizer
+end
+
+# ╔═╡ 580afffa-8c3a-11eb-0b29-659a3be01512
+function zipper(x::AA, y::AA)
+  @assert size(x)[1] == size(y)[1]
+
+  ([x[ix, :], y[ix, :]] for ix ∈ 1:size(x)[1]) ## returns a gen.
+end
+
+# ╔═╡ 6474f75a-8c38-11eb-1ed2-f78b522d0ae9
+function train_loop(model::AL, xs::AA, ys::AA, loss_fn::ALoss, opt_fn::AOpt;
+    epochs=3000, zip_fn=zip, acc_fn=nothing, verbose=false)
+	#
+	rec_loss = []
+	for epoch ∈ 1:epochs
+		epoch_loss = 0.
+		for (x, y) ∈ zip_fn(xs, ys)
+			ŷ = forward(model, x)
+			epoch_loss += loss(loss_fn, ŷ, y)
+			∇p = ∇loss(loss_fn, ŷ, y)
+			backward(model, ∇p)
+			#
+			step(opt_fn, model)
+		end
+		verbose && epoch % 100 == 0 && (@show epoch, epoch_loss)
+		push!(rec_loss, epoch_loss)
+	end
+	rec_loss
+end
 
 # ╔═╡ 2111ca94-8b8c-11eb-0307-d932886e4b10
 begin
@@ -601,40 +638,59 @@ begin
   ys = [0.; 1.; 1.; 0.]
 end
 
+# ╔═╡ ac9fbad6-8c3a-11eb-231c-f331a607203c
+with_terminal() do
+  for (x, y) in zip(xs, ys)
+    println(x, " / ", y)
+  end
+end
+
 # ╔═╡ 61904ed8-8b96-11eb-3046-331119a0dc9b
 size(xs[1, :]), size(reshape(xs[1, :], 2, :)), size(ys[1, :]), size(reshape(ys[1, :], 1, 1))
 
 # ╔═╡ 7d8504f8-8b8c-11eb-3c22-e788d025e8b4
-begin
-  ya_optimizer = GD(0.05)
-  ya_loss = SSE();
-end
+
 
 # ╔═╡ 7d69f7f8-8b8c-11eb-1de6-fd84daec8930
-for epoch ∈ 1:10000
-  epoch_loss = 0.
+begin
+	rec_loss = nothing
 
-  for ix ∈ 1:size(xs)[1]
-    _xs, _ys = xs[ix, :], ys[ix, :]
-    (x, y) = (reshape(_xs, size(_xs)[1], :), reshape(_ys, size(_ys)[1], :))
-    #x, y = view(xs, ix, :), view(ys, ix, :)
-    #x, y = xs[ix, :], ys[ix, :]
-    ŷ = forward(xor_net, x)
-    epoch_loss += loss(ya_loss, ŷ, y)
-    ∇p = ∇loss(ya_loss, ŷ, y)
-    backward(xor_net, ∇p)
-    step(ya_optimizer, xor_net)
-    end
-
-    epoch % 100 == 0 && (@show epoch, epoch_loss)
+	with_terminal() do
+		xor_loss = SSE()
+		xor_opt = GD(0.05)
+		global rec_loss = train_loop(xor_net, xs, ys, xor_loss, xor_opt; 
+			verbose=true, zip_fn=zipper)
+	end
 end
 
 # ╔═╡ 276897b0-8c27-11eb-3046-331119a0dc9b
 with_terminal() do
-  for p in parms(xor_net)
-    println(p)
-  end
+	for p in parms(xor_net); println(p); end
 end
+
+# ╔═╡ 70569cb6-8c44-11eb-397a-4971fb64f900
+begin
+	# using Plots
+	plot(1:3000, rec_loss, title="training loss", legend=false)
+end
+
+# ╔═╡ 593338dc-8c3f-11eb-3978-75a4a2df9116
+html"""
+<p style="text-align: right;">
+  <a id='fizzbuzz-example'></a>
+  <a href="#toc">back to TOC</a>
+</p>
+"""
+
+# ╔═╡ 319822fc-8c2a-11eb-397a-4971fb64f900
+md"""
+#### FizzBuzz example
+"""
+
+# ╔═╡ 9ef5592a-8c37-11eb-3046-331119a0dc9b
+md"""
+First some helper functions
+"""
 
 # ╔═╡ Cell order:
 # ╟─8c80e072-8b59-11eb-3c21-a18fe43c4536
@@ -669,8 +725,6 @@ end
 # ╟─3276d728-8b75-11eb-3bcb-95a228498748
 # ╠═d2d26a08-8b83-11eb-3975-57c2a8e1fd58
 # ╠═18a07872-8b84-11eb-3046-331119a0dc9b
-# ╠═23b693ca-8c21-11eb-3340-337957fd81b7
-# ╠═e9a11fde-8c20-11eb-3046-331119a0dc9b
 # ╟─879291b6-8b7a-11eb-3340-337957fd81b7
 # ╠═325b5476-8b75-11eb-0867-739680374b56
 # ╠═9337d830-8c17-11eb-397c-c56dc9ffeea4
@@ -709,10 +763,18 @@ end
 # ╟─e19d82b4-8b8a-11eb-3c22-e788d025e8b4
 # ╠═0c1df400-8b8c-11eb-1ed2-f78b522d0ae9
 # ╠═217c035a-8b8c-11eb-3e38-6b87cec5b14d
-# ╠═21614b5a-8b8c-11eb-01e9-bd2517364992
+# ╟─21614b5a-8b8c-11eb-01e9-bd2517364992
 # ╟─212a4800-8b8c-11eb-0b29-659a3be01512
+# ╠═3e135428-8c39-11eb-0307-d932886e4b10
+# ╠═580afffa-8c3a-11eb-0b29-659a3be01512
+# ╠═ac9fbad6-8c3a-11eb-231c-f331a607203c
+# ╠═6474f75a-8c38-11eb-1ed2-f78b522d0ae9
 # ╠═2111ca94-8b8c-11eb-0307-d932886e4b10
 # ╠═61904ed8-8b96-11eb-3046-331119a0dc9b
-# ╠═7d8504f8-8b8c-11eb-3c22-e788d025e8b4
+# ╟─7d8504f8-8b8c-11eb-3c22-e788d025e8b4
 # ╠═7d69f7f8-8b8c-11eb-1de6-fd84daec8930
 # ╠═276897b0-8c27-11eb-3046-331119a0dc9b
+# ╠═70569cb6-8c44-11eb-397a-4971fb64f900
+# ╟─593338dc-8c3f-11eb-3978-75a4a2df9116
+# ╟─319822fc-8c2a-11eb-397a-4971fb64f900
+# ╟─9ef5592a-8c37-11eb-3046-331119a0dc9b
