@@ -34,7 +34,7 @@ md"""
   - [Loss and Optimization](#loss-n-optimization)
   - [XOR example](#xor-example)
   - [FizzBuzz example](#fizzbuzz-example)
-  - [...](#...)
+  - [Softmax and Cross-Entropy Loss](#softmax-n-xentropy)
 """
 
 # ╔═╡ 164b4054-8b5a-11eb-03cc-9fc52eed5937
@@ -526,11 +526,11 @@ begin
   struct SSE <: AbstractLoss
   end
 
-  function loss(self::SSE, ŷ::Tensor, y::Tensor)::F
+  function loss(_self::SSE, ŷ::Tensor, y::Tensor)::F
     sum((ŷ .- y) .^ 2)
   end
 
-  function ∇loss(self::AbstractLoss, ŷ::Tensor, y::Tensor)::Tensor
+  function ∇loss(_self::AbstractLoss, ŷ::Tensor, y::Tensor)::Tensor
     2 * (ŷ .- y)
   end
 end
@@ -628,27 +628,6 @@ function zipper(x::AA, y::AA)
   ([x[ix, :], y[ix, :]] for ix ∈ 1:size(x)[1]) ## returns a gen.
 end
 
-# ╔═╡ 6474f75a-8c38-11eb-1ed2-f78b522d0ae9
-function train_loop(model::AL, xs::AA, ys::AA, loss_fn::ALoss, opt_fn::AOpt;
-    epochs=3000, zip_fn=zip, acc_fn=nothing, verbose=false)
-	#
-	rec_loss = []
-	for epoch ∈ 1:epochs
-		epoch_loss = 0.
-		for (x, y) ∈ zip_fn(xs, ys)
-			ŷ = forward(model, x)
-			epoch_loss += loss(loss_fn, ŷ, y)
-			∇p = ∇loss(loss_fn, ŷ, y)
-			backward(model, ∇p)
-			#
-			step(opt_fn, model)
-		end
-		verbose && epoch % 100 == 0 && (@show epoch, epoch_loss)
-		push!(rec_loss, epoch_loss)
-	end
-	rec_loss
-end
-
 # ╔═╡ 2111ca94-8b8c-11eb-0307-d932886e4b10
 begin
   ## Training data
@@ -669,25 +648,10 @@ size(xs[1, :]), size(reshape(xs[1, :], 2, :)), size(ys[1, :]), size(reshape(ys[1
 # ╔═╡ 7d8504f8-8b8c-11eb-3c22-e788d025e8b4
 
 
-# ╔═╡ 7d69f7f8-8b8c-11eb-1de6-fd84daec8930
-begin
-	rec_loss = nothing
-
-	with_terminal() do
-		xor_loss = SSE()
-		xor_opt = GD(0.05)
-		global rec_loss = train_loop(xor_net, xs, ys, xor_loss, xor_opt; 
-			verbose=true, zip_fn=zipper)
-	end
-end
-
 # ╔═╡ 276897b0-8c27-11eb-3046-331119a0dc9b
 with_terminal() do
 	for p in parms(xor_net); println(p); end
 end
-
-# ╔═╡ 70569cb6-8c44-11eb-397a-4971fb64f900
-plot(1:3000, rec_loss, title="XOR training loss", legend=false)
 
 # ╔═╡ 593338dc-8c3f-11eb-3978-75a4a2df9116
 html"""
@@ -807,21 +771,143 @@ md"""
 Fifth, let us define our training loop.
 """
 
+# ╔═╡ 3e34451e-8c51-11eb-3978-75a4a2df9116
+html"""
+<p style="text-align: right;">
+  <a id='softmax-n-xentropy'></a>
+  <a href="#toc">back to TOC</a>
+</p>
+"""
+
+# ╔═╡ 48ba66fa-8c51-11eb-34ee-4db60fb0db8a
+md"""
+#### Softmax and Cross-Entropy Loss
+
+The softmax function converts a vector of real numbers into a vector of probabilities.
+"""
+
+# ╔═╡ 489fe8d2-8c51-11eb-3340-337957fd81b7
+function softmax(tensor::Tensor)::Tensor
+	"""Softmax along ths last dimension"""
+	## for numerical stability - subtract largest value
+	exps = exp.(tensor .- maximum(tensor))
+	sum_exps = sum(exps)
+	exps ./ sum_exps
+end
+
+# ╔═╡ 4882bcee-8c51-11eb-3046-331119a0dc9b
+begin
+	@test softmax([1. 3. 2.]) ≈ [0.09003057 0.66524096 0.24472847]
+	@test softmax([0. 1. 0.]) ≈ [0.21194155761708 0.5761168847658 0.21194155761708]
+	@test softmax([8. 5. 0. 0.]) ≈ [0.9519657197813 0.04739558237461 0.0003193489220309 0.0003193489220309]
+end
+
+# ╔═╡ bd860472-8c53-11eb-0307-d932886e4b10
+begin
+	struct SoftmaxXEntropy <: AbstractLoss
+	end
+
+	function loss(_self::SoftmaxXEntropy, ŷ::Tensor, y::Tensor; ϵ=1e-20)::F
+		probs = softmax(ŷ)
+		-sum(log.(probs .+ ϵ) .* y)
+	end
+
+	function ∇loss(_self::SoftmaxXEntropy, ŷ::Tensor, y::Tensor)::Tensor
+		softmax(ŷ) .- y
+	end
+end
+
+# ╔═╡ 6474f75a-8c38-11eb-1ed2-f78b522d0ae9
+function train_loop(model::AL, xs::AA, ys::AA, loss_fn::ALoss, opt_fn::AOpt;
+    epochs=3000, zip_fn=zip, acc_fn=nothing, verbose=false)
+	#
+	rec_loss = []
+	for epoch ∈ 1:epochs
+		epoch_loss = 0.
+		for (x, y) ∈ zip_fn(xs, ys)
+			ŷ = forward(model, x)
+			epoch_loss += loss(loss_fn, ŷ, y)
+			∇p = ∇loss(loss_fn, ŷ, y)
+			backward(model, ∇p)
+			#
+			step(opt_fn, model)
+		end
+		if !isnothing(acc_fn)
+			acc = acc_fn(model, 101, 1024)
+			epoch % 100 == 0 && (@show epoch, epoch_loss, acc)
+		else
+			verbose && epoch % 100 == 0 && (@show epoch, epoch_loss)
+		end
+		push!(rec_loss, epoch_loss)
+	end
+	rec_loss
+end
+
+# ╔═╡ 7d69f7f8-8b8c-11eb-1de6-fd84daec8930
+begin
+	rec_loss = nothing
+
+	with_terminal() do
+		xor_loss = SSE()
+		xor_opt = GD(0.05)
+		global rec_loss = train_loop(xor_net, xs, ys, xor_loss, xor_opt;
+			verbose=true, zip_fn=zipper)
+	end
+end
+
+# ╔═╡ 70569cb6-8c44-11eb-397a-4971fb64f900
+plot(1:3000, rec_loss, title="XOR training loss", legend=false)
+
 # ╔═╡ ce39053e-8c45-11eb-01e9-bd2517364992
 begin
 	fb_rec_loss = nothing
+	n_epo = 500
 
 	with_terminal() do
-		global fb_rec_loss = train_loop(fb_net, xₛ, yₛ, fb_loss, fb_opt; 
-			verbose=true, epochs=1000)
+		global fb_rec_loss = train_loop(fb_net, xₛ, yₛ, fb_loss, fb_opt;
+			verbose=true, epochs=n_epo, acc_fn=accuracy)
 	end
 end
 
 # ╔═╡ 8090be8e-8c49-11eb-3978-75a4a2df9116
-plot(1:1000, fb_rec_loss, title="FizzBuzz training loss", legend=false)
+plot(1:n_epo, fb_rec_loss, title="FizzBuzz training loss", legend=false)
 
 # ╔═╡ b0a16012-8c49-11eb-3046-331119a0dc9b
-("Results (after training for 1000 epochs): ", accuracy(fb_net, 1, 101))
+("Results (after training for $(n_epo) epochs): ", accuracy(fb_net, 1, 101))
+
+# ╔═╡ bd69d86a-8c53-11eb-1ed2-f78b522d0ae9
+md"""
+Now let us redo FizzBuzz, using our `SoftmaxXEntropy`.
+"""
+
+# ╔═╡ a3a76e8a-8c56-11eb-3046-331119a0dc9b
+begin
+	fb_netₓ = Sequential([
+		Linear(10, Num_Hidden; init_fn=init_rand_uniform),
+		Tanh,
+		Linear(Num_Hidden, 4; init_fn=init_rand_uniform),
+		# No final Sigmoid
+	])
+	fb_lossₓ = SoftmaxXEntropy()
+	fb_optₓ = MomentumGD(;η=.1, α=.9)
+end
+
+# ╔═╡ bd4dc13e-8c53-11eb-170e-0f17904c9f2c
+begin
+	fb_rec_lossₓ = nothing
+	n_epoₓ = 500
+
+	with_terminal() do
+		global fb_rec_lossₓ = train_loop(fb_netₓ, xₛ, yₛ, fb_lossₓ, fb_optₓ;
+			verbose=true, epochs=n_epoₓ, acc_fn=accuracy)
+	end
+end
+
+# ╔═╡ e723003c-8c58-11eb-3046-331119a0dc9b
+plot(1:n_epoₓ, fb_rec_lossₓ, title="FizzBuzz training loss (Xentropy)", legend=false)
+
+# ╔═╡ 49b61c8e-8c56-11eb-3978-75a4a2df9116
+("Results (after training for $(n_epoₓ) epochs): ", accuracy(fb_netₓ, 1, 101))
 
 # ╔═╡ Cell order:
 # ╟─8c80e072-8b59-11eb-3c21-a18fe43c4536
@@ -891,7 +977,7 @@ plot(1:1000, fb_rec_loss, title="FizzBuzz training loss", legend=false)
 # ╠═04c3d762-8b8a-11eb-397a-4971fb64f900
 # ╟─247b100e-8b8b-11eb-2d5c-bd298437f953
 # ╠═33ad413e-8b8b-11eb-170e-0f17904c9f2c
-# ╠═e19d82b4-8b8a-11eb-3c22-e788d025e8b4
+# ╟─e19d82b4-8b8a-11eb-3c22-e788d025e8b4
 # ╠═0c1df400-8b8c-11eb-1ed2-f78b522d0ae9
 # ╟─21614b5a-8b8c-11eb-01e9-bd2517364992
 # ╟─212a4800-8b8c-11eb-0b29-659a3be01512
@@ -922,3 +1008,13 @@ plot(1:1000, fb_rec_loss, title="FizzBuzz training loss", legend=false)
 # ╠═ce39053e-8c45-11eb-01e9-bd2517364992
 # ╠═8090be8e-8c49-11eb-3978-75a4a2df9116
 # ╠═b0a16012-8c49-11eb-3046-331119a0dc9b
+# ╟─3e34451e-8c51-11eb-3978-75a4a2df9116
+# ╟─48ba66fa-8c51-11eb-34ee-4db60fb0db8a
+# ╠═489fe8d2-8c51-11eb-3340-337957fd81b7
+# ╠═4882bcee-8c51-11eb-3046-331119a0dc9b
+# ╠═bd860472-8c53-11eb-0307-d932886e4b10
+# ╟─bd69d86a-8c53-11eb-1ed2-f78b522d0ae9
+# ╠═a3a76e8a-8c56-11eb-3046-331119a0dc9b
+# ╠═bd4dc13e-8c53-11eb-170e-0f17904c9f2c
+# ╠═e723003c-8c58-11eb-3046-331119a0dc9b
+# ╠═49b61c8e-8c56-11eb-3978-75a4a2df9116
