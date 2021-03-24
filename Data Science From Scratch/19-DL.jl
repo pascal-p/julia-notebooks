@@ -52,7 +52,7 @@ Julia implements natively multi-dimensional arrays (namely tensors in other lang
 
 # ╔═╡ d783876e-8b59-11eb-3ec1-39663403c77d
 begin
-  const Tensor = Array{T} where {T <: Real}
+  const Tensor = Union{BitArray, Array{T}} where {T <: Real}
   const F = Float64
 end
 
@@ -60,7 +60,7 @@ end
 function mean(t::Tensor; dims::Integer=0, keep_shape=false)
   """
   Compute mean of tensor up to order 3
-    FIXME: how to generalize this?
+  FIXME: how to generalize this?
   """
   @assert 0 ≤ dims ≤ length(size(t))
   p = size(t) |> length
@@ -570,15 +570,33 @@ end
 # ╔═╡ e19d82b4-8b8a-11eb-3c22-e788d025e8b4
 md"""
 ###### GD with momentum
-
-TODO...
 """
 
 # ╔═╡ 0c1df400-8b8c-11eb-1ed2-f78b522d0ae9
-# TODO
+begin
+	mutable struct MomentumGD <: AbstractOptimizer
+		η::F  ## learning rate
+		α::F  ## momentum rate
+		updates::Vector{Tensor}
+		#
+		function MomentumGD(;η=0.1, α=0.9, updates=Vector{Tensor}[])
+			new(η, α, updates)
+		end
+	end
 
-# ╔═╡ 217c035a-8b8c-11eb-3e38-6b87cec5b14d
-
+	function step(self::MomentumGD, sl::AbstractLayer)
+		## sl ≡ seq. layer
+		length(self.updates) == 0 &&
+			(self.updates = [zeros(eltype(∇p), size(∇p)) for ∇p ∈ ∇(sl)])
+		#
+		for (_upd, _parms, _∇parms) ∈ zip(self.updates, parms(sl), ∇(sl))
+			## apply momentum
+			_upd[:] = self.α * _upd .+ (1. - self.α) * _∇parms
+			## take step
+			_parms[:] = _parms - self.η .* _upd
+		end
+	end
+end
 
 # ╔═╡ 21614b5a-8b8c-11eb-01e9-bd2517364992
 html"""
@@ -669,10 +687,7 @@ with_terminal() do
 end
 
 # ╔═╡ 70569cb6-8c44-11eb-397a-4971fb64f900
-begin
-	# using Plots
-	plot(1:3000, rec_loss, title="training loss", legend=false)
-end
+plot(1:3000, rec_loss, title="XOR training loss", legend=false)
 
 # ╔═╡ 593338dc-8c3f-11eb-3978-75a4a2df9116
 html"""
@@ -691,6 +706,122 @@ md"""
 md"""
 First some helper functions
 """
+
+# ╔═╡ 47eaec34-8c45-11eb-3046-331119a0dc9b
+function binary_encoder(x::Integer; n::Integer=10)::BitArray
+  vbin::BitArray = fill(false, n)
+  for ix ∈ 1:n
+    vbin[ix] = x % 2
+    x ÷= 2
+  end
+  vbin
+end
+
+# ╔═╡ 4baf8304-8c45-11eb-3340-337957fd81b7
+begin
+  @test binary_encoder(0) == [0, 0, 0, 0, 0, 0, 0, 0,  0,  0]
+  @test binary_encoder(1)  == [1, 0, 0, 0, 0, 0, 0, 0,  0,  0]
+  @test binary_encoder(10)  == [0, 1, 0, 1, 0, 0, 0, 0,  0,  0]
+  @test binary_encoder(101) == [1, 0, 1, 0, 0, 1, 1, 0,  0,  0]
+  @test binary_encoder(999) == [1, 1, 1, 0, 0, 1, 1, 1,  1,  1]
+end
+
+# ╔═╡ 5c2d2b14-8c45-11eb-2d5c-bd298437f953
+function fizzbuzz_encoder(x::Integer)::BitArray
+    if x % 15 == 0
+        [0, 0, 0, 1]
+    elseif x % 5 == 0
+        [0, 0, 1, 0]
+    elseif x % 3 == 0
+        [0, 1, 0, 0]
+    else
+        [1, 0, 0, 0]
+  end
+end
+
+# ╔═╡ 5c168c88-8c45-11eb-3c22-e788d025e8b4
+begin
+  @test fizzbuzz_encoder(2) == [1, 0, 0, 0]
+  @test fizzbuzz_encoder(6) == [0, 1, 0, 0]
+  @test fizzbuzz_encoder(10) == [0, 0, 1, 0]
+  @test fizzbuzz_encoder(30) == [0, 0, 0, 1]
+end
+
+# ╔═╡ 5bfa74da-8c45-11eb-1de6-fd84daec8930
+md"""
+Second, let us define the accuracy. We will use thsi during the training of our fizzbuzz model.
+"""
+
+# ╔═╡ 5bdf8ee8-8c45-11eb-34ee-4db60fb0db8a
+function accuracy(net::AbstractLayer, low::Integer, high::Integer):: F
+	ncorrect = 0
+	for n ∈ low:high
+		x = binary_encoder(n)
+		r₁ = forward(net, x)
+		r₂ = fizzbuzz_encoder(n)
+		## NOTE: argmax(r₁) => CartesianIndex
+		ŷ , y = argmax(r₁)[1], argmax(r₂)
+		ŷ == y && (ncorrect += 1)
+	end
+	ncorrect / (high - low)
+end
+
+# ╔═╡ aa26a570-8c45-11eb-170e-0f17904c9f2c
+md"""
+Third, let us prepare some taining data (using our helper functions).
+"""
+
+# ╔═╡ b324dd40-8c45-11eb-231c-f331a607203c
+begin
+	## Training data
+	rₛ = 101:1023
+	xₛ = binary_encoder.(collect(rₛ))
+	yₛ = fizzbuzz_encoder.(collect(rₛ))
+	(xₛ, yₛ)
+end
+
+# ╔═╡ b3092534-8c45-11eb-0b29-659a3be01512
+md"""
+Fourth, let us define our model and optimizer.
+"""
+
+# ╔═╡ b2ecba78-8c45-11eb-0307-d932886e4b10
+begin
+  const Num_Hidden = 25
+  #
+  # random seed
+  #
+  fb_net = Sequential([
+     Linear(10, Num_Hidden; init_fn=init_rand_uniform),
+     Tanh,
+     Linear(Num_Hidden, 4; init_fn=init_rand_uniform),
+     Sigmoid
+  ])
+  #
+  fb_opt = MomentumGD(;η=.1, α=.9)
+  fb_loss = SSE()
+end
+
+# ╔═╡ b2d39ee4-8c45-11eb-1ed2-f78b522d0ae9
+md"""
+Fifth, let us define our training loop.
+"""
+
+# ╔═╡ ce39053e-8c45-11eb-01e9-bd2517364992
+begin
+	fb_rec_loss = nothing
+
+	with_terminal() do
+		global fb_rec_loss = train_loop(fb_net, xₛ, yₛ, fb_loss, fb_opt; 
+			verbose=true, epochs=1000)
+	end
+end
+
+# ╔═╡ 8090be8e-8c49-11eb-3978-75a4a2df9116
+plot(1:1000, fb_rec_loss, title="FizzBuzz training loss", legend=false)
+
+# ╔═╡ b0a16012-8c49-11eb-3046-331119a0dc9b
+("Results (after training for 1000 epochs): ", accuracy(fb_net, 1, 101))
 
 # ╔═╡ Cell order:
 # ╟─8c80e072-8b59-11eb-3c21-a18fe43c4536
@@ -760,9 +891,8 @@ First some helper functions
 # ╠═04c3d762-8b8a-11eb-397a-4971fb64f900
 # ╟─247b100e-8b8b-11eb-2d5c-bd298437f953
 # ╠═33ad413e-8b8b-11eb-170e-0f17904c9f2c
-# ╟─e19d82b4-8b8a-11eb-3c22-e788d025e8b4
+# ╠═e19d82b4-8b8a-11eb-3c22-e788d025e8b4
 # ╠═0c1df400-8b8c-11eb-1ed2-f78b522d0ae9
-# ╠═217c035a-8b8c-11eb-3e38-6b87cec5b14d
 # ╟─21614b5a-8b8c-11eb-01e9-bd2517364992
 # ╟─212a4800-8b8c-11eb-0b29-659a3be01512
 # ╠═3e135428-8c39-11eb-0307-d932886e4b10
@@ -778,3 +908,17 @@ First some helper functions
 # ╟─593338dc-8c3f-11eb-3978-75a4a2df9116
 # ╟─319822fc-8c2a-11eb-397a-4971fb64f900
 # ╟─9ef5592a-8c37-11eb-3046-331119a0dc9b
+# ╠═47eaec34-8c45-11eb-3046-331119a0dc9b
+# ╠═4baf8304-8c45-11eb-3340-337957fd81b7
+# ╠═5c2d2b14-8c45-11eb-2d5c-bd298437f953
+# ╠═5c168c88-8c45-11eb-3c22-e788d025e8b4
+# ╟─5bfa74da-8c45-11eb-1de6-fd84daec8930
+# ╠═5bdf8ee8-8c45-11eb-34ee-4db60fb0db8a
+# ╟─aa26a570-8c45-11eb-170e-0f17904c9f2c
+# ╠═b324dd40-8c45-11eb-231c-f331a607203c
+# ╟─b3092534-8c45-11eb-0b29-659a3be01512
+# ╠═b2ecba78-8c45-11eb-0307-d932886e4b10
+# ╟─b2d39ee4-8c45-11eb-1ed2-f78b522d0ae9
+# ╠═ce39053e-8c45-11eb-01e9-bd2517364992
+# ╠═8090be8e-8c49-11eb-3978-75a4a2df9116
+# ╠═b0a16012-8c49-11eb-3046-331119a0dc9b
