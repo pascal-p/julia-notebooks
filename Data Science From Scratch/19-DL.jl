@@ -186,12 +186,9 @@ begin
 
   ## FIXME: review
   forward(::AbstractLayer, ::Tensor) = throws(ArgumentError("Not Implemented"))
-
   backward(::AbstractLayer, ::Tensor) = throws(ArgumentError("Not Implemented"))
-
   parms(::AbstractLayer) = throws(ArgumentError("Not Implemented"))
-
-  ∇(::AbstractLayer) = throws(ArgumentError("Not Implemented"))
+  ∇parms(::AbstractLayer) = throws(ArgumentError("Not Implemented"));
 end
 
 # ╔═╡ 96ef5f36-8b63-11eb-3503-617be0c0415b
@@ -207,10 +204,12 @@ We will implement three different shemes for initializing our weigths parameters
 
 # ╔═╡ 86ca6718-8b75-11eb-1d18-c16694e4482d
 function init_rand_normal(shape::Tuple;
-    μ=0., σ=1., seed=42, DT::DataType=Float64)
-  Random.seed!(seed)
-  nd = Normal(μ, σ)
-  DT == Float64 ? rand(nd, shape) : DT[rand(nd, shape)...]
+		seed=42, DT::DataType=Float64,
+		kwargs...)
+	Random.seed!(seed)
+	nd = Normal(haskey(kwargs, :μ) ? kwargs[:μ] : 0., 
+		haskey(kwargs, :σ) ? kwargs[:σ] : 1.)
+	DT == Float64 ? rand(nd, shape) : DT[rand(nd, shape)...]
 end
 
 # ╔═╡ 43d5f21a-8b77-11eb-397e-dda6619ddb03
@@ -221,7 +220,7 @@ m₁ = init_rand_normal((3, 2); μ=10., σ=2.)
 
 # ╔═╡ a66e2e68-8b63-11eb-0153-3bb8586dd8b2
 function init_rand_uniform(shape::Tuple;
-    seed=42, DT::DataType=Float64)
+    seed=42, DT::DataType=Float64, _kwargs...)
   Random.seed!(seed)
   ud = Uniform(0., 1.)
   DT == Float64 ? rand(ud, shape) : DT[rand(ud, shape)...]
@@ -232,7 +231,7 @@ m₂ = init_rand_uniform((3, 2))
 
 # ╔═╡ a654fbbe-8b63-11eb-10a6-5f34a3164a8e
 function init_xavier(shape::Tuple;
-    seed=42, DT::DataType=Float64)
+    seed=42, DT::DataType=Float64, _kwargs...)
   σ = length(shape) / sum(shape)
   init_rand_normal(shape; σ, seed, DT)
 end
@@ -274,13 +273,13 @@ begin
     self.store[self.name]
   end
 
-  function backward(self::Activation, ∇::Tensor)::Tensor
-    self.der_fn(self.store[self.name]) .* ∇
+  function backward(self::Activation, ∇p::Tensor)::Tensor
+    self.der_fn(self.store[self.name]) .* ∇p
   end
 
   parms(self::Activation) = []
 
-  ∇(self::Activation) = []
+  ∇parms(self::Activation) = []
 end
 
 # ╔═╡ 879291b6-8b7a-11eb-3340-337957fd81b7
@@ -290,9 +289,9 @@ md"""
 
 # ╔═╡ 325b5476-8b75-11eb-0867-739680374b56
 Sigmoid = let
-  σ = z -> 1. ./ (1. .+ exp.(-z))
+	σ = z -> 1. ./ (1. .+ exp.(-z))
     der_σ = z -> σ(z) .* (1 .- σ(z))
-  Activation(:sigmoid, σ, der_σ)
+	Activation(:sigmoid, σ, der_σ)
 end
 
 # ╔═╡ 9337d830-8c17-11eb-397c-c56dc9ffeea4
@@ -311,9 +310,9 @@ end
 
 # ╔═╡ 323ad930-8b75-11eb-315c-5398adedfb78
 Tanh = let
-  tanₕ = z -> (x = exp.(z); y = exp.(-z); (x .- y) ./ (x .+ y))
-    der_tanₕ = z -> 1 .- tanₕ.(z) .^ 2
-  Activation(:tanh, tanₕ, der_tanₕ)
+	tanₕ = z -> (x = exp.(z); y = exp.(-z); (x .- y) ./ (x .+ y))
+	der_tanₕ = z -> 1 .- tanₕ.(z) .^ 2
+	Activation(:tanh, tanₕ, der_tanₕ)
 end
 
 # ╔═╡ 2e1816d2-8c19-11eb-3046-331119a0dc9b
@@ -338,9 +337,9 @@ md"""
 
 # ╔═╡ 321c84bc-8b75-11eb-3869-5b3dfd0fcba7
 ReLU = let
-  relu_fn = z -> max(zero(eltype(z)), z)
-  der_relu = z -> (z₀ =	zero(eltype(z)); z .< z₀ ? z₀ : one(eltype(z)))
-  Activation(:relu, relu_fn, der_relu)
+	relu_fn = z -> max(zero(eltype(z)), z)
+	der_relu = z -> (z₀ =	zero(eltype(z)); z .< z₀ ? z₀ : one(eltype(z)))
+ 	Activation(:relu, relu_fn, der_relu)
 end
 
 # ╔═╡ 04a96d56-8c1a-11eb-1de6-fd84daec8930
@@ -376,14 +375,13 @@ struct Linear <: AbstractLayer
 
   ## Assume type is DT == Float64
   function Linear(idim::Integer, odim::Integer;
-      DT=Float64, init_fn=init_xavier, seed=42)
+      DT=Float64, init_fn=init_xavier, seed=42, kwargs...)
     ##
-    ## would also need μ and σ as kwargs for normal init.
     @assert 1 ≤ idim
     @assert 1 ≤ odim
     @assert init_fn ∈ INIT_FNs
     ##
-    w = init_fn((odim, idim); seed, DT)
+    w = init_fn((odim, idim); seed, DT, kwargs...)
     b = zeros(DT, (odim, 1))
     new(idim, odim, w, b, :dense, Dict())
   end
@@ -399,11 +397,11 @@ function forward(self::Linear, input::Tensor)::Tensor
 end
 
 # ╔═╡ 964d2ac2-8b72-11eb-28b5-ddc35ed07aa9
-function backward(self::Linear, ∇::Tensor)::Tensor
+function backward(self::Linear, ∇p::Tensor)::Tensor
   ## as each bᵢ is added to output oᵢ, ∇b is the same as output ∇
-  self.store[:∇b] = ∇
-  self.store[:∇w] = ∇ * self.store[:input]'
-  r = sum.(self.w' * ∇)
+  self.store[:∇b] = ∇p
+  self.store[:∇w] = ∇p * self.store[:input]'
+  r = sum.(self.w' * ∇p)
   @assert size(self.w) == size(self.store[:∇w]) "w and ∇w should have same shape: $(size(self.w)) == $(size(self.store[:∇w]))"
   @assert size(self.b) == size(self.store[:∇b]) "b and ∇b should have same shape: $(size(self.b)) == $(size(self.store[:∇b]))"
   r
@@ -413,7 +411,7 @@ end
 parms(self::Linear) = [self.w, self.b]
 
 # ╔═╡ c03c06ce-8b74-11eb-3158-c758e41c696d
-∇(self::Linear) = [self.store[:∇w], self.store[:∇b]]
+∇parms(self::Linear) = [self.store[:∇w], self.store[:∇b]]
 
 # ╔═╡ c01aade4-8b74-11eb-0af8-73ad690afddb
 html"""
@@ -445,7 +443,7 @@ struct Sequential <: AbstractLayer
       pl = cl
     end
 
-    new(layers, :sequentiaL)
+    new(layers, :sequential)
   end
 end
 
@@ -469,7 +467,7 @@ end
 parms(self::Sequential) = [p for l ∈ self.layers for p ∈ parms(l)]
 
 # ╔═╡ a9082e56-8b74-11eb-2359-d91cbb8c5e23
-∇(self::Sequential) = [∇p for l ∈ self.layers for ∇p ∈ ∇(l)]
+∇parms(self::Sequential) = [∇p for l ∈ self.layers for ∇p ∈ ∇parms(l)]
 
 # ╔═╡ 5b0074ac-8b88-11eb-397a-4971fb64f900
 md"""
@@ -477,14 +475,16 @@ And now we can define a simple network for calculating the XOR function.
 """
 
 # ╔═╡ dc8498c0-8b81-11eb-397e-dda6619ddb03
-xor_net = Sequential([
-  Linear(2, 2),
-  Sigmoid, # (),
-  Linear(2, 1),
-])
+begin
+  xor_seed = 19999
+  xor_init = init_rand_normal
 
-# ╔═╡ d18ce6f0-8b8d-11eb-2d5c-bd298437f953
-typeof(xor_net)
+  xor_net = Sequential([
+      Linear(2, 2; seed=xor_seed, init_fn=xor_init, μ=1., σ=10.),
+      Sigmoid,
+      Linear(2, 1; seed=xor_seed, init_fn=xor_init, μ=1, σ=10.),
+  ])
+end
 
 # ╔═╡ 7c12872a-8b88-11eb-1de6-fd84daec8930
 html"""
@@ -544,7 +544,7 @@ md"""
 begin
   abstract type AbstractOptimizer end
 
-  step(::AbstractOptimizer, _l::AbstractLayer) =
+  astep(::AbstractOptimizer, _l::AbstractLayer) =
     throws(ArgumentError("Not Implemented"))
 end
 
@@ -559,9 +559,9 @@ begin
     η::F
   end
 
-  function step(self::GD, sl::AbstractLayer)
+  function astep(self::GD, sl::AbstractLayer)
     ## sl ≡ seq. layer
-    for (_parms, _∇parms) ∈ zip(parms(sl), ∇(sl))
+    for (_parms, _∇parms) ∈ zip(parms(sl), ∇parms(sl))
       _parms[:] = _parms - self.η .* _∇parms
     end
   end
@@ -584,12 +584,12 @@ begin
 		end
 	end
 
-	function step(self::MomentumGD, sl::AbstractLayer)
+	function astep(self::MomentumGD, sl::AbstractLayer)
 		## sl ≡ seq. layer
 		length(self.updates) == 0 &&
-			(self.updates = [zeros(eltype(∇p), size(∇p)) for ∇p ∈ ∇(sl)])
+			(self.updates = [zeros(eltype(∇p), size(∇p)) for ∇p ∈ ∇parms(sl)])
 		#
-		for (_upd, _parms, _∇parms) ∈ zip(self.updates, parms(sl), ∇(sl))
+		for (_upd, _parms, _∇parms) ∈ zip(self.updates, parms(sl), ∇parms(sl))
 			## apply momentum
 			_upd[:] = self.α * _upd .+ (1. - self.α) * _∇parms
 			## take step
@@ -621,6 +621,13 @@ begin
 	const AOpt = AbstractOptimizer
 end
 
+# ╔═╡ 2111ca94-8b8c-11eb-0307-d932886e4b10
+begin
+  ## Training data
+  xs = [0. 0.; 0. 1.; 1. 0.; 1. 1.]
+  ys = [0.; 1.; 1.; 0.]
+end
+
 # ╔═╡ 580afffa-8c3a-11eb-0b29-659a3be01512
 function zipper(x::AA, y::AA)
   @assert size(x)[1] == size(y)[1]
@@ -628,12 +635,19 @@ function zipper(x::AA, y::AA)
   ([x[ix, :], y[ix, :]] for ix ∈ 1:size(x)[1]) ## returns a gen.
 end
 
-# ╔═╡ 2111ca94-8b8c-11eb-0307-d932886e4b10
-begin
-  ## Training data
-  xs = [0. 0.; 0. 1.; 1. 0.; 1. 1.]
-  ys = [0.; 1.; 1.; 0.]
+# ╔═╡ 254daee6-8db7-11eb-231c-f331a607203c
+function xor_accuracy(net::AbstractLayer, xs, ys, ϵ=1e-9):: F
+  ncorrect = 0
+  for (x, y) ∈ zipper(xs, ys)
+    ŷ = forward(net, x)
+    @show ŷ, y, abs(ŷ[1] - y[1]) ≤ ϵ
+     abs(ŷ[1] - y[1]) ≤ ϵ && (ncorrect += 1)
+  end
+  ncorrect / length(ys)
 end
+
+# ╔═╡ 61904ed8-8b96-11eb-3046-331119a0dc9b
+size(xs[1, :]), size(reshape(xs[1, :], 2, :)), size(ys[1, :]), size(reshape(ys[1, :], 1, 1))
 
 # ╔═╡ ac9fbad6-8c3a-11eb-231c-f331a607203c
 with_terminal() do
@@ -642,16 +656,20 @@ with_terminal() do
   end
 end
 
-# ╔═╡ 61904ed8-8b96-11eb-3046-331119a0dc9b
-size(xs[1, :]), size(reshape(xs[1, :], 2, :)), size(ys[1, :]), size(reshape(ys[1, :], 1, 1))
-
-# ╔═╡ 7d8504f8-8b8c-11eb-3c22-e788d025e8b4
-
+# ╔═╡ 9577b10a-8db9-11eb-3046-331119a0dc9b
+with_terminal() do
+  for (x, y) in zipper(xs, ys)
+    println(x, " / ", y)
+  end
+end
 
 # ╔═╡ 276897b0-8c27-11eb-3046-331119a0dc9b
 with_terminal() do
 	for p in parms(xor_net); println(p); end
 end
+
+# ╔═╡ 8880560a-8db7-11eb-01e9-bd2517364992
+xor_accuracy(xor_net, xs, ys)
 
 # ╔═╡ 593338dc-8c3f-11eb-3978-75a4a2df9116
 html"""
@@ -717,7 +735,7 @@ Second, let us define the accuracy. We will use thsi during the training of our 
 """
 
 # ╔═╡ 5bdf8ee8-8c45-11eb-34ee-4db60fb0db8a
-function accuracy(net::AbstractLayer, low::Integer, high::Integer):: F
+function fb_accuracy(net::AbstractLayer, low::Integer, high::Integer):: F
 	ncorrect = 0
 	for n ∈ low:high
 		x = binary_encoder(n)
@@ -804,8 +822,7 @@ end
 
 # ╔═╡ bd860472-8c53-11eb-0307-d932886e4b10
 begin
-	struct SoftmaxXEntropy <: AbstractLoss
-	end
+	struct SoftmaxXEntropy <: AbstractLoss; end
 
 	function loss(_self::SoftmaxXEntropy, ŷ::Tensor, y::Tensor; ϵ=1e-20)::F
 		probs = softmax(ŷ)
@@ -829,8 +846,7 @@ function train_loop(model::AL, xs::AA, ys::AA, loss_fn::ALoss, opt_fn::AOpt;
 			epoch_loss += loss(loss_fn, ŷ, y)
 			∇p = ∇loss(loss_fn, ŷ, y)
 			backward(model, ∇p)
-			#
-			step(opt_fn, model)
+            astep(opt_fn, model)
 		end
 		if !isnothing(acc_fn)
 			acc = acc_fn(model, 101, 1024)
@@ -846,17 +862,17 @@ end
 # ╔═╡ 7d69f7f8-8b8c-11eb-1de6-fd84daec8930
 begin
 	rec_loss = nothing
-
+	xor_epochs = 1_000 # 3_000
 	with_terminal() do
 		xor_loss = SSE()
-		xor_opt = GD(0.05)
+		xor_opt = GD(0.1)
 		global rec_loss = train_loop(xor_net, xs, ys, xor_loss, xor_opt;
-			verbose=true, zip_fn=zipper)
+			epochs=xor_epochs, verbose=true, zip_fn=zipper)
 	end
 end
 
 # ╔═╡ 70569cb6-8c44-11eb-397a-4971fb64f900
-plot(1:3000, rec_loss, title="XOR training loss", legend=false)
+plot(1:xor_epochs, rec_loss, title="XOR training loss", legend=false)
 
 # ╔═╡ ce39053e-8c45-11eb-01e9-bd2517364992
 begin
@@ -865,7 +881,7 @@ begin
 
 	with_terminal() do
 		global fb_rec_loss = train_loop(fb_net, xₛ, yₛ, fb_loss, fb_opt;
-			verbose=true, epochs=n_epo, acc_fn=accuracy)
+			verbose=true, epochs=n_epo, acc_fn=fb_accuracy)
 	end
 end
 
@@ -873,7 +889,7 @@ end
 plot(1:n_epo, fb_rec_loss, title="FizzBuzz training loss", legend=false)
 
 # ╔═╡ b0a16012-8c49-11eb-3046-331119a0dc9b
-("Results (after training for $(n_epo) epochs): ", accuracy(fb_net, 1, 101))
+("Results (after training for $(n_epo) epochs): ", fb_accuracy(fb_net, 1, 101))
 
 # ╔═╡ bd69d86a-8c53-11eb-1ed2-f78b522d0ae9
 md"""
@@ -889,7 +905,7 @@ begin
 		# No final Sigmoid
 	])
 	fb_lossₓ = SoftmaxXEntropy()
-	fb_optₓ = MomentumGD(;η=.1, α=.9)
+	fb_optₓ = MomentumGD(;η=.05, α=.95)
 end
 
 # ╔═╡ bd4dc13e-8c53-11eb-170e-0f17904c9f2c
@@ -899,7 +915,7 @@ begin
 
 	with_terminal() do
 		global fb_rec_lossₓ = train_loop(fb_netₓ, xₛ, yₛ, fb_lossₓ, fb_optₓ;
-			verbose=true, epochs=n_epoₓ, acc_fn=accuracy)
+			verbose=true, epochs=n_epoₓ, acc_fn=fb_accuracy)
 	end
 end
 
@@ -907,7 +923,7 @@ end
 plot(1:n_epoₓ, fb_rec_lossₓ, title="FizzBuzz training loss (Xentropy)", legend=false)
 
 # ╔═╡ 49b61c8e-8c56-11eb-3978-75a4a2df9116
-("Results (after training for $(n_epoₓ) epochs): ", accuracy(fb_netₓ, 1, 101))
+("Results (after training for $(n_epoₓ) epochs): ", fb_accuracy(fb_netₓ, 1, 101))
 
 # ╔═╡ Cell order:
 # ╟─8c80e072-8b59-11eb-3c21-a18fe43c4536
@@ -966,7 +982,6 @@ plot(1:n_epoₓ, fb_rec_lossₓ, title="FizzBuzz training loss (Xentropy)", lege
 # ╠═a9082e56-8b74-11eb-2359-d91cbb8c5e23
 # ╟─5b0074ac-8b88-11eb-397a-4971fb64f900
 # ╠═dc8498c0-8b81-11eb-397e-dda6619ddb03
-# ╠═d18ce6f0-8b8d-11eb-2d5c-bd298437f953
 # ╟─7c12872a-8b88-11eb-1de6-fd84daec8930
 # ╟─7bf6740e-8b88-11eb-34ee-4db60fb0db8a
 # ╟─be7ae9c0-8b8a-11eb-1de6-fd84daec8930
@@ -982,14 +997,16 @@ plot(1:n_epoₓ, fb_rec_lossₓ, title="FizzBuzz training loss (Xentropy)", lege
 # ╟─21614b5a-8b8c-11eb-01e9-bd2517364992
 # ╟─212a4800-8b8c-11eb-0b29-659a3be01512
 # ╠═3e135428-8c39-11eb-0307-d932886e4b10
-# ╠═580afffa-8c3a-11eb-0b29-659a3be01512
-# ╠═ac9fbad6-8c3a-11eb-231c-f331a607203c
-# ╠═6474f75a-8c38-11eb-1ed2-f78b522d0ae9
 # ╠═2111ca94-8b8c-11eb-0307-d932886e4b10
+# ╠═580afffa-8c3a-11eb-0b29-659a3be01512
+# ╠═6474f75a-8c38-11eb-1ed2-f78b522d0ae9
+# ╠═254daee6-8db7-11eb-231c-f331a607203c
 # ╠═61904ed8-8b96-11eb-3046-331119a0dc9b
-# ╟─7d8504f8-8b8c-11eb-3c22-e788d025e8b4
+# ╠═ac9fbad6-8c3a-11eb-231c-f331a607203c
+# ╠═9577b10a-8db9-11eb-3046-331119a0dc9b
 # ╠═7d69f7f8-8b8c-11eb-1de6-fd84daec8930
 # ╠═276897b0-8c27-11eb-3046-331119a0dc9b
+# ╠═8880560a-8db7-11eb-01e9-bd2517364992
 # ╠═70569cb6-8c44-11eb-397a-4971fb64f900
 # ╟─593338dc-8c3f-11eb-3978-75a4a2df9116
 # ╟─319822fc-8c2a-11eb-397a-4971fb64f900
