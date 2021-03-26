@@ -2,34 +2,39 @@ module YaDeepLearning
 
 using Random, Distributions, Flux.Data.MNIST, Images
 
-export Tensor, AA
-export AbstractLayer, AL
-export AbstractOptimizer, AOpt, NAOpt
-export Linear, Sequential, forward, backward, parms, ∇parms
-export init_rand_normal, init_rand_uniform, init_xavier
-export Activation, Sigmoid, Tanh, ReLU
-export AbstractLoss, ALoss, SSE, SoftmaxXEntropy, loss, ∇loss, Float
-export GD, MomentumGD, astep
-
+export TensorDT
+export AbstractLayers
+export AbstractOptimizers
+export Layers
+export Optimizers
+export Activations
+export Initializations
+export Loss
+export AA
 
 include("./tensor_dt.jl")
+import .TensorDT: Tensor
+
 include("./abstract_layers.jl")
+import .AbstractLayers
+
 include("./abstract_optimizers.jl")
-include("./layers.jl")
+import .AbstractOptimizers
+
+include("./optimizers.jl")
+import .Optimizers
+
 include("./initializations.jl")
+import .Initializations
+
+include("./layers.jl")
+import .Layers
+
 include("./activations.jl")
+import .Activations
+
 include("./loss.jl")
-include("./optimizer.jl")
-
-
-using .TensorDT: Tensor
-using .Layers: AbstractLayer, AL, Linear, Sequential, forward, backward, parms, ∇parms
-using .Layers: Linear, Sequential, forward, backward, parms, ∇parms
-using .Activations: Activation, Sigmoid, Tanh, ReLU
-using .Initializations: init_rand_normal, init_rand_uniform, init_xavier #, INIT_FNs
-using .Loss: AbstractLoss, ALoss, SSE, SoftmaxXEntropy, loss, ∇loss, Float
-using .Optimizer: AbstractOptimizer, AOpt, NAOpt, GD, MomentumGD, astep
-
+import .Loss
 
 
 ## ======================================================================

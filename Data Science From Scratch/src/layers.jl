@@ -1,12 +1,16 @@
 module Layers
 
-include("./tensor_dt.jl")
-include("./abstract_layers.jl")
-include("./initializations.jl")
+export Linear, Sequential, forward, backward, parms, ∇parms
 
-import .AbstractLayers: AbstractLayer, AL, forward, backward, parms, ∇parms
-using .TensorDT: Tensor
-using .Initializations: init_xavier, INIT_FNs
+
+include("./tensor_dt.jl")
+using ..TensorDT: Tensor
+
+include("./abstract_layers.jl")
+import ..AbstractLayers: AbstractLayer, AL, forward, backward, parms, ∇parms
+
+include("./initializations.jl")
+using ..Initializations: init_xavier, INIT_FNs
 
 
 ## ======================================================================
@@ -101,10 +105,10 @@ function check_dim_layer(layers::Vector{AbstractLayer})
   """
   pl = layers[1]
   for cl ∈ layers[2:end]
-    cl._type == :activation && continue
-    pl.odim == cl.idim && throw(ArgumentError("incompatible shape"))
+    cl._type ∈ [:activation, :regularization] && continue
+    pl.odim ≠ cl.idim && throw(ArgumentError("incompatible shape between pl.odim; $(pl.odim) vs cl.idim: $(cl.idim)"))
     pl = cl
   end
 end
 
-end
+end ## Module

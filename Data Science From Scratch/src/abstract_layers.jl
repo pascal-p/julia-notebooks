@@ -1,5 +1,7 @@
 module AbstractLayers
 
+export AbstractLayer, AL, forward, backward, parms, ∇parms
+
 include("./tensor_dt.jl")
 using .TensorDT: Tensor
 

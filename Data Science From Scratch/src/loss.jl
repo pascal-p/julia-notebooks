@@ -1,16 +1,16 @@
 module Loss
 
+export AbstractLoss, ALoss, Float, loss, ∇loss, SSE, SoftmaxXEntropy
+
 include("./tensor_dt.jl")
 using .TensorDT: Tensor
-
-const Float = Float64
 
 ## ======================================================================
 ## Loss
 ## ======================================================================
 abstract type AbstractLoss end
 const ALoss = AbstractLoss
-
+const Float = Float64
 
 loss(::AbstractLoss, _ŷ::Tensor, _y::Tensor) = throws(ArgumentError("Not Implemented"))
 ∇loss(::AbstractLoss, _ŷ::Tensor, _y::Tensor) = throws(ArgumentError("Not Implemented"))

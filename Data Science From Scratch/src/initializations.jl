@@ -2,16 +2,18 @@ module Initializations
 
 using Random, Distributions
 
+export init_rand_normal, init_rand_uniform, init_xavier
+
 ## ======================================================================
 ## Initialization of a Layer
 ## ======================================================================
 
 function init_rand_normal(shape::Tuple; seed=42, DT::DataType=Float64,
                           kwargs...)
-	Random.seed!(seed)
-	nd = Normal(haskey(kwargs, :μ) ? kwargs[:μ] : 0., 
-		haskey(kwargs, :σ) ? kwargs[:σ] : 1.)
-	DT == Float64 ? rand(nd, shape) : DT[rand(nd, shape)...]
+  Random.seed!(seed)
+  nd = Normal(haskey(kwargs, :μ) ? kwargs[:μ] : 0.,
+    haskey(kwargs, :σ) ? kwargs[:σ] : 1.)
+  DT == Float64 ? rand(nd, shape) : DT[rand(nd, shape)...]
 end
 
 

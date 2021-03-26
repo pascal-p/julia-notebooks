@@ -1,14 +1,16 @@
-module Optimizer
+module Optimizers
+
+export AbstractOptimizer, GD, MomentumGD, astep
 
 include("./tensor_dt.jl")
-# include("./abstract_layers.jl")
-include("./layers.jl")
-include("./abstract_optimizers.jl")
+using ..TensorDT: Tensor
 
-using .AbstractOptimizers: AbstractOptimizer, AOpt, NAOpt
-# using .AbstractLayers: AbstractLayer, AL, parms, ∇parms
-using .Layers: AbstractLayer, AL, parms, ∇parms
-using .TensorDT: Tensor
+include("./abstract_layers.jl")
+using ..AbstractLayers: AbstractLayer, AL, forward, backward, parms, ∇parms
+
+include("./abstract_optimizers.jl")
+using ..AbstractOptimizers: AbstractOptimizer, AOpt, NAOpt
+
 
 ## ======================================================================
 ## Optimization

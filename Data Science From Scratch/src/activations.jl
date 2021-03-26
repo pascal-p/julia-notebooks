@@ -1,10 +1,13 @@
 module Activations
 
-include("./tensor_dt.jl")
-include("./abstract_layers.jl")
+export Activation, forward, backward, parms, ∇parms
 
-import .AbstractLayers: AbstractLayer, AL, forward, backward, parms, ∇parms
-using .TensorDT: Tensor
+include("./tensor_dt.jl")
+using ..TensorDT: Tensor
+
+include("./abstract_layers.jl")
+import ..AbstractLayers: AbstractLayer, AL, forward, backward, parms, ∇parms
+
 
 ## ======================================================================
 ## Activation Layer
@@ -32,7 +35,6 @@ function backward(self::Activation, ∇p::Tensor)::Tensor
 end
 
 parms(self::Activation) = []
-
 ∇parms(self::Activation) = []
 
 
