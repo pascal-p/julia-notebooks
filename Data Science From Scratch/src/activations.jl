@@ -1,8 +1,10 @@
 module Activations
 
+include("./tensor_dt.jl")
 include("./abstract_layers.jl")
 
-using .AbstractLayers: AbstractLayer
+import .AbstractLayers: AbstractLayer, AL, forward, backward, parms, ∇parms
+using .TensorDT: Tensor
 
 ## ======================================================================
 ## Activation Layer
@@ -19,6 +21,20 @@ struct Activation <: AbstractLayer
     new(name, fn, der_fn, :activation, Dict())
   end
 end
+
+function forward(self::Activation, input::Tensor)::Tensor
+  self.store[self.name] = self.fn.(input)
+  self.store[self.name]
+end
+
+function backward(self::Activation, ∇p::Tensor)::Tensor
+  self.der_fn(self.store[self.name]) .* ∇p
+end
+
+parms(self::Activation) = []
+
+∇parms(self::Activation) = []
+
 
 ### Sigmoid (Activation) function
 const Sigmoid = let

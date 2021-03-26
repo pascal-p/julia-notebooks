@@ -1,22 +1,18 @@
 module Optimizer
 
 include("./tensor_dt.jl")
-include("./abstract_layers.jl")
+# include("./abstract_layers.jl")
+include("./layers.jl")
+include("./abstract_optimizers.jl")
 
-import Base: step
-
-using .AbstractLayers: AbstractLayer
+using .AbstractOptimizers: AbstractOptimizer, AOpt, NAOpt
+# using .AbstractLayers: AbstractLayer, AL, parms, ∇parms
+using .Layers: AbstractLayer, AL, parms, ∇parms
 using .TensorDT: Tensor
 
 ## ======================================================================
 ## Optimization
 ## ======================================================================
-
-abstract type AbstractOptimizer end
-const AOpt = AbstractOptimizer
-const NAOpt = Union{AOpt, Nothing}
-
-step(::AbstractOptimizer, _l::AbstractLayer) = throws(ArgumentError("Not Implemented"))
 
 #### (Vanilla) Gradient Descent (GD)
 
@@ -24,9 +20,9 @@ struct GD <: AbstractOptimizer
   η::Float64
 end
 
-function step(self::GD, sl::AbstractLayer)
+function astep(self::GD, sl::AbstractLayer)
   ## sl ≡ seq. layer
-  for (_parms, _∇parms) ∈ zip(parms(sl), ∇(sl))
+  for (_parms, _∇parms) ∈ zip(parms(sl), ∇parms(sl))
     _parms[:] = _parms - self.η .* _∇parms
   end
 end
@@ -43,15 +39,15 @@ mutable struct MomentumGD <: AbstractOptimizer
   end
 end
 
-function step(self::MomentumGD, sl::AbstractLayer)
+function astep(self::MomentumGD, sl::AbstractLayer)
   ## sl ≡ seq. layer
   length(self.updates) == 0 &&
-  (self.updates = [zeros(eltype(∇p), size(∇p)) for ∇p ∈ ∇(sl)])
+  (self.updates = [zeros(eltype(∇p), size(∇p)) for ∇p ∈ ∇parms(sl)])
   #
-  for (_upd, _parms, _∇parms) ∈ zip(self.updates, parms(sl), ∇(sl))
+  for (_upd, _parms, _∇parms) ∈ zip(self.updates, parms(sl), ∇parms(sl))
     ## apply momentum
     _upd[:] = self.α * _upd .+ (1. - self.α) * _∇parms
-    ## take step
+    ## take a step
     _parms[:] = _parms - self.η .* _upd
   end
 end

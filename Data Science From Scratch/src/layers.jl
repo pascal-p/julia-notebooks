@@ -4,7 +4,7 @@ include("./tensor_dt.jl")
 include("./abstract_layers.jl")
 include("./initializations.jl")
 
-using .AbstractLayers: AbstractLayer
+import .AbstractLayers: AbstractLayer, AL, forward, backward, parms, ∇parms
 using .TensorDT: Tensor
 using .Initializations: init_xavier, INIT_FNs
 
@@ -15,24 +15,22 @@ using .Initializations: init_xavier, INIT_FNs
 struct Linear <: AbstractLayer
   idim::Integer   ## input dim
   odim::Integer   ## output dim
-
   ## parameters
   w::Tensor
   b::Tensor
-
+  #
   _type::Symbol
   store::Dict # {Any. Any}
 
   ## Assume type is DT == Float64
   function Linear(idim::Integer, odim::Integer;
-      DT=Float64, init_fn=init_xavier, seed=42)
+      DT=Float64, init_fn=init_xavier, seed=42, kwargs...)
     ##
-    ## would also need μ and σ as kwargs for normal init.
     @assert 1 ≤ idim
     @assert 1 ≤ odim
     @assert init_fn ∈ INIT_FNs
     ##
-    w = init_fn((odim, idim); seed, DT)
+    w = init_fn((odim, idim); seed, DT, kwargs...)
     b = zeros(DT, (odim, 1))
     new(idim, odim, w, b, :dense, Dict())
   end
@@ -45,11 +43,11 @@ function forward(self::Linear, input::Tensor)::Tensor
   self.w * input + self.b
 end
 
-function backward(self::Linear, ∇::Tensor)::Tensor
+function backward(self::Linear, ∇p::Tensor)::Tensor
   ## as each bᵢ is added to output oᵢ, ∇b is the same as output ∇
-  self.store[:∇b] = ∇
-  self.store[:∇w] = ∇ * self.store[:input]'
-  r = sum.(self.w' * ∇)
+  self.store[:∇b] = ∇p
+  self.store[:∇w] = ∇p * self.store[:input]'
+  r = sum.(self.w' * ∇p)
   @assert(size(self.w) == size(self.store[:∇w]),
           "w and ∇w should have same shape: $(size(self.w)) == $(size(self.store[:∇w]))")
   @assert(size(self.b) == size(self.store[:∇b]),
@@ -58,7 +56,7 @@ function backward(self::Linear, ∇::Tensor)::Tensor
 end
 
 parms(self::Linear) = [self.w, self.b]
-∇(self::Linear) = [self.store[:∇w], self.store[:∇b]]
+∇parms(self::Linear) = [self.store[:∇w], self.store[:∇b]]
 
 ## ======================================================================
 ## Neural Network as a sequence of Layers
@@ -68,15 +66,9 @@ struct Sequential <: AbstractLayer
   _type::Symbol
 
   function Sequential(layers::Vector{AbstractLayer})
-    ## output of prev. layer == input of curr layer
     @assert length(layers) > 0
-    pl = layers[1]
-    for cl ∈ layers[2:end]
-      cl._type == :activation && continue
-      @assert pl.odim == cl.idim
-      pl = cl
-    end
-
+    check_dim_layer(layers)
+    #
     new(layers, :sequential)
   end
 end
@@ -88,14 +80,31 @@ function forward(self::Sequential, input::Tensor)::Tensor
   input
 end
 
-function backward(self::Sequential, ∇::Tensor)::Tensor
+function backward(self::Sequential, ∇p::Tensor)::Tensor
   for (ix, l) ∈ enumerate(reverse(self.layers))
-    ∇ = backward(l, ∇)
+    ∇p = backward(l, ∇p)
   end
-  ∇
+  ∇p
 end
 
 parms(self::Sequential) = [p for l ∈ self.layers for p ∈ parms(l)]
-∇(self::Sequential) = [∇p for l ∈ self.layers for ∇p ∈ ∇(l)]
+∇parms(self::Sequential) = [∇p for l ∈ self.layers for ∇p ∈ ∇parms(l)]
+
+
+##
+## Internal helpers
+##
+
+function check_dim_layer(layers::Vector{AbstractLayer})
+  """
+  output of prev. layer == input of curr layer
+  """
+  pl = layers[1]
+  for cl ∈ layers[2:end]
+    cl._type == :activation && continue
+    pl.odim == cl.idim && throw(ArgumentError("incompatible shape"))
+    pl = cl
+  end
+end
 
 end
