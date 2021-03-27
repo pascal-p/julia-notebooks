@@ -6,6 +6,7 @@ using InteractiveUtils
 
 # ╔═╡ e03dd22c-884c-11eb-2432-3dc04b0cf286
 begin
+  using Pkg; Pkg.activate("MLJ_env", shared=true)
   using Test
   using Plots
   using PlutoUI

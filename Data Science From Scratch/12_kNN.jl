@@ -6,6 +6,7 @@ using InteractiveUtils
 
 # ╔═╡ 5eebac68-891b-11eb-37ba-c1d9481c6134
 begin
+  	using Pkg; Pkg.activate("MLJ_env", shared=true)
 	using Test
 	using Random
 	using RDatasets
