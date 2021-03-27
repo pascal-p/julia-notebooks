@@ -4,6 +4,9 @@
 using Markdown
 using InteractiveUtils
 
+# ╔═╡ 06755ffe-8e78-11eb-0492-154107f31423
+using Pkg; Pkg.activate("MLJ_env", shared=true)
+
 # ╔═╡ ac463e7a-8b59-11eb-229e-db560e17c5f5
 begin
 	using Test
@@ -927,6 +930,7 @@ plot(1:n_epoₓ, fb_rec_lossₓ, title="FizzBuzz training loss (Xentropy)", lege
 
 # ╔═╡ Cell order:
 # ╟─8c80e072-8b59-11eb-3c21-a18fe43c4536
+# ╠═06755ffe-8e78-11eb-0492-154107f31423
 # ╠═ac463e7a-8b59-11eb-229e-db560e17c5f5
 # ╟─e7373726-8b59-11eb-2a2b-b5138e4f5268
 # ╟─f5ee64b2-8b59-11eb-2751-0778efd589cd

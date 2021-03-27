@@ -1,5 +1,8 @@
 module YaDeepLearning
 
+using Pkg
+Pkg.activate("MLJ_env", shared=true)
+
 using Random, Distributions, Flux.Data.MNIST, Images
 
 export TensorDT

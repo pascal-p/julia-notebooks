@@ -10,6 +10,9 @@ begin
 	using YaDeepLearning
 end
 
+# ╔═╡ de098278-8e74-11eb-13e3-49c1b6e06e7d
+using Pkg; Pkg.activate("MLJ_env", shared=true)
+
 # ╔═╡ ac463e7a-8b59-11eb-229e-db560e17c5f5
 begin
 	using Test
@@ -198,7 +201,6 @@ end
 begin
 	ntrain_labels = one_hot_encoder.(train_labels)
 	ntest_labels = one_hot_encoder.(test_labels);
-	
 	ntrain_labels[1:3]
 end
 
@@ -334,6 +336,7 @@ end
 
 # ╔═╡ Cell order:
 # ╟─8c80e072-8b59-11eb-3c21-a18fe43c4536
+# ╠═de098278-8e74-11eb-13e3-49c1b6e06e7d
 # ╠═ac463e7a-8b59-11eb-229e-db560e17c5f5
 # ╠═10d6d90e-8d43-11eb-216c-8f94a3946fab
 # ╠═3972ef40-8d4f-11eb-3369-6dd94e7cfc13
