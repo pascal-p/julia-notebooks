@@ -6,8 +6,9 @@ using InteractiveUtils
 
 # ╔═╡ a5df7598-814e-11eb-03c8-b1450e513104
 begin
+  using Pkg; Pkg.activate("MLJ_env", shared=true)
 	using Plots
-    using Test
+  using Test
 	using LinearAlgebra
 end
 

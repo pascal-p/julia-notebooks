@@ -6,6 +6,7 @@ using InteractiveUtils
 
 # ╔═╡ c96551a0-881e-11eb-0d92-61edbb6c86e6
 begin
+  using Pkg; Pkg.activate("MLJ_env", shared=true)
 	using Test 
 end
 
