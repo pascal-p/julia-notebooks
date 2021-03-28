@@ -8,4 +8,13 @@
   - and [Dynamic Programming Exploration with Julia](https://github.com/pascal-p/jdp)
 
 <hr />
+
+  [The Julia Language](https://www.julialang.org/)
+
+<div align="right">
+    <img src="https://github.com/pascal-p/julia-notebooks/blob/main/Data%20Science%20From%20Scratch/src/julia-logo.svg" alt="JuliaLang Logo" width="100px" />
+</div>
+
+<hr />
+
 <p><sub><em>2019, 2020, 2021 Corto Inc</sub></em></p>
