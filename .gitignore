@@ -4,9 +4,9 @@
 
 *.org
 *.pdf
+*.jlso
 
 0*/
 [A-Z]*/
 
-*.jlso
 MLJ_Workshop/{img,orig_jl,meta,data}

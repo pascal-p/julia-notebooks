@@ -4,20 +4,23 @@
 using Markdown
 using InteractiveUtils
 
-# ╔═╡ de098278-8e74-11eb-13e3-49c1b6e06e7d
-using Pkg; Pkg.activate("MLJ_env", shared=true)
-
 # ╔═╡ ac463e7a-8b59-11eb-229e-db560e17c5f5
 begin
 	using Test
 	using Random
-	# using Distributions
 	using PlutoUI
 	using LinearAlgebra
-	# using Plots
-	# using Flux.Data.MNIST
-	# using Images
+	using CSV
+	using StringEncodings
+	using Printf
+	using Plots
+	
+	push!(LOAD_PATH, "./src")
+	using YaWorkingData: DT, pca, transform
 end
+
+# ╔═╡ de098278-8e74-11eb-13e3-49c1b6e06e7d
+using Pkg; Pkg.activate("MLJ_env", shared=true)
 
 # ╔═╡ 8c80e072-8b59-11eb-3c21-a18fe43c4536
 md"""
@@ -37,6 +40,7 @@ md"""
   - [Recommending What is Popular](#recom-whats-popular)
   - [User-Based Collaborative Filtering](#user-based-collaborative-filtering)
   - [Item-Based Collaborative Filtering](#item-based-collaborative-filtering)
+  - [Matrix Factorization](#matrix-factorization)
 """
 
 # ╔═╡ 81290d1c-8ce2-11eb-3340-337957fd81b7
@@ -411,12 +415,289 @@ begin
 	@test 1.31 < ibs1[2][2] < 1.32
 end
 
+# ╔═╡ d9e37240-8f31-11eb-1caf-dbbf84b424f0
+html"""
+<p style="text-align: right;">
+  <a id='matrix-factorization'></a>
+  <a href="#toc">back to TOC</a>
+</p>
+"""
+
+# ╔═╡ d962551e-8f31-11eb-3ddf-8bc8b04b3086
+md"""
+#### Matrix Factorization
+"""
+
+# ╔═╡ 1a9f18a4-8f32-11eb-056a-b3ee5e093957
+begin
+	const MOVIES = "./recommender_data/ml-100k/u.item"
+	const RATINGS = "./recommender_data/ml-100k/u.data"
+end
+
+# ╔═╡ 1a84db5e-8f32-11eb-2724-23abff284462
+struct Rating
+	user_id:: String
+	movie_id::String
+	rating::Float32
+end
+
+# ╔═╡ 1a69eff8-8f32-11eb-1513-63f5a01b3ec0
+begin
+	movies = Dict{String, String}()
+	
+	for row ∈ CSV.File(open(read, MOVIES, enc"ISO-8859-1"); delim="|")
+    	movies[string(row[1])] = row[2]
+	end
+end
+
+# ╔═╡ d3183c3a-8f38-11eb-21ac-bdb7bb7d21c7
+@test length(movies) == 1681
+
+# ╔═╡ 40705800-8f39-11eb-1f91-b3a013911ef8
+collect(keys(movies))[1:10]
+
+# ╔═╡ 5f543412-8f39-11eb-3a1f-4d7b9960e772
+movies["519"]
+
+# ╔═╡ 1a4d76a0-8f32-11eb-2293-51b004ec835f
+begin
+	ratings= Rating[]
+	
+	for row ∈ CSV.File(open(read, RATINGS, enc"ISO-8859-1"); delim="\t")
+    	push!(ratings, Rating(string(row[1]), string(row[2]), Float32(row[3])))
+	end
+end
+
+# ╔═╡ db2dbb10-8f31-11eb-259b-2f0f3ca5a29d
+@test length(rating.user_id for rating ∈ ratings) == 99999
+
+# ╔═╡ 7237b428-8f39-11eb-2b91-effb877198e5
+##
+## Create a dictionary for ratings by movie ids
+##
+# starwars_ratings = Dict{String, Vector{Float32}}(
+# 	movie_id => Float32[] for (movie_id, title) ∈ movies if occursin(r"Star Wars|Empire Strikes|Jedi", title)
+# )
+starwars_ratings = reduce(
+	(hsh, (movie_id, title)=r) -> (
+		occursin(r"Star Wars|Empire Strikes|Jedi", title) && 
+			(hsh[movie_id] = Float32[]); hsh
+		), 
+	movies;
+	init=Dict{String, Vector{Float32}}()
+)
+
+# ╔═╡ 71c9a9fe-8f39-11eb-1d2e-5994b912b366
+begin
+	## Iterate over ratings, accumulating the Star Wars ones
+	for rating ∈ ratings
+		rating.movie_id ∈ keys(starwars_ratings) && 
+			(push!(starwars_ratings[rating.movie_id], rating.rating))
+	end
+
+	## Compute avg rating for each movie
+	avg_ratings = [
+		(sum(title_ratings) / length(title_ratings), movie_id) 
+			for (movie_id, title_ratings) ∈ starwars_ratings
+	]
+
+	## then print them in order
+	with_terminal() do
+		for (avg_rating, movie_id) ∈ sort(avg_ratings, by=t -> t[1], rev=true)
+			@printf("%.2f %5s\n", avg_rating, movies[movie_id])
+		end
+	end
+end
+
+# ╔═╡ fb52634a-8f3c-11eb-173f-fdd2dfe5d9d3
+md"""
+Ok, let us try to come up with a model to predict these ratings. Our first step is to split the ratings data into 3 subsets: train, validation and test
+"""
+
+# ╔═╡ f093174a-8f43-11eb-154c-e54e019c2a93
+typeof(ratings)
+
+# ╔═╡ 61fb5714-8f3d-11eb-265d-97ac6dc8f150
+begin
+	Random.seed!(42)
+	Random.shuffle!(ratings)
+	s₁, s₂ = round(Int, length(ratings) * .7), round(Int, length(ratings) * .05)
+
+	train, valid = ratings[1:s₁], ratings[s₁+1:s₁+1+s₂]
+	test = ratings[s₁+2+s₂:end]
+	
+	length(train), length(valid), length(test)
+end
+
+# ╔═╡ 61df4254-8f3d-11eb-1b73-d5045174f781
+@test length(train) + length(valid) + length(test) == length(ratings)
+
+# ╔═╡ 3adaca50-8f3f-11eb-2881-a1bc37f221b0
+train[1], typeof(train)
+
+# ╔═╡ 61c6f168-8f3d-11eb-311c-47ad4dc9bb5e
+md"""
+Let us define a baseline model which will predict the average rating. We will use MSE (Mean Squared Error) as our metric and check how the baseline does on our test set.
+"""
+
+# ╔═╡ 71ac1ecc-8f39-11eb-0489-7bda4977893d
+begin
+	bl_avg_ratings = map(row -> row.rating, train) |> 
+		sum |> s -> s/length(train)
+	
+	bl_error = map(row -> (row.rating - bl_avg_ratings) ^ 2, test) |> 
+		sum |> s -> s/length(test);
+end
+
+# ╔═╡ ea84aeb2-8f3f-11eb-09e2-c7cb101a48d1
+@test 1.26 < bl_error < 1.28   ## this is what we hope to beat...
+
+# ╔═╡ ea67ca68-8f3f-11eb-28ce-5b807376fa85
+md"""
+Given our embeddings, the predicted ratings are given by the matrix product of the user embeddings and the movie embeddings. 
+For a given user and movie, that value is just the dot product of the corresponding
+embeddings.
+
+Let us start by creating the embeddings. We will represent them as dictionaries
+where the keys are IDs and the values are vectors, which will allow us to easily retrieve the embedding for a given ID:
+"""
+
+# ╔═╡ 2580fa72-8f40-11eb-1894-8dc53902cff1
+begin
+	const EMB_DIM = 2
+
+	user_ids = map(r -> r.user_id, ratings) |> unique
+	movie_ids = map(r -> r.movie_id, ratings) |> unique
+
+	user_vects = Dict{String, Vector{Float32}}(
+		user_id => rand(Float32, EMB_DIM) for user_id ∈ user_ids
+	)
+	movie_vects = Dict{String, Vector{Float32}}(
+		movie_id => rand(Float32, EMB_DIM) for movie_id ∈ movie_ids
+	)
+end
+
+# ╔═╡ 25666c1c-8f40-11eb-265b-070dc6e71052
+md"""
+Now, it is time to write our taining loop.
+"""
+
+# ╔═╡ 4d52b86a-8f41-11eb-07de-632ac5b2c513
+function train_loop(ds::Vector{Rating}, ds_name::Symbol; 
+		η::Union{Float32, Nothing}=nothing)
+	loss = 0.
+	for (ix, rating) ∈ enumerate(ds)
+		movie_v = movie_vects[rating.movie_id]
+		user_v = user_vects[rating.user_id]
+		ŷ = dot(user_v, movie_v)
+		err = ŷ - rating.rating
+		loss += err ^ 2
+		if !isnothing(η)
+			## we have ŷ ≡ m₀ × u₀	+ m₁ × u₁ + ... +mₖ × uₖ
+			## thus each uⱼ contributes to output with coefficient mⱼ
+			## and conv. each mⱼ contributes to output with coefficient uⱼ
+			∇user = movie_v * err # [err * mⱼ for mⱼ ∈ movie_v]
+			∇movie = user_v * err
+			#
+			user_v .-= η * ∇user
+			movie_v .-= η * ∇movie
+		end
+		ix % 10_000 == 0 && @printf("\t%5d: avg_loss: %3.6f\n", ix, loss / ix)
+	end
+	avg_loss = loss / length(ds)
+	@printf("\tFinal avg_loss(%12s): %3.6f\n", ds_name, avg_loss)
+	avg_loss
+end
+
+# ╔═╡ 25489752-8f40-11eb-129b-e52fde513eed
+begin
+	η = Float32(0.05)
+	avg_train_losses, avg_valid_losses = [], [] 
+	avg_test_loss = nothing
+	
+	with_terminal() do
+		for epoch ∈ 1:20
+			global η *= Float32(0.9)
+			@printf("%2d => η: %2.5f", epoch, η)
+			#
+			avg_train_loss = train_loop(train, :Training; η)
+			avg_valid_loss = train_loop(valid, :Validation)
+			push!(avg_train_losses, avg_train_loss)
+			push!(avg_valid_losses, avg_valid_loss)
+		end
+		#
+		global avg_test_loss = train_loop(test, :Test)
+	end
+end
+
+# ╔═╡ a1bc5930-8f55-11eb-0fdb-af0f194e92b3
+(avg_test_loss=string(round(avg_test_loss * 100., digits=2), "%"),)
+
+# ╔═╡ 27dd9746-8f55-11eb-28a7-d3037bd284e8
+begin
+	plot(avg_train_losses, title="avg loss/epoch", label="train loss")
+	plot!(avg_valid_losses, label="valid loss")
+end
+
+# ╔═╡ 46a227c8-8f55-11eb-07f9-f7eaff5b38de
+md"""
+Now, we will inspect  the learned vectors. Because there is no reason to expect the two components to be particularly meaningful, we are going to use PCA. 
+"""
+
+# ╔═╡ f82b1e48-8f71-11eb-1988-c970a4a0a5a3
+begin
+	orig_vects = values(movie_vects) |> collect
+	comps = pca(orig_vects, 2)
+end
+
+# ╔═╡ 143bd95e-8f74-11eb-10af-49df13561522
+md"""
+Let us transform our vectors to represent the principal components and join
+in the movie IDs and average ratings:
+"""
+
+# ╔═╡ 21dcc152-8f76-11eb-1511-674e702e4072
+begin
+	ratings_by_movie = Dict{String, DT}()
+	for rating in ratings
+		id = rating.movie_id
+		ary = get(ratings_by_movie, id, DT{Float32}())
+		push!(ary, rating.rating)
+		ratings_by_movie[id] = ary
+	end
+	vs = [
+		(
+			movie_id, 
+			sum(ratings_by_movie[movie_id]) / length(ratings_by_movie[movie_id]),
+			get(movies, movie_id, "_"),
+			vect
+		) 
+		for (movie_id, vect) ∈ zip(keys(movie_vects), transform(orig_vects, comps))
+	]
+end
+
+
+# ╔═╡ f1c75d7c-8f7c-11eb-1e75-dbc0b7d8225d
+# top 25 by first principal component
+sort(vs, by=t -> t[end][1], rev=true)[1:25]
+
+# ╔═╡ 51e6fadc-8f7d-11eb-1f1f-93756139d30b
+# bottom 25 by first principal component
+sort(vs, by=t -> t[end][1], rev=false)[1:25]
+
+# ╔═╡ 81cb1cec-8f7d-11eb-0b7d-4f4c7dd01a2c
+md"""
+The top 25 are all highly rated, while the bottom 25 are *mostly* low-rated (or unrated in the training data), which suggests that the first principal component is mostly capturing “how good is this movie?”
+
+It is hard to make much sense of the second component; and, indeed the 2-dimensional embeddings performed only slightly better than the one-dimensional embeddings, suggesting that whatever the second component captured is possibly very subtle...
+"""
+
 # ╔═╡ Cell order:
 # ╟─8c80e072-8b59-11eb-3c21-a18fe43c4536
 # ╠═de098278-8e74-11eb-13e3-49c1b6e06e7d
 # ╠═ac463e7a-8b59-11eb-229e-db560e17c5f5
 # ╟─e7373726-8b59-11eb-2a2b-b5138e4f5268
-# ╠═f5ee64b2-8b59-11eb-2751-0778efd589cd
+# ╟─f5ee64b2-8b59-11eb-2751-0778efd589cd
 # ╟─81290d1c-8ce2-11eb-3340-337957fd81b7
 # ╟─8ff1bb20-8ce2-11eb-1de6-fd84daec8930
 # ╠═d3ee2138-8ce2-11eb-0b29-659a3be01512
@@ -471,3 +752,37 @@ end
 # ╠═80dff352-8d02-11eb-06b1-5f5e325046f5
 # ╠═34811c32-8edd-11eb-0018-e73666ea7667
 # ╠═d878e9b6-8edd-11eb-03ab-f3a908ee47fe
+# ╟─d9e37240-8f31-11eb-1caf-dbbf84b424f0
+# ╟─d962551e-8f31-11eb-3ddf-8bc8b04b3086
+# ╠═1a9f18a4-8f32-11eb-056a-b3ee5e093957
+# ╠═1a84db5e-8f32-11eb-2724-23abff284462
+# ╠═1a69eff8-8f32-11eb-1513-63f5a01b3ec0
+# ╠═d3183c3a-8f38-11eb-21ac-bdb7bb7d21c7
+# ╠═40705800-8f39-11eb-1f91-b3a013911ef8
+# ╠═5f543412-8f39-11eb-3a1f-4d7b9960e772
+# ╠═1a4d76a0-8f32-11eb-2293-51b004ec835f
+# ╠═db2dbb10-8f31-11eb-259b-2f0f3ca5a29d
+# ╠═7237b428-8f39-11eb-2b91-effb877198e5
+# ╠═71c9a9fe-8f39-11eb-1d2e-5994b912b366
+# ╟─fb52634a-8f3c-11eb-173f-fdd2dfe5d9d3
+# ╠═f093174a-8f43-11eb-154c-e54e019c2a93
+# ╠═61fb5714-8f3d-11eb-265d-97ac6dc8f150
+# ╠═61df4254-8f3d-11eb-1b73-d5045174f781
+# ╠═3adaca50-8f3f-11eb-2881-a1bc37f221b0
+# ╟─61c6f168-8f3d-11eb-311c-47ad4dc9bb5e
+# ╠═71ac1ecc-8f39-11eb-0489-7bda4977893d
+# ╠═ea84aeb2-8f3f-11eb-09e2-c7cb101a48d1
+# ╟─ea67ca68-8f3f-11eb-28ce-5b807376fa85
+# ╠═2580fa72-8f40-11eb-1894-8dc53902cff1
+# ╟─25666c1c-8f40-11eb-265b-070dc6e71052
+# ╠═4d52b86a-8f41-11eb-07de-632ac5b2c513
+# ╠═25489752-8f40-11eb-129b-e52fde513eed
+# ╠═a1bc5930-8f55-11eb-0fdb-af0f194e92b3
+# ╠═27dd9746-8f55-11eb-28a7-d3037bd284e8
+# ╟─46a227c8-8f55-11eb-07f9-f7eaff5b38de
+# ╠═f82b1e48-8f71-11eb-1988-c970a4a0a5a3
+# ╟─143bd95e-8f74-11eb-10af-49df13561522
+# ╠═21dcc152-8f76-11eb-1511-674e702e4072
+# ╠═f1c75d7c-8f7c-11eb-1e75-dbc0b7d8225d
+# ╠═51e6fadc-8f7d-11eb-1f1f-93756139d30b
+# ╟─81cb1cec-8f7d-11eb-0b7d-4f4c7dd01a2c

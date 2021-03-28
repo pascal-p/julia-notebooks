@@ -5,8 +5,8 @@ using LinearAlgebra
 export de_μ, directional_σ, ∇directional_σ,
   first_principal_component, pca, transform
 
-const DT{T} = Vector{T} where {T <: Any}
-const VDT{T} = Vector{DT{T}} where {T <: Any}
+const DT{T} = Vector{T} where {T <: Real}
+const VDT{T} = Vector{DT{T}} where {T <: Real}
 
 """
 Re-center to have mean 0. across all dim
@@ -58,10 +58,10 @@ end
 
 
 function pca(data::VDT, ncomp::Integer)::VDT
-  comps = VDT[]
+  comps = VDT{eltype(data[1])}()
   for _ ∈ 1:ncomp
     comp = first_principal_component(data)
-    push!(comps. comp)
+    push!(comps, comp)
     data = rm_project(data, comp)
   end
   comps
@@ -91,7 +91,7 @@ end
 
 
 function project(u::DT, v::DT)::DT
-  """return the projection of v onto the direction w"""
+  """return the projection of u onto the direction v"""
   proj_len = dot(u, v)
   proj_len * v
 end
