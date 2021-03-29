@@ -1,9 +1,9 @@
 module YaCounter
 
-import Base: getindex, keys, values,
+import Base: getindex, setindex!, keys, values,
   iterate, length, eltype
 
-export Counter, getindex, keys, values,
+export Counter, getindex, setindex!, keys, values,
   iterate, eltype, most_common
 
 const DT{T} = Dict{T, Integer} where T <: Any
@@ -18,6 +18,8 @@ struct Counter
                       nokey_exception=true, defval=0) where T <: Any
     counter_fn(entry) |> d -> new(d, nokey_exception, defval)
   end
+
+  Counter() = new(DT{Any}(), false, 0)
 end
 
 ## API
@@ -27,8 +29,14 @@ values(self::Counter) = values(self._hsh) |> collect
 
 function getindex(self::Counter, key::T) where T  <: Any
   haskey(self._hsh, key) && (return self._hsh[key])
-  self._nonkey && throw(KeyError("No such key $(key) in Counter"))
+  self._nonkey && throw(KeyError(key))
   self._defval  ## otherwise default value for non existent key (Int64)
+end
+
+function setindex!(self::Counter, v::Integer, key::T) where T  <: Any
+  self._nonkey && !haskey(self._hsh, key) && throw(KeyError(key))
+  self._hsh[key] = v
+  nothing
 end
 
 function iterate(self::Counter, state=(collect(self._hsh), 1))

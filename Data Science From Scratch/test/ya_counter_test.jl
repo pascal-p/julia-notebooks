@@ -61,3 +61,16 @@ end
   @test length(thing_cnt) == 1
   @test length(thing_cnt[1]) == 1
 end
+
+
+@testset "Counter of Any" begin
+  things_cnt = Counter()
+  things_cnt[1] += 1
+  things_cnt[3] = 10
+
+  @test things_cnt[1] == 1
+  @test things_cnt[3] == 10
+
+  things_cnt[1] = 10
+  @test things_cnt[1] == 10
+end
