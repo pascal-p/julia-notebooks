@@ -4,7 +4,7 @@ import Base: getindex, keys, values,
   iterate, length, eltype
 
 export Counter, getindex, keys, values,
-  iterate, eltype
+  iterate, eltype, most_common
 
 const DT{T} = Dict{T, Integer} where T <: Any
 const VT{T} = AbstractVector{T} where T <: Any
@@ -41,6 +41,14 @@ end
 length(self::Counter) = length(self._hsh)
 
 eltype(self::Counter) = eltype(self._hsh)
+
+function most_common(self::Counter, n=length(self))::Vector{Pair}
+  """
+  top 'n' elements from most common to least common, as specified by parameter 'n'
+  """
+  ## t = (key, bal), t[2] means by val
+  sort(collect(self._hsh), by=t -> t[2], rev=true)[1:n]
+end
 
 
 ## internals

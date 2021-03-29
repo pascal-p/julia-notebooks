@@ -34,6 +34,11 @@ end
 
   @test eltype(things_cnt) == Pair{Int64, Integer}
 
+  @test most_common(things_cnt, 1) == [Pair(1, 5)]
+  @test most_common(things_cnt, 1)[1][1] == 1
+
+  @test most_common(things_cnt, 2) == [Pair(1, 5), Pair(2, 4)]
+
   @test_throws KeyError things_cnt[70]
 end
 
