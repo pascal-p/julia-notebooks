@@ -10,6 +10,9 @@ begin
 	using Test
 	using Random
 	using PlutoUI
+
+	push!(LOAD_PATH, "./src")
+	using YaCounter
 end
 
 # ╔═╡ 87e5e2ec-8915-11eb-362b-6bf13a36b8e4
@@ -22,9 +25,8 @@ ref. from book **"Data Science from Scratch"**, Chap 17
 # ╔═╡ 8e2aca8e-8a8f-11eb-1e68-1316740f4697
 begin
 	const F = Float64
-	const T = Any
 	const VF = AbstractVector{F}
-	const VT = AbstractVector{T1} where {T1 <: Any};
+	const AVT{T} = AbstractVector{T} where {T <: Any};
 end
 
 # ╔═╡ cb25501a-8915-11eb-3626-a1ae6d233f92
@@ -83,36 +85,30 @@ Our data will consist of pairs(input, label) for which we will need to compute t
 
 # ╔═╡ 9ae99efe-891c-11eb-3d1f-89182e3f9ff8
 begin
-	function counter(labels::VT)::Dict{T, Integer}
-		h = Dict{T, Integer}()
-		for v ∈ labels
-			h[v] = get(h, v, 0) + 1
-		end
-		h
-	end
-	
-	function class_prob(labels::VT)::VF
+	function class_prob(labels::AVT)::VF
 		@assert length(labels) > 0
-		tot_cnt = length(labels)
-		[cnt / tot_cnt for cnt ∈ values(counter(labels))]
+		values(Counter(labels)) / length(labels)
 	end
-	
-	function data_entropy(labels::VT)::F
+
+	function data_entropy(labels::AVT)::F
 		class_prob(labels) |> entropy
 	end
 end
 
 # ╔═╡ ea1f4a2c-891d-11eb-3027-bd447dd9d1e1
 begin
-	@test data_entropy(["a"]) ≈ 0. # == 0.
+	@test data_entropy(["a"]) ≈ 0.
 	@test data_entropy([:a]) ≈ 0.
 	@test data_entropy([:b, :a, :b]) ≈ entropy([1. / 3., 2. / 3.])
 	@test data_entropy([true, false]) == 1.
 	@test data_entropy([2, 1, 2, 2]) == entropy([0.25, 0.75])
+	#
+	bv = BitVector[[1, 1, 1, 1], [0, 0, 0, 1, 1], [1, 1, 0, 1, 0]]
+	@test data_entropy(bv) ≈ 1.5849625007
 end
 
 # ╔═╡ 13e3ccb6-8aae-11eb-3a9e-85b5afc74097
- class_prob([1, 1, 1, 1, 1])
+class_prob([1, 1, 1, 1, 1])
 
 # ╔═╡ 13c729da-8aae-11eb-29aa-b171020ad8dd
 class_prob([0, 0, 0, 1, 1]), class_prob([1, 1, 0, 1, 0])
@@ -123,7 +119,7 @@ data_entropy([0, 0, 0, 1, 1]), data_entropy([1, 1, 0, 1, 0])
 # ╔═╡ dc0c5a5e-8915-11eb-2c62-5328b42add69
 html"""
 <p style="text-align: right;">
-  <a id='entroyp-partition'></a>
+  <a id='entropy-partition'></a>
   <a href="#toc">back to TOC</a>
 </p>
 """
@@ -138,19 +134,19 @@ $$H = \sum_{i=1}^m q_i \times H(S_i)$$
 """
 
 # ╔═╡ dbd86924-8915-11eb-351f-8362f09ba984
-function partition_entropy(subsets::Vector{VT})::F
-	"""Given the partition into subsets, calc. its entropy"""
-	# @show subsets
+function partition_entropy(subsets)::F
+	"""
+	Given the partition into subsets, calc. its entropy
+	"""
 	tot_cnt = sum(length.(subsets))
-	# @show tot_cnt
-	λ = s -> data_entropy(s) * length(s) / tot_cnt
+	λ = s -> (data_entropy(s) * length(s)) / tot_cnt
 	sum(λ.(subsets))
 end
 
 # ╔═╡ d32b86e0-8928-11eb-193c-e3d7c85d23dd
 begin
-	a_ = BitArray{1}[[1, 1, 1, 1], [0, 0, 0, 1, 1], [1, 1, 0, 1, 0]]
- 	@test abs(partition_entropy(VT[a_...]) - 0.69353613) ≤ 1e-6 
+	a_ = BitVector[[1, 1, 1, 1], [0, 0, 0, 1, 1], [1, 1, 0, 1, 0]]
+	@test abs(partition_entropy(a_) - 0.6935361388961) ≤ 1e-6
 end
 
 # ╔═╡ dbbf22a2-8915-11eb-00eb-4b0278c0283d
@@ -178,7 +174,8 @@ struct Candidate
 	tweets::Bool
 	phd::Bool
 	did_well::NB
-	function Candidate(level::Symbol, lang::Symbol, tweets::Bool, phd::Bool, did_well::NB=nothing)
+	function Candidate(level::Symbol, lang::Symbol, tweets::Bool,
+				phd::Bool, did_well::NB=nothing)
 		new(level, lang, tweets, phd, did_well)
 	end
 end
@@ -226,35 +223,38 @@ fieldnames(Candidate)[1:end-1]
 Symbol[fieldnames(Candidate)[1:end-1]...]
 
 # ╔═╡ 65ec8554-8953-11eb-3973-b56039754312
-function partition_by(inputs::VT, attr::Symbol)::Dict{T, VT}
-	part = Dict{T, VT}()
-	for inp ∈ inputs
-		key = getfield(inp, attr)
-		part[key] = push!(get(part, key, []), inp)
+function partition_by(inputs::AVT, attr::Symbol)::Dict{Symbol, AVT}
+	parts = Dict{Symbol, AVT}()
+	for input ∈ inputs
+		kval = getfield(input, attr)
+		parts[Symbol(kval)] = push!(get(parts, Symbol(kval), []), input)
 	end
-	part
+	parts
 end
 
 # ╔═╡ 0c8055b8-89b2-11eb-3046-331119a0dc9b
-function partition_entropy_by(inputs::VT, attr::Symbol, label_attr::Symbol)::F
-	"""Given the partition, calc. its entropy"""
+function partition_entropy_by(inputs::AVT, attr::Symbol, label_attr::Symbol)::F
+	"""
+	Given the partition, calc. its entropy
+	"""
 	parts = partition_by(inputs, attr)
 	# @show(parts, attr) 
 	# println("-----------------------")
 	
-	λ = inp -> getfield(inp, label_attr)
-	labels = [λ.(p) for p ∈ values(parts)]
+	λ = input -> getfield(input, label_attr)
+	labels = [λ.(vp) for vp ∈ values(parts)]
 	# @show(labels)
 	# println("-----------------------")
 	
-	partition_entropy(VT[labels...])
+	partition_entropy(AVT[labels...])
 end
 
 # ╔═╡ d728d526-8956-11eb-3c22-e788d025e8b4
 with_terminal() do
+	attr = :did_well
 	for key ∈ fieldnames(Candidate)[1:end-1]
-		r = partition_entropy_by(inputs, key, :did_well)
-		println("$(key) => $(r)")
+		r = partition_entropy_by(inputs, key, attr)
+		println("$(key)/$(attr) => $(r)")
 	end
 end
 
@@ -262,6 +262,7 @@ end
 begin
 	@test 0.69 ≤ partition_entropy_by(inputs, :level, :did_well) < 0.7
 	@test 0.86 ≤ partition_entropy_by(inputs, :lang, :did_well) < 0.87
+
 	@test 0.78 ≤ partition_entropy_by(inputs, :tweets, :did_well) < 0.79
 	@test 0.89 ≤ partition_entropy_by(inputs, :phd, :did_well) < 0.90
 end
@@ -296,6 +297,9 @@ We are going to define out tree as either:
   - a :split containing an attribute to split on, subtrees for specific values of that attribute and possibly a default value (if we see an unknown value)
 """
 
+# ╔═╡ dd9487fa-9035-11eb-174b-fdc642e5f518
+const T = Any
+
 # ╔═╡ 704c988e-8ab3-11eb-2882-7bdab634fdb4
 struct Leaf
 	value::T
@@ -323,23 +327,20 @@ function classify(dt::DT, input::T)::T
 	## values are subtrees to consider next
 	sdt_key = getfield(input, dt.attr)
 
-	if !haskey(dt.subtrees, sdt_key)
-		return dt.defval       ## no subtree for key => default value 
-	end	
+	## no subtree for key => default value
+	!haskey(dt.subtrees, Symbol(sdt_key)) && (return dt.defval)
 
-	sdt = dt.subtrees[sdt_key] ## choose appropriate subtree and
-	classify(sdt, input)       ## use it to classify the input
+	sdt = dt.subtrees[Symbol(sdt_key)] ## choose appropriate subtree and
+	classify(sdt, input)               ## use it to classify the input
 end
 
 # ╔═╡ 6fdb83ce-8ab3-11eb-03a2-bf78a195426b
-function build_tree_id3(inputs::VT, split_attrs::Vector{Symbol}, 
+function build_tree_id3(inputs::AVT, split_attrs::Vector{Symbol},
 		target::Symbol)::DT
 	λ₁ = inp -> getfield(inp, target)
-	label_cnt = λ₁.(inputs) |> counter
+	label_cnt = λ₁.(inputs) |> Counter
 
-	most_common_label = reduce((m, x) -> m = x[2] > m[2] ? x : m, label_cnt;
-		init=(nothing, -1))[1]
-	# sort(collect(label_cnt), by=t -> t[2], rev=true)[1][1] 
+	most_common_label = most_common(label_cnt, 1)[1][1]
 
 	## If unique label, predict it
 	length(label_cnt) == 1 && (return Leaf(most_common_label))
@@ -365,15 +366,16 @@ function build_tree_id3(inputs::VT, split_attrs::Vector{Symbol},
 end
 
 # ╔═╡ f21e8240-8ab9-11eb-1223-cbc0f2b1aa8c
-dtree = build_tree_id3(inputs, Symbol[fieldnames(Candidate)[1:end-1]...], :did_well)
+dtree = build_tree_id3(inputs, Symbol[fieldnames(Candidate)[1:end-1]...],
+	:did_well)
 
 # ╔═╡ 4891273a-8a8e-11eb-32a5-5b7fb191b833
 @test classify(dtree, Candidate(:Junior, :Java, true, false))
-## Should predict true
+# Should predict true
 
 # ╔═╡ 2a823d90-8abd-11eb-0e52-d53dfd7d28af
 @test !classify(dtree, Candidate(:Junior, :Java, true, true))
-## Should predict false
+# Should predict false
 
 # ╔═╡ 2a68888e-8abd-11eb-396d-2dbac68b7419
 @test classify(dtree, Candidate(:Intern, :Java, true, true))
@@ -414,6 +416,7 @@ dtree = build_tree_id3(inputs, Symbol[fieldnames(Candidate)[1:end-1]...], :did_w
 # ╟─432cd594-89b9-11eb-2d4a-6f46f08a511d
 # ╟─48db121e-8a8e-11eb-189f-d9f41e4b1d9d
 # ╟─48ba469c-8a8e-11eb-0016-d784d1f60eb0
+# ╠═dd9487fa-9035-11eb-174b-fdc642e5f518
 # ╠═704c988e-8ab3-11eb-2882-7bdab634fdb4
 # ╠═702fd9e2-8ab3-11eb-0ac9-590fd1e3ca02
 # ╠═7014500a-8ab3-11eb-13bc-69adb8a72f13
