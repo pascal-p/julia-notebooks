@@ -17,6 +17,7 @@ begin
 	
 	push!(LOAD_PATH, "./src")
 	using YaWorkingData: DT, pca, transform
+	using YaDistances: cosine_similarity
 end
 
 # ╔═╡ de098278-8e74-11eb-13e3-49c1b6e06e7d
@@ -196,20 +197,20 @@ length(User_Interest_Vect[1])
 md"""
 Now `user_interest_vect[i][j]` is 1 if user i has interest in j and 0 otherwise.
 
-Let us define the cosine similarity:
+Check cosine similarity definition in `YaDistances` module.
 """
 
 # ╔═╡ 526acb22-8ea2-11eb-158e-63c3ec6df336
-function cosine_similarity(v₁::AVT, v₂::AVT)::Float64 # where {T <: Any}
-	dot(v₁, v₂) / (norm(v₁) * norm(v₂))
-end
+#function cosine_similarity(v₁::AVT, v₂::AVT)::Float64 # where {T <: Any}
+#	dot(v₁, v₂) / (norm(v₁) * norm(v₂))
+#end
 
 # ╔═╡ 66a3df24-8ea5-11eb-309c-f549d788b65d
-begin
-	@test cosine_similarity([1., 1, 1], [2., 2, 2]) ≈ 1. ## "same direction"
-	@test cosine_similarity([-1., -1], [2., 2]) ≈ -1.    ## "opposite direction"
-	@test cosine_similarity([1., 0], [0., 1]) ≈ 0.       ## "orthogonal"
-end
+# begin
+# 	@test cosine_similarity([1., 1, 1], [2., 2, 2]) ≈ 1. ## "same direction"
+# 	@test cosine_similarity([-1., -1], [2., 2]) ≈ -1.    ## "opposite direction"
+# 	@test cosine_similarity([1., 0], [0., 1]) ≈ 0.       ## "orthogonal"
+# end
 
 # ╔═╡ 1a305bc2-8ea3-11eb-128a-27139da33ae3
 md"""
