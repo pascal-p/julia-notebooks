@@ -12,6 +12,7 @@ begin
 	using Distributions
 	using PlutoUI
 	using Printf
+	using JSON
 
 	push!(LOAD_PATH, "./src")
 	using YaCounter
@@ -32,18 +33,14 @@ html"""
 # ╔═╡ cb0838ae-8915-11eb-082f-3991192a101f
 md"""
 #### TOC
-  - ...
   - [Gibbs Sampling](#gibbs-sampling)
   - [Topic Modeling](#topic-modeling)
-  - [Word Vectors](#word_vectors)
-  - [RNN](#rnn)
-  - [Example using a character-level RNN](character-level-rnn)
 """
 
 # ╔═╡ caf03ada-8915-11eb-2935-01e110accba6
 html"""
 <p style="text-align: right;">
-  <a id='entropy'></a>
+  <a id='gibbs-sampling'></a>
   <a href="#toc">back to TOC</a>
 </p>
 """
@@ -416,103 +413,6 @@ with_terminal() do
 	end
 end
 
-# ╔═╡ dbbf22a2-8915-11eb-00eb-4b0278c0283d
-html"""
-<p style="text-align: right;">
-  <a id='word_vectors'></a>
-  <a href="#toc">back to TOC</a>
-</p>
-"""
-
-## ================================
-
-# ╔═╡ 5f5e6d02-892a-11eb-32d8-dfc1a7f259fa
-md"""
-### Word Vectors
-"""
-
-# ╔═╡ 073f6442-892e-11eb-0fc2-bbeb1d12619e
-# TODO...
-
-# ╔═╡ 2ec41c48-8a95-11eb-13b6-61f4a07a31db
-# TODO...
-
-# ╔═╡ 25fb8f9a-8952-11eb-35bb-b173ac466835
-md"""
- TODO...
-"""
-
-# ╔═╡ 045023be-8aac-11eb-29c1-3f4da066ff9b
-## Tuple
-
-
-# ╔═╡ b1c0a416-8aba-11eb-140a-9f3c4eb93346
-# TODO...
-
-# ╔═╡ 65ec8554-8953-11eb-3973-b56039754312
-# TODO...
-
-# ╔═╡ 0c8055b8-89b2-11eb-3046-331119a0dc9b
-# TODO...
-
-# ╔═╡ d728d526-8956-11eb-3c22-e788d025e8b4
-# TODO...
-
-# ╔═╡ 17768334-8a98-11eb-1172-3d5079435dcf
-# TODO...
-
-# ╔═╡ 8365f5cc-8aaf-11eb-1928-b3a201b840a0
-# TODO...
-
-# ╔═╡ 432cd594-89b9-11eb-2d4a-6f46f08a511d
-html"""
-<p style="text-align: right;">
-  <a id='rnn'></a>
-  <a href="#toc">back to TOC</a>
-</p>
-"""
-
-# ╔═╡ 48db121e-8a8e-11eb-189f-d9f41e4b1d9d
-md"""
-### RNN
-
-"""
-
-# ╔═╡ 48ba469c-8a8e-11eb-0016-d784d1f60eb0
-md"""
-TODO ...
-"""
-
-# ╔═╡ dd9487fa-9035-11eb-174b-fdc642e5f518
-# TODO...
-
-# ╔═╡ 704c988e-8ab3-11eb-2882-7bdab634fdb4
-# TODO...
-
-# ╔═╡ 702fd9e2-8ab3-11eb-0ac9-590fd1e3ca02
-# TODO...
-
-# ╔═╡ 7014500a-8ab3-11eb-13bc-69adb8a72f13
-# TODO...
-
-# ╔═╡ 6ff9bd6c-8ab3-11eb-1346-f1b274ec7283
-# TODO...
-
-# ╔═╡ 6fdb83ce-8ab3-11eb-03a2-bf78a195426b
-# TODO...
-
-# ╔═╡ f21e8240-8ab9-11eb-1223-cbc0f2b1aa8c
-# TODO...
-
-# ╔═╡ 4891273a-8a8e-11eb-32a5-5b7fb191b833
-# TODO...
-
-# ╔═╡ 2a823d90-8abd-11eb-0e52-d53dfd7d28af
-# TODO...
-
-# ╔═╡ 2a68888e-8abd-11eb-396d-2dbac68b7419
-# TODO...
-
 # ╔═╡ Cell order:
 # ╟─87e5e2ec-8915-11eb-362b-6bf13a36b8e4
 # ╠═5eebac68-891b-11eb-37ba-c1d9481c6134
@@ -553,28 +453,3 @@ TODO ...
 # ╟─4f708e46-9070-11eb-2e90-45e2e028bbdb
 # ╠═4b449308-9070-11eb-2aed-65775ffabadb
 # ╠═89f83412-9073-11eb-11bf-e7a77ea377ab
-# ╟─dbbf22a2-8915-11eb-00eb-4b0278c0283d
-# ╟─5f5e6d02-892a-11eb-32d8-dfc1a7f259fa
-# ╠═073f6442-892e-11eb-0fc2-bbeb1d12619e
-# ╠═2ec41c48-8a95-11eb-13b6-61f4a07a31db
-# ╟─25fb8f9a-8952-11eb-35bb-b173ac466835
-# ╠═045023be-8aac-11eb-29c1-3f4da066ff9b
-# ╠═b1c0a416-8aba-11eb-140a-9f3c4eb93346
-# ╠═65ec8554-8953-11eb-3973-b56039754312
-# ╠═0c8055b8-89b2-11eb-3046-331119a0dc9b
-# ╠═d728d526-8956-11eb-3c22-e788d025e8b4
-# ╠═17768334-8a98-11eb-1172-3d5079435dcf
-# ╠═8365f5cc-8aaf-11eb-1928-b3a201b840a0
-# ╟─432cd594-89b9-11eb-2d4a-6f46f08a511d
-# ╟─48db121e-8a8e-11eb-189f-d9f41e4b1d9d
-# ╟─48ba469c-8a8e-11eb-0016-d784d1f60eb0
-# ╠═dd9487fa-9035-11eb-174b-fdc642e5f518
-# ╠═704c988e-8ab3-11eb-2882-7bdab634fdb4
-# ╠═702fd9e2-8ab3-11eb-0ac9-590fd1e3ca02
-# ╠═7014500a-8ab3-11eb-13bc-69adb8a72f13
-# ╠═6ff9bd6c-8ab3-11eb-1346-f1b274ec7283
-# ╠═6fdb83ce-8ab3-11eb-03a2-bf78a195426b
-# ╠═f21e8240-8ab9-11eb-1223-cbc0f2b1aa8c
-# ╠═4891273a-8a8e-11eb-32a5-5b7fb191b833
-# ╠═2a823d90-8abd-11eb-0e52-d53dfd7d28af
-# ╠═2a68888e-8abd-11eb-396d-2dbac68b7419
