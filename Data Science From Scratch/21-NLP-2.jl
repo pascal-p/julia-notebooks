@@ -24,7 +24,7 @@ end
 
 # ╔═╡ 87e5e2ec-8915-11eb-362b-6bf13a36b8e4
 md"""
-## NLP, part 2
+## NLP, part 2 - Word Vectors
 
 ref. from book **"Data Science from Scratch"**, Chap 21
 """
@@ -97,15 +97,15 @@ html"""
 # ╔═╡ cb0838ae-8915-11eb-082f-3991192a101f
 md"""
 #### TOC
-  - [Word Vectors](#word_vectors)
-  - [RNN](#rnn)
-  - [Example using a character-level RNN](#character-level-rnn)
+  - [Vocabulary](#vocabulary)
+  - [Embedding Layer](#embedding-layer)
+  - [Run it](#run-it)
 """
 
 # ╔═╡ dbbf22a2-8915-11eb-00eb-4b0278c0283d
 html"""
 <p style="text-align: right;">
-  <a id='word_vectors'></a>
+  <a id='vocabulary'></a>
   <a href="#toc">back to TOC</a>
 </p>
 """
@@ -114,7 +114,7 @@ html"""
 
 # ╔═╡ 5f5e6d02-892a-11eb-32d8-dfc1a7f259fa
 md"""
-### Word Vectors
+### Vocabulary
 """
 
 # ╔═╡ c1cb6562-90c8-11eb-2095-cbf63bb8b59d
@@ -265,6 +265,21 @@ begin
   @test isnothing(one_hot_encode(l_vocab, "z"))
 end
 
+# ╔═╡ ce9e2400-91a9-11eb-1e99-6d75ec2a3078
+html"""
+<p style="text-align: right;">
+  <a id='embedding-layer'></a>
+  <a href="#toc">back to TOC</a>
+</p>
+"""
+
+## ================================
+
+# ╔═╡ cdf7edf6-91a9-11eb-1d6c-a5288d3fd950
+md"""
+### Embedding Layer
+"""
+
 # ╔═╡ d728d526-8956-11eb-3c22-e788d025e8b4
 md"""
 We will be using a word vector model called *skip-gram) that takes as input a word and generates probabilities for what words are likely to be seen near it.
@@ -376,7 +391,22 @@ end
 md"""
 Our embedding layer is outputting vectors which can be fed into a linear(dense) layer.
 
-But first we need to tokenize the sentences:
+But first we need to tokenize the sentences.
+"""
+
+# ╔═╡ 1ed2ac2a-91aa-11eb-2b74-7d00f8d91a53
+html"""
+<p style="text-align: right;">
+  <a id='run-it'></a>
+  <a href="#toc">back to TOC</a>
+</p>
+"""
+
+## ================================
+
+# ╔═╡ 00982dfc-91aa-11eb-2e9d-f5831922a61d
+md"""
+### Run it
 """
 
 # ╔═╡ f3d7e0be-90f3-11eb-00c7-036c1168da05
@@ -513,42 +543,6 @@ md"""
 This shows that similar words tends to cluster together (almost...)
 """
 
-# ╔═╡ 432cd594-89b9-11eb-2d4a-6f46f08a511d
-html"""
-<p style="text-align: right;">
-  <a id='rnn'></a>
-  <a href="#toc">back to TOC</a>
-</p>
-"""
-
-# ╔═╡ 48db121e-8a8e-11eb-189f-d9f41e4b1d9d
-md"""
-### RNN
-
-"""
-
-# ╔═╡ dd9487fa-9035-11eb-174b-fdc642e5f518
-# TODO...
-
-# ╔═╡ fe725b62-9134-11eb-159f-9d6cdc91e798
-
-
-# ╔═╡ 985e4192-9134-11eb-2676-8f6e2a79de43
-html"""
-<p style="text-align: right;">
-  <a id='character-level-rnn'></a>
-  <a href="#toc">back to TOC</a>
-</p>
-"""
-
-# ╔═╡ 983f0df4-9134-11eb-0b3c-c1503a7a838b
-md"""
-### Example using a character-level RNN
-"""
-
-# ╔═╡ f21e8240-8ab9-11eb-1223-cbc0f2b1aa8c
-# TODO...
-
 # ╔═╡ Cell order:
 # ╟─87e5e2ec-8915-11eb-362b-6bf13a36b8e4
 # ╠═5eebac68-891b-11eb-37ba-c1d9481c6134
@@ -565,6 +559,8 @@ md"""
 # ╠═b1c0a416-8aba-11eb-140a-9f3c4eb93346
 # ╠═65ec8554-8953-11eb-3973-b56039754312
 # ╠═0c8055b8-89b2-11eb-3046-331119a0dc9b
+# ╟─ce9e2400-91a9-11eb-1e99-6d75ec2a3078
+# ╟─cdf7edf6-91a9-11eb-1d6c-a5288d3fd950
 # ╟─d728d526-8956-11eb-3c22-e788d025e8b4
 # ╠═c228148c-90e0-11eb-1007-43a7de1d22ee
 # ╠═e6634800-90e0-11eb-2d3d-c58c08564720
@@ -573,6 +569,8 @@ md"""
 # ╟─f3fa0216-90da-11eb-157a-e3941af7117b
 # ╠═17768334-8a98-11eb-1172-3d5079435dcf
 # ╟─e27e6ed6-90e7-11eb-17a7-79104767ea17
+# ╟─1ed2ac2a-91aa-11eb-2b74-7d00f8d91a53
+# ╟─00982dfc-91aa-11eb-2e9d-f5831922a61d
 # ╠═f3d7e0be-90f3-11eb-00c7-036c1168da05
 # ╠═e5532350-90e9-11eb-2e60-591759fb2f28
 # ╟─bb601544-90f3-11eb-1f6a-9758edfa0c59
@@ -586,10 +584,3 @@ md"""
 # ╠═d6b82be6-9112-11eb-110c-036fa8880c8a
 # ╠═8153d3ac-9113-11eb-1e9c-5dabd3012046
 # ╟─c484c36e-9133-11eb-22ef-dfdcfa0d75ec
-# ╟─432cd594-89b9-11eb-2d4a-6f46f08a511d
-# ╟─48db121e-8a8e-11eb-189f-d9f41e4b1d9d
-# ╠═dd9487fa-9035-11eb-174b-fdc642e5f518
-# ╠═fe725b62-9134-11eb-159f-9d6cdc91e798
-# ╟─985e4192-9134-11eb-2676-8f6e2a79de43
-# ╟─983f0df4-9134-11eb-0b3c-c1503a7a838b
-# ╠═f21e8240-8ab9-11eb-1223-cbc0f2b1aa8c

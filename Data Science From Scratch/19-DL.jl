@@ -745,7 +745,7 @@ function fb_accuracy(net::AbstractLayer, low::Integer, high::Integer):: F
 		r₁ = forward(net, x)
 		r₂ = fizzbuzz_encoder(n)
 		## NOTE: argmax(r₁) => CartesianIndex
-		ŷ , y = argmax(r₁)[1], argmax(r₂)
+		ŷ, y = argmax(r₁)[1], argmax(r₂)
 		ŷ == y && (ncorrect += 1)
 	end
 	ncorrect / (high - low)
