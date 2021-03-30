@@ -62,9 +62,18 @@ end
 parms(self::Linear) = [self.w, self.b]
 ∇parms(self::Linear) = [self.store[:∇w], self.store[:∇b]]
 
+## Extra internal
+idims(self::Linear) = self.idim
+odims(self::Linear) = self.odim
+
+
+
 ## ======================================================================
 ## Neural Network as a sequence of Layers
 ## ======================================================================
+
+const CHECK_DIMS_EXCLUSION = [:activation, :regularization] #:embedding]
+
 struct Sequential <: AbstractLayer
   layers::Vector{AbstractLayer}
   _type::Symbol
@@ -103,10 +112,14 @@ function check_dim_layer(layers::Vector{AbstractLayer})
   """
   output of prev. layer == input of curr layer
   """
-  pl = layers[1]
+  @assert length(layers) > 0
+  pl = layers[1]._type ∈ CHECK_DIMS_EXCLUSION ? layers[1] : nothing
+
   for cl ∈ layers[2:end]
-    cl._type ∈ [:activation, :regularization] && continue
-    pl.odim ≠ cl.idim && throw(ArgumentError("incompatible shape between pl.odim; $(pl.odim) vs cl.idim: $(cl.idim)"))
+    cl._type ∈ CHECK_DIMS_EXCLUSION && continue
+    isnothing(pl) && (pl = cl; continue)
+
+    odims(pl) ≠ idims(cl) && throw(ArgumentError("incompatible shape between pl.odim; $(pl.odim) vs cl.idim: $(cl.idim)"))
     pl = cl
   end
 end

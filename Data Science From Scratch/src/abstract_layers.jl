@@ -14,9 +14,9 @@ abstract type AbstractLayer end
 const AL = AbstractLayer
 
 ### FIXME: review
-forward(::AbstractLayer, ::Tensor) = throws(ArgumentError("Not Implemented"))
-backward(::AbstractLayer, ::Tensor) = throws(ArgumentError("Not Implemented"))
-parms(::AbstractLayer) = throws(ArgumentError("Not Implemented"))
-∇parms(::AbstractLayer) = throws(ArgumentError("Not Implemented"))
+forward(::AbstractLayer, ::Tensor) = throw(ArgumentError("Not Implemented"))
+backward(::AbstractLayer, ::Tensor) = throw(ArgumentError("Not Implemented"))
+parms(::AbstractLayer) = throw(ArgumentError("Not Implemented"))
+∇parms(::AbstractLayer) = throw(ArgumentError("Not Implemented"))
 
 end ## Module
