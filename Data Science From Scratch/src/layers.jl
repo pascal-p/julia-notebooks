@@ -7,7 +7,7 @@ include("./tensor_dt.jl")
 using ..TensorDT: Tensor
 
 include("./abstract_layers.jl")
-import ..AbstractLayers: AbstractLayer, AL, forward, backward, parms, ∇parms
+import ..AbstractLayers: AbstractLayer, AL, forward, backward, parms, ∇parms, idims, odims
 
 include("./initializations.jl")
 using ..Initializations: init_xavier, INIT_FNs
@@ -62,7 +62,7 @@ end
 parms(self::Linear) = [self.w, self.b]
 ∇parms(self::Linear) = [self.store[:∇w], self.store[:∇b]]
 
-## Extra internal
+## Extra
 idims(self::Linear) = self.idim
 odims(self::Linear) = self.odim
 
@@ -103,6 +103,8 @@ end
 parms(self::Sequential) = [p for l ∈ self.layers for p ∈ parms(l)]
 ∇parms(self::Sequential) = [∇p for l ∈ self.layers for ∇p ∈ ∇parms(l)]
 
+idims(self::Sequential) = nothing
+odims(self::Sequential) = nothing
 
 ##
 ## Internal helpers
@@ -119,7 +121,8 @@ function check_dim_layer(layers::Vector{AbstractLayer})
     cl._type ∈ CHECK_DIMS_EXCLUSION && continue
     isnothing(pl) && (pl = cl; continue)
 
-    odims(pl) ≠ idims(cl) && throw(ArgumentError("incompatible shape between pl.odim; $(pl.odim) vs cl.idim: $(cl.idim)"))
+    odims(pl) ≠ idims(cl) &&
+      throw(ArgumentError("incompatible shape between pl.odim; $(odims(pl)) vs cl.idim: $(idims(cl))"))
     pl = cl
   end
 end

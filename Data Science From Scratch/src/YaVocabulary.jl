@@ -1,9 +1,9 @@
 module YaVocabulary
 
-import Base.size
+import Base: size, length
 
-export Vocabulary, get_id, get_word, size, one_hot_encode,
-  add, save_vocab, load_vocab
+export Vocabulary, get_id, get_word, size, length, one_hot_encode,
+  add!, save_vocab, load_vocab
 
 
 include("./tensor_dt.jl")
@@ -46,6 +46,7 @@ function get_word(self::Vocabulary, ix::Integer)::S_N
 end
 
 size(self::Vocabulary) = length(self.word2ix)
+length(self::Vocabulary) = length(self.word2ix)
 
 function one_hot_encode(self::Vocabulary, w::String)::T_N
   !haskey(self.word2ix, w) && (return nothing)
@@ -54,7 +55,7 @@ function one_hot_encode(self::Vocabulary, w::String)::T_N
   # FIXME: use a BitArray?
 end
 
-function add(self::Vocabulary, word::String)
+function add!(self::Vocabulary, word::String)
   if !haskey(self.word2ix, word)
     w_ix = length(self.word2ix) + 1
     self.word2ix[word] = w_ix

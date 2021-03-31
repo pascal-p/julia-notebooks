@@ -17,7 +17,7 @@ using YaVocabulary
   @test get_word(vocab, 6) == "P"
   @test isnothing(get_word(vocab, 10))
 
-  add(vocab, "Y")
+  add!(vocab, "Y")
   @test size(vocab) == (length ∘ unique)(vlst) + 1
   @test one_hot_encode(vocab, "B") == [1., 0., 0., 0., 0., 0., 0.]
   @test one_hot_encode(vocab, "Y") == [0., 0., 0., 0., 0., 0., 1.]

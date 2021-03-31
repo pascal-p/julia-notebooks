@@ -1,6 +1,6 @@
 module Loss
 
-export AbstractLoss, ALoss, Float, loss, ∇loss, SSE, SoftmaxXEntropy
+export AbstractLoss, ALoss, Float, loss, ∇loss, SSE, SoftmaxXEntropy, softmax
 
 include("./tensor_dt.jl")
 using .TensorDT: Tensor
@@ -40,10 +40,8 @@ function ∇loss(_self::SoftmaxXEntropy, ŷ::Tensor, y::Tensor)::Tensor
     softmax(ŷ) .- y
 end
 
+## Softmax function helper
 
-## Internals
-
-#### Softmax function helper
 function softmax(tensor::Tensor)::Tensor
   """Softmax along ths last dimension"""
   ## for numerical stability - subtract largest value
