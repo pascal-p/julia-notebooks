@@ -3,13 +3,20 @@ push!(LOAD_PATH, "./src")
 using Test
 using YaDB
 
-@testset "Create Table" begin
+@testset "Create Table/1" begin
   Users = Table([:name => String, :num_friends => Int]; pkey=(:user_id => Int))
 
   @test length(Users) == 0
   @test sort(Users.columns) == [:name, :num_friends, :user_id]
-  @test Users.pkey == :user_id
   @test id(Users) == :user_id
+end
+
+@testset "Create Table - default pkey" begin
+  Users = Table([:name => String, :num_friends => Int])
+
+  @test length(Users) == 0
+  @test sort(Users.columns) == [:id, :name, :num_friends]
+  @test id(Users) == :id
 end
 
 @testset "Insert rows" begin
@@ -83,4 +90,38 @@ end
 
   delete(Users)
   @test length(Users) == 0
+end
+
+@testset "Select / where / limit" begin
+	Users = Table([:name => String, :num_friends => Int])
+  
+	insert(Users, [[0, "Hero", 0],
+			[1, "Dunn", 2],
+			[2, "Sue", 3],
+			[3, "Chi", 3],
+			[4, "Thor", 3],
+			[5, "Clive", 2],
+			[6, "Hicks", 3],
+			[7, "Devin", 2],
+			[8, "Kate", 2]
+	])
+	insert(Users, Dict(:name => "Ayumi", :num_friends => 5))
+	insert(Users, [:name => "PasMas", :num_friends => 5])
+
+  n = length(Users)
+  user_names = select(Users, keep_cols=[:name])
+
+  @test length(user_names) == n
+  @test user_names.columns == [:name]
+
+  dunn_ids = where(Users, row -> row[:name] == "Dunn") |> 
+		u -> select(u, keep_cols=[:id])
+  @test length(dunn_ids) == 1
+  @test dunn_ids.rows[1][:id] == 1
+
+  amp_name_ids = where(Users, row -> row[:name][1] ∈ ['A', 'P']) |> 
+	  u -> select(u, keep_cols=[:id, :name])
+  @test length(amp_name_ids) == 2
+  @test amp_name_ids.rows[1][:name] ∈ ["Ayumi", "PasMas"]
+  @test amp_name_ids.rows[2][:name] ∈ ["Ayumi", "PasMas"]
 end

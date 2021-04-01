@@ -1,37 +1,39 @@
 module YaDB
 
-import Base: length, show
+import Base: length #, show
 
 export Table, Row, GRow, WhereClause, HavingClause,
-  id, length, insert, update, delete, show, coltype
+  id, length, insert, update, delete, coltype,
+  select, where, limit #, show
 
 
 const Row = Dict{Symbol, Any}
 const GRow = Union{Row, Vector{Pair{Symbol, Any}}, Vector{Any}}  ## Generic Row
 const WhereClause = Function  # Base.Callable
 const HavingClause = Function # Base.Callable
-const PK = Pair{Symbol, DataType}
+const S_N = Union{Symbol, Nothing}
+# const PK = Pair{S_N, DataType}
 
 
 mutable struct Table
   columns::Vector{Symbol}
   types::Vector{DataType}
-  pkey::Symbol
+  _pkey::S_N
   rows::Vector{Row}
 
-  function Table(col_types::Vector{Pair{Symbol, DataType}}; pkey::PK=(:id, Int))
+  function Table(col_types::Vector{Pair{Symbol, DataType}}; pkey::Pair=(:id => Int))
     # vector of pairs keeps implicit order
     @assert length(col_types) ≥ 1
     #
     cols = map(((k, _)=p) -> k, col_types)
     types = map(((_, v)=p) -> v, col_types)
     cols, types = check_pk(cols, types, pkey)
-    new(cols, types, pkey[1], Vector{Row}[])
+    new(cols, types, pkey.first, Vector{Row}[])
   end
 
-  function Table(cols::Vector{Symbol}, types::Vector{DataType}; pkey::PK=(:id, Int))
+  function Table(cols::Vector{Symbol}, types::Vector{DataType}; pkey::Pair=(:id => Int))
     cols, types = check_pk(cols, types, pkey)
-    new(cols, types, pkey[1], Vector{Row}[])
+    new(cols, types, pkey.first, Vector{Row}[])
   end
 end
 
@@ -40,7 +42,7 @@ end
 ## Public API
 ## ================================
 
-id(self::Table) = self.pkey
+id(self::Table) = self._pkey
 
 length(self::Table) = length(self.rows)
 
@@ -121,17 +123,84 @@ function delete(self::Table, pred::WhereClause=row -> true)|
 end
 
 
-function show(io::IO, self::Table)
-  s = "num. records: $(length(self)):\n"
-  for rd ∈ self.rows
-    s₁ = []
-    for (k, v) ∈ rd
-      push!(s₁, "$(k): $(v)")
+function select(self::Table;
+    keep_cols=Vector{Symbol}[], add_cols=Dict{Symbol, Function}())::Table
+  ##
+  length(keep_cols) == 0 && (keep_cols = self.columns)
+
+  ## New column names and types
+  new_cols = [keep_cols..., collect(keys(add_cols))...]
+  keep_types = [coltype(self, col) for col in keep_cols]
+
+  ## Add new types if any
+  add_types = [typeof(col_type) for col_types ∈ values(add_cols)]
+
+  ## Create new table
+  new_types = [keep_types..., add_types...]
+
+  @assert(length(new_cols) == length(new_types),
+    "length(new_cols) $(length(new_cols)) == length(new_types)")
+
+  n_table = id(self) ∈ keep_cols ? Table(new_cols, new_types) :
+    Table(new_cols, new_types; pkey=(nothing => Nothing))
+
+  n_rows = Vector{Any}[]
+  for row ∈ self.rows
+    n_row = Any[row[col] for col ∈ keep_cols]
+    for (_col_name, fn) in add_cols
+      push!(n_row, fn(row))
     end
-    s = string(s, "  <", join(s₁, ", "), ">\n")
+    push!(n_rows, n_row)
   end
-  print(io, "$(s)")
+
+  insert(n_table, n_rows)
+  n_table
 end
+
+
+function where(self::Table, pred::WhereClause=row -> true)::Table
+  """
+  Only the rows that satisfy pred are returned
+  """
+  n_table = id(self) !== nothing ? Table(self.columns, self.types) :
+    Table(self.columns, self.types; pkey=(nothing => Nothing))
+
+  n_rows = Vector{Any}[]
+  for row ∈ self.rows
+    pred(row) && (push!(n_rows, [row[col] for col ∈ n_table.columns]))
+  end
+
+  insert(n_table, n_rows)
+  n_table
+end
+
+
+function limit(self::Table, num_rows::Int=5)::Table
+  """
+  Only the first num_rows are returned
+  """
+  @assert 1 ≤ num_rows ≤ length(self.rows)
+
+  n_table = id(self) !== nothing ? Table(self.columns, self.types) :
+    Table(self.columns, self.types; pkey=(nothing => Nothing))
+  ## NOTE: mark vector asd GRow type
+  rows = GRow[Any[v] for r ∈ self.rows[1:num_rows] for (_, v) ∈ r]
+  insert(n_table, rows)
+  n_table
+end
+
+
+# function show(io::IO, self::Table)
+#   s = "num. records: $(length(self)):\n"
+#   for rd ∈ self.rows
+#     s₁ = []
+#     for (k, v) ∈ rd
+#       push!(s₁, "$(k): $(v)")
+#     end
+#     s = string(s, "  <", join(s₁, ", "), ">\n")
+#   end
+#   print(io, "$(s)")
+# end
 
 
 function coltype(self::Table, colname::Symbol)::DataType
@@ -144,11 +213,12 @@ end
 ## Internals
 ## ================================
 
-function check_pk(cols, types, pkey)
-  @assert pkey[2] <: Integer "Expecting an Integer, got: $(pkey[2])"
+function check_pk(cols, types, pkey) # ::Pair
+  if pkey.first !== nothing
+    @assert pkey[2] <: Integer "Expecting an Integer, got: $(pkey[2])"
+  end
 
-  if pkey.first ∉ cols
-    # check pkey[2] <: Integer
+  if pkey.first !== nothing && pkey.first ∉ cols
     cols  = [pkey[1], cols...]
     types = [pkey[2], types...]
   end
@@ -166,7 +236,7 @@ end
 
 
 function check_value_dtype(self::Table,
-                           row::Union{Row,  Vector{Pair{Symbol, Any}}})
+                           row::Union{Row, Vector{Pair{Symbol, Any}}})
   (cols, types) = self.columns, self.types
   col_type = Dict(zip(cols, types))
 
@@ -178,6 +248,8 @@ end
 
 
 function row_already_inserted(self::Table, id_val::Any)::Bool
+  id(self) === nothing && return false  ## no pkey => ignore check
+  #
   res = filter(r -> r[id(self)] == id_val, self.rows)
   length(res) > 0    ## row already inserted id > 0
 end
