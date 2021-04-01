@@ -84,7 +84,7 @@ begin
   parms(self::Embedding) = [self.embeddings]
   ∇parms(self::Embedding) = [self.∇]
 
-  ## Extra internal
+  ## Extra
   idims(self::Embedding) = self.num_embedding
   odims(self::Embedding) = self.embedding_dim
 end
@@ -425,6 +425,7 @@ begin
   using .Layers
 
   Random.seed!(42)
+
   const EMBEDDING_DIM = 5
   embedding_layer = TextEmbedding(the_vocab, EMBEDDING_DIM)
 
