@@ -64,11 +64,11 @@ begin
 	const Row = Dict{Symbol, Any}
 	const GRow = Union{Row, Vector{Pair{Symbol, Any}}, 
 		Vector{Any}}  ## Generic Row
-	
+
 	const WhereClause = Function  # Base.Callable
 	const HavingClause = Function # Base.Callable
-	
 	const S_N = Union{Symbol, Nothing}
+	const D_SF = Dict{Symbol, Function}
 end
 
 # ╔═╡ 53accaea-92d4-11eb-0bc2-3d2ee10f9bfb
@@ -448,7 +448,7 @@ keep in the result. if none supply, the result contains all the columns, and
 
 # ╔═╡ a56253c8-92cd-11eb-31b9-51e1fd5ae026
 function select(self::Table;
-		keep_cols=Vector{Symbol}[], add_cols=Dict{Symbol, Function}())::Table
+		keep_cols=Vector{Symbol}[], add_cols=D_SF())::Table
 	##
 	length(keep_cols) == 0 && (keep_cols = self.columns)
 
@@ -576,7 +576,7 @@ begin
 	end
 
 	name_lengths = select(Users;
-		add_cols=Dict{Symbol, Function}(:name_length => name_len_fn))
+		add_cols=D_SF(:name_length => name_len_fn))
 end
 
 # ╔═╡ 13c464eb-2a59-488b-b0ab-922ecda91bbd
@@ -661,13 +661,96 @@ md"""
 """
 
 # ╔═╡ 70d84470-8cf6-11eb-23b6-c7ba506d8552
-
+md"""
+This function will take a list of columns we want to group by and a dictionary of aggragation functions plus an optional predicate parameter (having clause) that can operate on multiple rows. 
+"""
 
 # ╔═╡ c451451a-8cf7-11eb-183b-e358c9d618e0
+function group_by(self::Table; group_by_cols::Vector{Symbol}, agg::D_SF,
+	having=HavingClause=row_gp -> true)::Table
+	grouped_rows = Dict{}()
 
+	## 1 - Populate groups
+	for row ∈ self.rows
+		key = Tuple(row[col] for col ∈ group_by_cols)
+		ary = get(grouped_rows, key, Row[])
+		push!(ary, row)
+		grouped_rows[key] = ary
+	end
+
+	## 2 - populate rows
+	n_rows = Vector{Any}[]
+	agg_types = Any[]
+	for (ix, (key, rows)) ∈ enumerate(grouped_rows)
+		agg_row = Any[]
+		if having(rows)
+			agg_row = Any[agg_row..., key...]  ## Keep Any[]
+			for (_, agg_fn) ∈ agg
+				r = agg_fn(rows)
+				ix == 1 && push!(agg_types, typeof(r))
+				push!(agg_row, r)
+			end
+		end
+		push!(n_rows, agg_row)
+	end
+
+	## 3 - res. table consists of group_by columns and aggregates
+	new_cols = [group_by_cols..., collect(keys(agg))...] |> unique
+	gp_by_types = [coltype(self, col) for col ∈ group_by_cols]
+	new_types = [gp_by_types..., agg_types...]
+
+	n_table = id(self) ∈ new_cols ? Table(new_cols, new_types) :
+		Table(new_cols, new_types; pkey=nothing => Nothing)
+
+	insert(n_table, n_rows)
+	n_table
+end
 
 # ╔═╡ 30bdc788-8d01-11eb-2f8f-9fd79593ddb8
+begin
+	"""
+	-- find number of users and smallest user_id for each possible name length:
+	SELECT LENGTH(name) as name_length, MIN(user_id) AS min_user_id,
+		COUNT(*) AS num_users
+	FROM users
+	GROUP BY LENGTH(name);
+	"""
+	min_user_id = rows -> minimum(row[:id] for row ∈ rows)
+	num_rows = rows -> length(rows)
 
+	stats_by_len = select(Users, add_cols=D_SF(:name_length => name_len_fn)) |>
+		u -> group_by(u,
+				group_by_cols=[:name_length],
+				agg=D_SF(:min_user_id => min_user_id, :num_users => num_rows))
+	#
+end
+
+# ╔═╡ c5bac3ae-c63b-44ba-9b10-75144410f456
+Users
+
+# ╔═╡ e696c2dd-b250-418c-9161-9fd87bfc378e
+begin
+	"""
+	-- average number of friends for users whose names start with specific letters
+	-- but see only the results for letters whose corresponding average is greater
+	-- than 1
+	SELECT SUBSTR(name, 1, 1) AS first_letter,
+		AVG(num_friends) AS avg_num_friends
+	FROM users
+	GROUP BY SUBSTR(name, 1, 1)
+	HAVING AVG(num_friends) > 1;
+	"""
+	first_letter_fn = row -> row[:name] !== nothing ? string(row[:name][1]) : ""
+	avg_num_friends_fn =
+		rows -> sum([row[:num_friends] for row in rows]) / length(rows)
+	enough_friends_fn = rows -> avg_num_friends_fn(rows) > 1.
+
+	avg_friends_by_letter =
+		select(Users, add_cols=D_SF(:first_letter => first_letter_fn)) |>
+		u -> group_by(u, group_by_cols=[:first_letter],
+				agg=D_SF(:avg_num_friends => avg_num_friends_fn),
+				having=enough_friends_fn)
+end
 
 # ╔═╡ 84946000-8d02-11eb-3160-571efee8fb0b
 html"""
@@ -782,9 +865,11 @@ md"""
 # ╠═9b24fead-ccfd-43ed-afa8-ed5ef6c4cf8f
 # ╟─6e7e7896-8cf8-11eb-062e-99492ec8cff8
 # ╟─70f707c0-8cf6-11eb-11c2-73d7b28f7a0c
-# ╠═70d84470-8cf6-11eb-23b6-c7ba506d8552
+# ╟─70d84470-8cf6-11eb-23b6-c7ba506d8552
 # ╠═c451451a-8cf7-11eb-183b-e358c9d618e0
 # ╠═30bdc788-8d01-11eb-2f8f-9fd79593ddb8
+# ╠═c5bac3ae-c63b-44ba-9b10-75144410f456
+# ╠═e696c2dd-b250-418c-9161-9fd87bfc378e
 # ╟─84946000-8d02-11eb-3160-571efee8fb0b
 # ╟─d05f1c40-8d17-11eb-2724-4d989c4c6b92
 # ╠═848fd812-8d02-11eb-01d6-75965b08bcc5
