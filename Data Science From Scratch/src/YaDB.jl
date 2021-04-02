@@ -2,9 +2,9 @@ module YaDB
 
 import Base: length #, show
 
-export Table, Row, GRow, WhereClause, HavingClause,
+export Table, Row, GRow, WhereClause, HavingClause, D_SF,
   id, length, insert, update, delete, coltype,
-  select, where, limit #, show
+  select, where, limit, group_by #, show
 
 
 const Row = Dict{Symbol, Any}
@@ -13,6 +13,7 @@ const WhereClause = Function  # Base.Callable
 const HavingClause = Function # Base.Callable
 const S_N = Union{Symbol, Nothing}
 # const PK = Pair{S_N, DataType}
+const D_SF = Dict{Symbol, Function}
 
 
 mutable struct Table
@@ -152,9 +153,8 @@ function select(self::Table;
   @assert(length(new_cols) == length(new_types),
     "length(new_cols) $(length(new_cols)) == length(new_types)")
 
-  n_table = id(self) ∈ keep_cols ? Table(new_cols, new_types) :
-    Table(new_cols, new_types; pkey=nothing => Nothing)
-
+  n_table = create_res_table(self, new_cols, new_types;
+                             pred=s -> id(s) ∈ keep_cols)
   insert(n_table, n_rows)
   n_table
 end
@@ -164,14 +164,13 @@ function where(self::Table, pred::WhereClause=row -> true)::Table
   """
   Only the rows that satisfy pred are returned
   """
-  n_table = id(self) !== nothing ? Table(self.columns, self.types) :
-    Table(self.columns, self.types; pkey=(nothing => Nothing))
+  n_table = create_res_table(self, self.columns, self.types;
+                             pred=s -> id(s) !== nothing)
 
   n_rows = Vector{Any}[]
   for row ∈ self.rows
     pred(row) && (push!(n_rows, [row[col] for col ∈ n_table.columns]))
   end
-
   insert(n_table, n_rows)
   n_table
 end
@@ -183,11 +182,51 @@ function limit(self::Table, num_rows::Int=5)::Table
   """
   @assert 1 ≤ num_rows ≤ length(self.rows)
 
-  n_table = id(self) !== nothing ? Table(self.columns, self.types) :
-    Table(self.columns, self.types; pkey=(nothing => Nothing))
+  n_table = create_res_table(self, self.columns, self.types;
+                             pred=s -> id(s) !== nothing)
   ## NOTE: mark vector asd GRow type
   rows = GRow[Any[v] for r ∈ self.rows[1:num_rows] for (_, v) ∈ r]
   insert(n_table, rows)
+  n_table
+end
+
+
+function group_by(self::Table; group_by_cols::Vector{Symbol}, agg::D_SF,
+  having=HavingClause=row_gp -> true)::Table
+  grouped_rows = Dict{}()
+
+  ## 1 - Populate groups
+  for row ∈ self.rows
+    key = Tuple(row[col] for col ∈ group_by_cols)
+    ary = get(grouped_rows, key, Row[])
+    push!(ary, row)
+    grouped_rows[key] = ary
+  end
+
+  ## 2 - populate rows
+  n_rows = Vector{Any}[]
+  agg_types = Any[]
+  for (ix, (key, rows)) ∈ enumerate(grouped_rows)
+    agg_row = Any[]
+    if having(rows)
+      agg_row = Any[agg_row..., key...]  ## Keep Any[]
+      for (_, agg_fn) ∈ agg
+        r = agg_fn(rows)
+        ix == 1 && push!(agg_types, typeof(r))
+        push!(agg_row, r)
+      end
+    end
+    push!(n_rows, agg_row)
+  end
+
+  ## 3 - res. table consists of group_by columns and aggregates
+  new_cols = [group_by_cols..., collect(keys(agg))...] |> unique
+  gp_by_types = [coltype(self, col) for col ∈ group_by_cols]
+  new_types = [gp_by_types..., agg_types...]
+
+  n_table = create_res_table(self, new_cols, new_types;
+                             pred=s -> id(s) ∈ new_cols )
+  insert(n_table, n_rows)
   n_table
 end
 
@@ -214,6 +253,12 @@ end
 ## ================================
 ## Internals
 ## ================================
+
+function create_res_table(self::Table, new_cols, new_types;
+                          pred::Function=_a -> true)
+  pred(self) ? Table(new_cols, new_types) :
+    Table(new_cols, new_types; pkey=nothing => Nothing)
+end
 
 function check_pk(cols, types, pkey) # ::Pair
   if pkey.first !== nothing

@@ -3,6 +3,27 @@ push!(LOAD_PATH, "./src")
 using Test
 using YaDB
 
+
+function feed_db()
+  Users = Table([:name => String, :num_friends => Int])
+
+  insert(Users, [[0, "Hero", 0],
+      [1, "Dunn", 2],
+      [2, "Sue", 3],
+      [3, "Chi", 3],
+      [4, "Thor", 3],
+      [5, "Clive", 2],
+      [6, "Hicks", 3],
+      [7, "Devin", 2],
+      [8, "Kate", 2]
+  ])
+  insert(Users, Dict(:name => "Ayumi", :num_friends => 5))
+  insert(Users, [:name => "PasMas", :num_friends => 5])
+
+  Users
+end
+
+
 @testset "Create Table/1" begin
   Users = Table([:name => String, :num_friends => Int]; pkey=(:user_id => Int))
 
@@ -93,20 +114,7 @@ end
 end
 
 @testset "Select / where / limit" begin
-  Users = Table([:name => String, :num_friends => Int])
-
-  insert(Users, [[0, "Hero", 0],
-      [1, "Dunn", 2],
-      [2, "Sue", 3],
-      [3, "Chi", 3],
-      [4, "Thor", 3],
-      [5, "Clive", 2],
-      [6, "Hicks", 3],
-      [7, "Devin", 2],
-      [8, "Kate", 2]
-  ])
-  insert(Users, Dict(:name => "Ayumi", :num_friends => 5))
-  insert(Users, [:name => "PasMas", :num_friends => 5])
+  Users = feed_db()
 
   n = length(Users)
   user_names = select(Users, keep_cols=[:name])
@@ -126,10 +134,61 @@ end
   @test amp_name_ids.rows[2][:name] ∈ ["Ayumi", "PasMas"]
 
   ext_user = name_lengths₂ = select(Users;
-		add_cols=Dict{Symbol, Function}(
-			:name_ini => row -> string(row[:name][1]),
-			:len_name => row -> length(row)
-		)
-	)
+    add_cols=Dict{Symbol, Function}(
+      :name_ini => row -> string(row[:name][1]),
+      :len_name => row -> length(row)
+    )
+  )
   @test sort(ext_user.columns) == Symbol[:id, :len_name, :name, :name_ini, :num_friends]
+end
+
+@testset "Group by/1" begin
+  Users = feed_db()
+
+  """
+  -- find number of users and smallest user_id for each possible name length:
+  SELECT LENGTH(name) as name_length, MIN(user_id) AS min_user_id,
+    COUNT(*) AS num_users
+  FROM users
+  GROUP BY LENGTH(name);
+    """
+  name_len_fn = row -> length(row[:name])
+  min_user_id = rows -> minimum(row[:id] for row ∈ rows)
+  num_rows = rows -> length(rows)
+
+  stats_by_len = select(Users, add_cols=D_SF(:name_length => name_len_fn)) |>
+    u -> group_by(u,
+        group_by_cols=[:name_length],
+        agg=D_SF(:min_user_id => min_user_id, :num_users => num_rows))
+
+  @test sort(stats_by_len.columns) == [:min_user_id, :name_length, :num_users]
+  @test length(stats_by_len.rows) == 4
+end
+
+@testset "Group by/2" begin
+  Users = feed_db()
+
+  """
+  -- average number of friends for users whose names start with specific letters
+  -- but see only the results for letters whose corresponding average is greater
+  -- than 1
+  SELECT SUBSTR(name, 1, 1) AS first_letter,
+    AVG(num_friends) AS avg_num_friends
+  FROM users
+  GROUP BY SUBSTR(name, 1, 1)
+  HAVING AVG(num_friends) > 1;
+  """
+  first_letter_fn = row -> row[:name] !== nothing ? string(row[:name][1]) : ""
+  avg_num_friends_fn =
+    rows -> sum([row[:num_friends] for row in rows]) / length(rows)
+  enough_friends_fn = rows -> avg_num_friends_fn(rows) > 1.
+
+  avg_friends_by_letter =
+    select(Users, add_cols=D_SF(:first_letter => first_letter_fn)) |>
+    u -> group_by(u, group_by_cols=[:first_letter],
+        agg=D_SF(:avg_num_friends => avg_num_friends_fn),
+                  having=enough_friends_fn)
+
+  @test sort(avg_friends_by_letter.columns) == [:avg_num_friends, :first_letter]
+  @test length(avg_friends_by_letter.rows) == 8
 end
