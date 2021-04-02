@@ -149,7 +149,7 @@ begin
 	##
 	## API for Table (cont'ed)
 	##
-	
+
 	function insert(self::Table, row::Vector{Pair{Symbol, Any}})
 		res = filter(p -> p.first == id(self), row)
 		has_pkey = length(res) > 0
@@ -166,16 +166,16 @@ begin
 		end
 		push!(self.rows, Dict(row...))
 	end
-	
+
 	function insert(self::Table, row::Vector{Any})
 		length(row) ≠ length(self.types) && 
-			throw(ArgumentError("Mismatch with expected number of columns: $(length(row)) / $(length(self.types))"))
+			throw(ArgumentError("Mismatch with expected number of columns"))
 		check_value_dtype(self, row)
 		## row[1] is the value assoc. with pkey
 		row_already_inserted(self, row[1]) && (return nothing)
 		push!(self.rows, Dict(zip(self.columns, row)))
 	end
-	
+
 	function insert(self::Table, row::Row)
 		length(row) ≠ length(self.types) && haskey(row, id(self)) &&
 				throw(ArgumentError("Mismatch with expected number of columns"))
@@ -188,16 +188,16 @@ begin
 			end
 			push!(self.rows, row)
 	end
-	
+
 	insert(self::Table, rows::Vector{T}) where T <: GRow = 
 		insert.(Ref(self), rows)
-		
+
 	function coltype(self::Table, colname::Symbol)::DataType
 		ix = findfirst(col -> col == colname, self.columns)
 		ix === nothing && throw(ArgumentError("column $(colname) inexistent"))
 		self.types[ix]
 	end
-	
+
 	# function Base.show(io::IO, self::Table)
 	# 	s = "num. records: $(length(self)):\n"
 	# 	for rd ∈ self.rows
@@ -210,11 +210,11 @@ begin
 	# 	print(io, "$(s)")
 	# end
 
-	
+
 	##
 	## Internal checkers
 	##
-	
+
 	function check_value_dtype(self::Table, values::Vector{Any})
 		dtypes = self.types
 		for (v, dt) ∈ zip(values, dtypes)
@@ -222,7 +222,7 @@ begin
 				throw("Expected type for $(v): $(dt), got $(typeof(v))")
 		end
 	end
-	
+
 	function check_value_dtype(self::Table, 
 			row::Union{Row,  Vector{Pair{Symbol, Any}}})
 		(cols, types) = self.columns, self.types
@@ -233,14 +233,14 @@ begin
 				throw("Expected type: $(col_type[k]), got $(typeof(v))")
 		end
 	end
-	
+
 	function row_already_inserted(self::Table, id_val::Any)::Bool
 		id(self) === nothing && return false  ## no pkey => ignore check
 		#
 		res = filter(r -> r[id(self)] == id_val, self.rows)
 		length(res) > 0    ## row already inserted id > 0
 	end
-	
+
 end
 
 # ╔═╡ d146a8ac-92cc-11eb-29b1-bb065a468477
@@ -413,7 +413,6 @@ end
 # ╔═╡ 394093fa-8cea-11eb-0071-eff3045a012b
 begin
 	n = length(Users)
-	
 	delete(Users, row -> row[:id] == 1)
 	@assert length(Users) == n - 1
 end
@@ -457,26 +456,28 @@ function select(self::Table;
 	new_cols = [keep_cols..., collect(keys(add_cols))...]
 	keep_types = [coltype(self, col) for col in keep_cols]
 
-	## Add new types if any
-	add_types = [typeof(col_type) for col_types ∈ values(add_cols)]
-
-	## Create new table
-	new_types = [keep_types..., add_types...]
+	## collect the rows for result table
+	n_rows = Vector{Any}[]
+	add_types = Any[]
+	for (ix, row) ∈ enumerate(self.rows)
+		n_row = Any[row[col] for col ∈ keep_cols]
+		## as we process the first row, we can get the return type...
+		## ...of each function defined in add_cols
+		for (_col_name, fn) ∈ add_cols
+			r = fn(row)
+			ix == 1 && push!(add_types, typeof(r))
+			push!(n_row, r)
+		end
+		push!(n_rows, n_row)
+	end
 	
+	## Create result table
+	new_types = [keep_types..., add_types...]
 	@assert(length(new_cols) == length(new_types),
 		"length(new_cols) $(length(new_cols)) == length(new_types)")
 
 	n_table = id(self) ∈ keep_cols ? Table(new_cols, new_types) :
 		Table(new_cols, new_types; pkey=nothing => Nothing)
-	
-	n_rows = Vector{Any}[]
-	for row ∈ self.rows
-		n_row = Any[row[col] for col ∈ keep_cols]
-		for (_col_name, fn) in add_cols
-			push!(n_row, fn(row))
-		end
-		push!(n_rows, n_row)
-	end
 
 	insert(n_table, n_rows)
 	n_table
@@ -485,7 +486,6 @@ end
 # ╔═╡ e6348294-92cb-11eb-3bfd-09d80933b33a
 begin
 	delete(Users)
-	
 	insert(Users, [[0, "Hero", 0],
 			[1, "Dunn", 2],
 			[2, "Sue", 3],
@@ -559,6 +559,7 @@ end
 begin
 	dunn_ids = where(Users, row -> row[:name] == "Dunn") |> 
 		u -> select(u, keep_cols=[:id])
+	@assert length(dunn_ids) == 1
 end
 
 # ╔═╡ 955fe2a1-22b3-44db-b23d-d595d58bac3d
@@ -566,6 +567,85 @@ begin
 	amp_ids = where(Users, row -> row[:name][1] ∈ ['A', 'P']) |> 
 		u -> select(u, keep_cols=[:id, :name])
 end
+
+# ╔═╡ 964507de-c48d-4f7c-ab05-9b7739ecd5f3
+begin
+	ncol = length(Users.columns)
+	function name_len_fn(row)::Int 
+		length(row[:name])
+	end
+
+	name_lengths = select(Users;
+		add_cols=Dict{Symbol, Function}(:name_length => name_len_fn))
+end
+
+# ╔═╡ 13c464eb-2a59-488b-b0ab-922ecda91bbd
+begin
+	name_lengths₂ = select(Users;
+		add_cols=Dict{Symbol, Function}(
+			:name_ini => row -> string(row[:name][1]),
+			:len_name => row -> length(row)
+		)
+	)
+end
+
+# ╔═╡ 95ae9db4-f9ba-4fde-a021-0fc952550627
+md"""
+##### Aside on introspection
+"""
+
+# ╔═╡ 17b2e439-4f70-4db6-a01f-638ae2f88b6f
+begin
+	## with explicit return type
+	##
+	str_fn = """
+function name_len_fn(row, bar, vargs...)::UInt16
+	length(row[:name])
+end
+"""
+	expr = Meta.parse(str_fn)
+end
+
+# ╔═╡ a57b3859-d026-4325-a5b2-7d4e7b4db408
+begin
+	## w/o explicit return type
+	##
+	str_fn₂ = """
+function name_len_fn(row1, bar1; foo1=10)
+	length(row[:name])
+end
+"""
+	expr₂ = Meta.parse(str_fn₂)
+end
+
+# ╔═╡ 8e25eb57-b6f0-4c61-b657-4d815f1eb31f
+with_terminal() do
+	dump(expr)
+end
+
+# ╔═╡ 8ea2ba50-ad35-40b2-ab2d-1c34c9d90bd9
+expr.args[1], expr₂.args[1]
+
+# ╔═╡ b34d8aaa-7696-452f-9fd7-1002aa771547
+## get return type
+expr.args[1].args, length(expr.args[1].args), expr.args[1].args[end]
+
+# ╔═╡ 4ff7e8e9-354e-4c99-b6f8-aedbf7ce1f3f
+expr₂.args[1].args, length(expr₂.args[1].args)
+
+# ╔═╡ 3a438295-3d30-41cc-95bd-db3b93e62d12
+function get_fn_retype(str_fn::String)::DataType
+	"""
+	Return output type of a user function if such type is available...
+	...which is the case iff expr.args[1].args has length of 2
+	Otherwise fallback to Any
+	"""
+	expr = Meta.parse(str_fn)
+	length(expr.args[1].args) == 2 ? eval(expr.args[1].args[end]) : Any
+end
+
+# ╔═╡ 9b24fead-ccfd-43ed-afa8-ed5ef6c4cf8f
+get_fn_retype(str_fn), get_fn_retype(str_fn₂)
 
 # ╔═╡ 6e7e7896-8cf8-11eb-062e-99492ec8cff8
 html"""
@@ -689,6 +769,17 @@ md"""
 # ╠═e99eab12-08d9-4955-ba10-2eb46f74bd85
 # ╠═b08b9470-5d53-4420-bef6-ef1c0bb4414c
 # ╠═955fe2a1-22b3-44db-b23d-d595d58bac3d
+# ╠═964507de-c48d-4f7c-ab05-9b7739ecd5f3
+# ╠═13c464eb-2a59-488b-b0ab-922ecda91bbd
+# ╟─95ae9db4-f9ba-4fde-a021-0fc952550627
+# ╠═17b2e439-4f70-4db6-a01f-638ae2f88b6f
+# ╠═a57b3859-d026-4325-a5b2-7d4e7b4db408
+# ╠═8e25eb57-b6f0-4c61-b657-4d815f1eb31f
+# ╠═8ea2ba50-ad35-40b2-ab2d-1c34c9d90bd9
+# ╠═b34d8aaa-7696-452f-9fd7-1002aa771547
+# ╠═4ff7e8e9-354e-4c99-b6f8-aedbf7ce1f3f
+# ╠═3a438295-3d30-41cc-95bd-db3b93e62d12
+# ╠═9b24fead-ccfd-43ed-afa8-ed5ef6c4cf8f
 # ╟─6e7e7896-8cf8-11eb-062e-99492ec8cff8
 # ╟─70f707c0-8cf6-11eb-11c2-73d7b28f7a0c
 # ╠═70d84470-8cf6-11eb-23b6-c7ba506d8552
