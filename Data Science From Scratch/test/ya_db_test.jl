@@ -192,3 +192,27 @@ end
   @test sort(avg_friends_by_letter.columns) == [:avg_num_friends, :first_letter]
   @test length(avg_friends_by_letter.rows) == 8
 end
+
+
+@testset "Order by" begin
+  Users = feed_db()
+  first_letter_fn = row -> row[:name] !== nothing ? string(row[:name][1]) : ""
+  avg_num_friends_fn =
+    rows -> sum([row[:num_friends] for row in rows]) / length(rows)
+  enough_friends_fn = rows -> avg_num_friends_fn(rows) > 1.
+
+  avg_friends_by_letter =
+    select(Users, add_cols=D_SF(:first_letter => first_letter_fn)) |>
+    u -> group_by(u, group_by_cols=[:first_letter],
+        agg=D_SF(:avg_num_friends => avg_num_friends_fn),
+                  having=enough_friends_fn)
+  #
+  friendliest_letters₂ =  avg_friends_by_letter |>
+    u -> order_by(u, row -> -row[:avg_num_friends]) |>
+    u -> limit(u, 3)
+  #
+
+  @test sort(friendliest_letters₂.columns) == [:avg_num_friends, :first_letter]
+  @test friendliest_letters₂.rows[1][:first_letter] == "A"
+  @test length(friendliest_letters₂.rows) == 3
+end

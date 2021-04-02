@@ -169,7 +169,7 @@ begin
 
 	function insert(self::Table, row::Vector{Any})
 		length(row) ≠ length(self.types) && 
-			throw(ArgumentError("Mismatch with expected number of columns"))
+			throw(ArgumentError("Mismatch with expected number of columns: $(length(row)) => $(row) // $(length(self.types)) => $(self.types)"))
 		check_value_dtype(self, row)
 		## row[1] is the value assoc. with pkey
 		row_already_inserted(self, row[1]) && (return nothing)
@@ -514,6 +514,11 @@ begin
 	user_ids = select(Users, keep_cols=[:name])
 end
 
+# ╔═╡ cfed19ac-94e2-4c84-85b4-6134765cce0b
+md"""
+##### Limit
+"""
+
 # ╔═╡ 386a0591-92ce-4267-b1e6-73e293eb727c
 ##
 ## API (cont'ed)
@@ -522,18 +527,31 @@ function limit(self::Table, num_rows::Int=5)::Table
 	"""
 	Only the first num_rows are returned
 	"""
-	@assert 1 ≤ num_rows ≤ length(self.rows)
+	@assert 1 ≤ num_rows ≤ length(self.rows) "1 ≤ $(num_rows) ≤ $(length(self.rows))"
 
 	n_table = id(self) !== nothing ? Table(self.columns, self.types) :
 		Table(self.columns, self.types; pkey=nothing => Nothing)
-	## NOTE: mark vector asd GRow type
-	rows = GRow[Any[v] for r ∈ self.rows[1:num_rows] for (_, v) ∈ r]
+
+	## NOTE: mark vector as GRow type
+	rows = Vector{Any}[]
+	for row ∈ self.rows[1:num_rows]
+		push!(rows, Any[v for (_, v) ∈ row])
+	end
 	insert(n_table, rows)
 	n_table
 end
 
 # ╔═╡ 53c15148-1b04-4d85-aac6-874a6f750a00
 user_ids₁ = select(Users, keep_cols=[:name]) |> limit
+
+# ╔═╡ 1ac32ed0-6e47-4606-8b70-524159660d93
+user_ids₂ = select(Users, keep_cols=[:name]) |>
+  u -> limit(u, 2)
+
+# ╔═╡ be425e03-c7b4-401d-9d29-fa2b07618ee5
+md"""
+###### Where
+"""
 
 # ╔═╡ e99eab12-08d9-4955-ba10-2eb46f74bd85
 ##
@@ -666,6 +684,10 @@ This function will take a list of columns we want to group by and a dictionary o
 """
 
 # ╔═╡ c451451a-8cf7-11eb-183b-e358c9d618e0
+##
+## API (cont'ed)
+##
+
 function group_by(self::Table; group_by_cols::Vector{Symbol}, agg::D_SF,
 	having=HavingClause=row_gp -> true)::Table
 	grouped_rows = Dict{}()
@@ -766,13 +788,25 @@ md"""
 """
 
 # ╔═╡ 848fd812-8d02-11eb-01d6-75965b08bcc5
-
+##
+## API (cont'ed)
+##
+function order_by(self::Table, order::Function)::Table
+	n_table = select(self)
+	sort!(n_table.rows, by=order)
+	n_table
+end
 
 # ╔═╡ 6cde1330-e1bb-419e-87f3-cf73c0e11e3d
-
+friendliest_letters =  avg_friends_by_letter |>
+	u -> order_by(u, row -> -row[:avg_num_friends])
+# NOTE: -row(...) to reverse the sort
 
 # ╔═╡ 7d35f85e-8e07-11eb-228c-81d28a444b52
-
+friendliest_letters₂ =  avg_friends_by_letter |>
+	u -> order_by(u, row -> -row[:avg_num_friends]) |>
+	u -> limit(u, 3)
+# NOTE: -row(...) to reverse the sort
 
 # ╔═╡ 40d46802-8e0f-11eb-2e47-53096e24dbd8
 html"""
@@ -847,8 +881,11 @@ md"""
 # ╠═e6348294-92cb-11eb-3bfd-09d80933b33a
 # ╠═a5441766-92cd-11eb-1c8e-edcf3db0022e
 # ╠═3bfad78b-2ebd-4067-b306-b687f5a92a10
+# ╟─cfed19ac-94e2-4c84-85b4-6134765cce0b
 # ╠═386a0591-92ce-4267-b1e6-73e293eb727c
 # ╠═53c15148-1b04-4d85-aac6-874a6f750a00
+# ╠═1ac32ed0-6e47-4606-8b70-524159660d93
+# ╟─be425e03-c7b4-401d-9d29-fa2b07618ee5
 # ╠═e99eab12-08d9-4955-ba10-2eb46f74bd85
 # ╠═b08b9470-5d53-4420-bef6-ef1c0bb4414c
 # ╠═955fe2a1-22b3-44db-b23d-d595d58bac3d

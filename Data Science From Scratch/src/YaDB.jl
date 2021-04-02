@@ -4,7 +4,7 @@ import Base: length #, show
 
 export Table, Row, GRow, WhereClause, HavingClause, D_SF,
   id, length, insert, update, delete, coltype,
-  select, where, limit, group_by #, show
+  select, where, limit, group_by, order_by #, show
 
 
 const Row = Dict{Symbol, Any}
@@ -180,12 +180,17 @@ function limit(self::Table, num_rows::Int=5)::Table
   """
   Only the first num_rows are returned
   """
-  @assert 1 ≤ num_rows ≤ length(self.rows)
+  @assert 1 ≤ num_rows ≤ length(self.rows) "1 ≤ $(num_rows) ≤ $(length(self.rows))"
 
-  n_table = create_res_table(self, self.columns, self.types;
-                             pred=s -> id(s) !== nothing)
-  ## NOTE: mark vector asd GRow type
-  rows = GRow[Any[v] for r ∈ self.rows[1:num_rows] for (_, v) ∈ r]
+  n_table = id(self) !== nothing ? Table(self.columns, self.types) :
+    Table(self.columns, self.types; pkey=nothing => Nothing)
+
+  ## NOTE: mark vector as GRow type
+  # rows = GRow[Any[v] for r ∈ self.rows[1:num_rows] for (_, v) ∈ r]
+  rows = Vector{Any}[]
+  for row ∈ self.rows[1:num_rows]
+    push!(rows, Any[v for (_, v) ∈ row])
+  end
   insert(n_table, rows)
   n_table
 end
@@ -227,6 +232,13 @@ function group_by(self::Table; group_by_cols::Vector{Symbol}, agg::D_SF,
   n_table = create_res_table(self, new_cols, new_types;
                              pred=s -> id(s) ∈ new_cols )
   insert(n_table, n_rows)
+  n_table
+end
+
+
+function order_by(self::Table, order::Function)::Table
+  n_table = select(self)
+  sort!(n_table.rows, by=order)
   n_table
 end
 
