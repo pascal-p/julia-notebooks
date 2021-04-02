@@ -12,7 +12,7 @@ end
 
 # ╔═╡ 45d72214-919c-11eb-2e69-23c0786baacb
 md"""
-### Gaussian Integer
+### Subtyping
 
 Src: [Julia 1.0 Cookbook -  Bogumił Kamiński , Przemysław Szufel - 2018](https://www.packtpub.com/product/julia-1-0-programming-cookbook/9781788998369)
 
@@ -74,6 +74,12 @@ md"""
 Expecting an **error** while invoking `sum_points_v₂([p₁, p₂])`, but why?
 """
 
+# ╔═╡ d8e2b4db-ec24-411a-9a62-d7f2a6b4d078
+## with Reactive cell - the test will pass and then fail because of added 
+## definition to fix the problem later
+
+# @test_throws MethodError sum_points_v₂([p₁, p₂])
+
 # ╔═╡ c2745a46-6258-4b92-b7bb-2a770c9273ec
 md"""
 our `Vector{Point{Int64, S}` (see cell below) does not match the function signature expectation, which is `Vector{Point}`.
@@ -99,9 +105,6 @@ end
 
 # ╔═╡ bc1b65b1-5063-4567-8928-f9847f0382b4
 sum_points_v₂(ary)
-
-# ╔═╡ d8e2b4db-ec24-411a-9a62-d7f2a6b4d078
-@test_throws MethodError sum_points_v₂([p₁, p₂])
 
 # ╔═╡ e9a32b85-e697-4a78-8cbb-0d242e86d8fe
 sum_points_v₂(Point[p₁, p₂])
