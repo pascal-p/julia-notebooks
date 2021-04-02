@@ -93,20 +93,20 @@ end
 end
 
 @testset "Select / where / limit" begin
-	Users = Table([:name => String, :num_friends => Int])
-  
-	insert(Users, [[0, "Hero", 0],
-			[1, "Dunn", 2],
-			[2, "Sue", 3],
-			[3, "Chi", 3],
-			[4, "Thor", 3],
-			[5, "Clive", 2],
-			[6, "Hicks", 3],
-			[7, "Devin", 2],
-			[8, "Kate", 2]
-	])
-	insert(Users, Dict(:name => "Ayumi", :num_friends => 5))
-	insert(Users, [:name => "PasMas", :num_friends => 5])
+  Users = Table([:name => String, :num_friends => Int])
+
+  insert(Users, [[0, "Hero", 0],
+      [1, "Dunn", 2],
+      [2, "Sue", 3],
+      [3, "Chi", 3],
+      [4, "Thor", 3],
+      [5, "Clive", 2],
+      [6, "Hicks", 3],
+      [7, "Devin", 2],
+      [8, "Kate", 2]
+  ])
+  insert(Users, Dict(:name => "Ayumi", :num_friends => 5))
+  insert(Users, [:name => "PasMas", :num_friends => 5])
 
   n = length(Users)
   user_names = select(Users, keep_cols=[:name])
@@ -114,14 +114,22 @@ end
   @test length(user_names) == n
   @test user_names.columns == [:name]
 
-  dunn_ids = where(Users, row -> row[:name] == "Dunn") |> 
-		u -> select(u, keep_cols=[:id])
+  dunn_ids = where(Users, row -> row[:name] == "Dunn") |>
+    u -> select(u, keep_cols=[:id])
   @test length(dunn_ids) == 1
   @test dunn_ids.rows[1][:id] == 1
 
-  amp_name_ids = where(Users, row -> row[:name][1] ∈ ['A', 'P']) |> 
-	  u -> select(u, keep_cols=[:id, :name])
+  amp_name_ids = where(Users, row -> row[:name][1] ∈ ['A', 'P']) |>
+    u -> select(u, keep_cols=[:id, :name])
   @test length(amp_name_ids) == 2
   @test amp_name_ids.rows[1][:name] ∈ ["Ayumi", "PasMas"]
   @test amp_name_ids.rows[2][:name] ∈ ["Ayumi", "PasMas"]
+
+  ext_user = name_lengths₂ = select(Users;
+		add_cols=Dict{Symbol, Function}(
+			:name_ini => row -> string(row[:name][1]),
+			:len_name => row -> length(row)
+		)
+	)
+  @test sort(ext_user.columns) == Symbol[:id, :len_name, :name, :name_ini, :num_friends]
 end

@@ -132,26 +132,28 @@ function select(self::Table;
   new_cols = [keep_cols..., collect(keys(add_cols))...]
   keep_types = [coltype(self, col) for col in keep_cols]
 
-  ## Add new types if any
-  add_types = [typeof(col_type) for col_types ∈ values(add_cols)]
+  ## collect the rows for result table
+  n_rows = Vector{Any}[]
+  add_types = Any[]
+  for (ix, row) ∈ enumerate(self.rows)
+    n_row = Any[row[col] for col ∈ keep_cols]
+    ## as we process the first row, we can get the return type...
+    ## ...of each function defined in add_cols
+    for (_col_name, fn) ∈ add_cols
+      r = fn(row)
+      ix == 1 && push!(add_types, typeof(r))
+      push!(n_row, r)
+    end
+    push!(n_rows, n_row)
+  end
 
-  ## Create new table
+  ## Create result table
   new_types = [keep_types..., add_types...]
-
   @assert(length(new_cols) == length(new_types),
     "length(new_cols) $(length(new_cols)) == length(new_types)")
 
   n_table = id(self) ∈ keep_cols ? Table(new_cols, new_types) :
-    Table(new_cols, new_types; pkey=(nothing => Nothing))
-
-  n_rows = Vector{Any}[]
-  for row ∈ self.rows
-    n_row = Any[row[col] for col ∈ keep_cols]
-    for (_col_name, fn) in add_cols
-      push!(n_row, fn(row))
-    end
-    push!(n_rows, n_row)
-  end
+    Table(new_cols, new_types; pkey=nothing => Nothing)
 
   insert(n_table, n_rows)
   n_table

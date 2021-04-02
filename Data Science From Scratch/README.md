@@ -11,8 +11,9 @@
     [Deep Learning/p2](https://github.com/pascal-p/julia-notebooks/blob/main/Data%20Science%20From%20Scratch/19-DL-p2.jl)<br />
   - [Recommender Systems](https://github.com/pascal-p/julia-notebooks/blob/main/Data%20Science%20From%20Scratch/23-RecomSys.jl)
   - [NLP topic analysis](https://github.com/pascal-p/julia-notebooks/blob/main/Data%20Science%20From%20Scratch/21-NLP.jl)<br />
-    `WIP` [NLP word vectors](https://github.com/pascal-p/julia-notebooks/blob/main/Data%20Science%20From%20Scratch/21-NLP-p2.jl)<br />
-    
+    [NLP word vectors](https://github.com/pascal-p/julia-notebooks/blob/main/Data%20Science%20From%20Scratch/21-NLP-p2.jl)<br />
+    `WIP`[NLP RNN]() <!-- (https://github.com/pascal-p/julia-notebooks/blob/main/Data%20Science%20From%20Scratch/21-NLP-p3.jl)<br /> -->
+  - [DB](https://github.com/pascal-p/julia-notebooks/blob/main/Data%20Science%20From%20Scratch/24_DB_SQL.jl)
     
 <hr />
 
