@@ -33,10 +33,9 @@ end
 
 # ╔═╡ 45d72214-919c-11eb-2e69-23c0786baacb
 md"""
-### Multiple dispatch to handle branching behavio
+### Multiple dispatch to handle branching behavior
 
 Src: [Julia 1.0 Cookbook -  Bogumił Kamiński , Przemysław Szufel - 2018](https://www.packtpub.com/product/julia-1-0-programming-cookbook/9781788998369)
-
 """
 
 # ╔═╡ 25b36455-0e5a-4318-9bd3-0440ac0b0080
