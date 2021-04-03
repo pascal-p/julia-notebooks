@@ -61,25 +61,29 @@ We will represent our table in memory by a dictionary (not really space efficien
 
 # ╔═╡ 6d759180-928b-11eb-1cc1-0593c7f3b0c2
 begin
-	const Row = Dict{Symbol, Any}
-	const GRow = Union{Row, Vector{Pair{Symbol, Any}}, 
-		Vector{Any}}  ## Generic Row
+	const Row = Dict{Symbol, <: Any}
+	const GRow = Union{Row, Vector{Pair{Symbol, <: Any}}, Vector{<: Any}} ## Generic Row
 
-	const WhereClause = Function  # Base.Callable
-	const HavingClause = Function # Base.Callable
-	const S_N = Union{Symbol, Nothing}
+	const WhereClause = Function
+	const HavingClause = Function
 	const D_SF = Dict{Symbol, Function}
+
+	const S_N = Union{Symbol, Nothing}
+	const U_IN = Union{Int, Nothing}
+	const U_SN = Union{String, Nothing}
+
+	const UDT = Union{Union, DataType}
 end
 
 # ╔═╡ 53accaea-92d4-11eb-0bc2-3d2ee10f9bfb
 mutable struct Table
 	columns::Vector{Symbol}
-	types::Vector{DataType}
+	types::Vector{UDT}
 	pkey::Union{Symbol, Nothing}
 	rows::Vector{Row}
 	
-	function Table(col_types::Vector{Pair{Symbol, DataType}};
-			pkey=Pair{S_N, DataType}(:id, Int))
+	function Table(col_types::Vector{Pair{Symbol, DT}};
+			pkey::Pair=(:id => Int)) where DT <: UDT
  		# vector of pairs keeps implicit order
 		@assert length(col_types) ≥ 1
 		#
@@ -95,8 +99,8 @@ mutable struct Table
 		new(cols, types, pkey.first, Vector{Row}[])
 	end
 	
-	function Table(cols::Vector{Symbol}, types::Vector{DataType};	
-			pkey=Pair{S_N, DataType}(:id, Int))
+	function Table(cols::Vector{Symbol}, types::Vector{DT};
+			pkey::Pair=(:id => Int)) where DT <: UDT
 		if pkey.first !== nothing && pkey.first ∉ cols
 			cols  = [pkey[1], cols...]
 			types = [pkey[2], types...] 
@@ -111,8 +115,7 @@ begin
 	##
 	## API for Table
 	##
-	
-	## Assuming existence of a primary key :id 
+
 	id(self::Table) = self.pkey
 	
 	length(self::Table) = length(self.rows)
@@ -126,12 +129,14 @@ begin
 end
 
 # ╔═╡ 040a7354-92d2-11eb-2825-7bac34b9fdf9
-YaUsers = Table([:name => String,  :num_friends => Int];
-	pkey=(:user_id => Int))
+YaUsers = Table([:name => String, :num_friends => Int];
+	pkey=(:user_id => Int32))
 
 # ╔═╡ 17d214a7-be15-4236-a614-3127b535ef66
-AltUsers = Table([:name => String,  :num_friends => Int]; 
-	pkey=(:user_id => Int32))
+AltUsers = Table([:name => String, :num_friends => Int]) ## Default pkey
+
+# ╔═╡ 85211d8a-be50-454d-a6c5-cd820a20f8d4
+AltUsers₂ = Table([:name, :num_friends], [U_SN, U_IN]) ## Default pkey
 
 # ╔═╡ adf67244-92d4-11eb-3004-41e62e906e32
 begin
@@ -140,8 +145,10 @@ begin
 	## TODO: unless explicitly stated otherwise, something like:
 	##   :pkey => (:user_id, Int)
 	##
-	Users = Table([:name => String, :num_friends => Int]) ## Default pkey
+	Users = Table([:name => U_SN, :num_friends => U_IN];
+		pkey=(:user_id => Int))
 	@assert length(Users) == 0
+	Users;
 end
 
 # ╔═╡ 650237ee-928e-11eb-0e43-17ab98a0cc11
@@ -151,6 +158,7 @@ begin
 	##
 
 	function insert(self::Table, row::Vector{Pair{Symbol, Any}})
+		@show "1 - insert/vec/pair", row
 		res = filter(p -> p.first == id(self), row)
 		has_pkey = length(res) > 0
 		length(row) ≠ length(self.types) && has_pkey &&
@@ -167,8 +175,9 @@ begin
 		push!(self.rows, Dict(row...))
 	end
 
-	function insert(self::Table, row::Vector{Any})
-		length(row) ≠ length(self.types) && 
+	function insert(self::Table, row::Vector{<: Any})
+		@show "2 - insert/vec/any", row
+		length(row) ≠ length(self.types) &&
 			throw(ArgumentError("Mismatch with expected number of columns: $(length(row)) => $(row) // $(length(self.types)) => $(self.types)"))
 		check_value_dtype(self, row)
 		## row[1] is the value assoc. with pkey
@@ -177,13 +186,14 @@ begin
 	end
 
 	function insert(self::Table, row::Row)
+		@show "3 - insert/row", row
 		length(row) ≠ length(self.types) && haskey(row, id(self)) &&
 				throw(ArgumentError("Mismatch with expected number of columns"))
+		@show "Insert Row: ", row
 		check_value_dtype(self, row)
 		if haskey(row, id(self))
 				row_already_inserted(self, row[id(self)]) && (return nothing)
 			else
-				# TODO: gen a pkey for this tuple/record...
 				row[id(self)] = gen_pkey_value(self)
 			end
 			push!(self.rows, row)
@@ -192,7 +202,7 @@ begin
 	insert(self::Table, rows::Vector{T}) where T <: GRow = 
 		insert.(Ref(self), rows)
 
-	function coltype(self::Table, colname::Symbol)::DataType
+	function coltype(self::Table, colname::Symbol)::UDT
 		ix = findfirst(col -> col == colname, self.columns)
 		ix === nothing && throw(ArgumentError("column $(colname) inexistent"))
 		self.types[ix]
@@ -261,7 +271,7 @@ Insert using a vector of pairs:
 
 # ╔═╡ 96c2a668-9290-11eb-074d-19ffeb68eba6
 begin
-	insert(Users, [:id => 1, :name => "Dunn", :num_friends => 2])
+	insert(Users, [id(Users) => 1, :name => "Dunn", :num_friends => 2])
 	@assert length(Users) ≥ 2
 end
 
@@ -273,7 +283,7 @@ Insert using a dictionary
 # ╔═╡ 5a3a8fdc-929d-11eb-25e3-e309dffdb455
 begin
 	## Insert with a Dict
-	insert(Users, Dict(:id => 2, :name => "Sue", :num_friends => 3))
+	insert(Users, Dict(id(Users) => 2, :name => "Sue", :num_friends => 3))
 	@assert length(Users) ≥ 3
 end
 
@@ -296,6 +306,15 @@ begin
 	@assert length(Users) ≥ 5
 end
 
+# ╔═╡ 8a945abc-012f-4ace-a67a-b7e0f520346b
+begin
+	## Insert with a Dict no pkey/2 + null value (encoded as nothing)
+	# insert(Users,
+	# 	[:name => "Foobar", :num_friends => nothing])
+	insert(Users,
+		[:name => "Foobar", :num_friends => nothing, :user_id => 17])
+end
+
 # ╔═╡ 28ba0bf6-92cd-11eb-0669-75eadb768518
 md"""
 Insert using a collection (vector of rows):
@@ -309,7 +328,8 @@ begin
 		[6, "Thor", 3],
 		[7, "Clive", 2],
 		[8, "Devin", 2],
-		[9, "Kate", 2]
+		[9, "Kate", 2],
+		[10, "Kaze", nothing]
 	])
 	@assert length(Users) ≥ 10
 end
@@ -320,8 +340,8 @@ Users
 # ╔═╡ d5657a88-92c4-11eb-2a4f-c7dcaa97bcf6
 begin
 	@test_throws ArgumentError  coltype(Users, :foobar)
-	@test coltype(Users, :num_friends) == Int
-	@test coltype(Users, :name) == String
+	@test coltype(Users, :num_friends) == U_IN
+	@test coltype(Users, :name) == U_SN
 end
 
 # ╔═╡ 80ddf0f4-8ce2-11eb-3046-331119a0dc9b
@@ -354,7 +374,6 @@ function update(self::Table, updates::Row, pred::WhereClause=row -> true)
 	for (col, val) ∈ updates
 		col ∉ self.columns && throw(ArgumentError("invalid column $(col)"))
 		col_type = coltype(self, col)
-
 		!(typeof(val) <: col_type) && val !== nothing && 
 			throw(ArgumentError("Expected $(col_type), got $(typeof(val))"))
 	end
@@ -362,14 +381,17 @@ function update(self::Table, updates::Row, pred::WhereClause=row -> true)
 	## 2 - OK, update
 	rows_to_update = filter(((ix, r)=t) -> pred(r), collect(enumerate(self.rows)))
 	for (ix, row) ∈ rows_to_update
-		self.rows[ix] = Row(row..., updates...)
+		# self.rows[ix] = Row(row..., updates...)
+		for (k, v) ∈ updates
+			self.rows[ix][k] = v
+		end
 	end
-
 	nothing
 end
 
 # ╔═╡ 2af6dbec-92c6-11eb-1155-596ed44b04f8
-update(Users, Dict{Symbol, Any}(:num_friends => 7), row -> row[:name] == "Ayumi")
+update(Users, Dict{Symbol, Any}(:num_friends => 7),
+	row -> row[:name] == "Ayumi")
 
 # ╔═╡ 2ad5cdbe-92c6-11eb-34d6-dbd22dc5bc29
 Users
@@ -413,7 +435,7 @@ end
 # ╔═╡ 394093fa-8cea-11eb-0071-eff3045a012b
 begin
 	n = length(Users)
-	delete(Users, row -> row[:id] == 1)
+	delete(Users, row -> row[id(Users)] == 1)
 	@assert length(Users) == n - 1
 end
 
@@ -446,6 +468,17 @@ keep in the result. if none supply, the result contains all the columns, and
   - `add_cols` is a dictionary whose keys are new column names and whose values are functions specifying how to compute the values of the new columns. 
 """
 
+# ╔═╡ 3ec9f5d5-6d6d-4586-b68b-84e3ee5aee27
+## Utility function
+##
+function create_res_table(self::Table, new_cols, new_types;
+                          pred::Function=_a -> true)
+  ## keep pkey or not...
+  pred(self) ?
+	Table(new_cols, new_types; pkey=id(self) => coltype(self, id(self))) :
+    Table(new_cols, new_types; pkey=nothing => Nothing)
+end
+
 # ╔═╡ a56253c8-92cd-11eb-31b9-51e1fd5ae026
 function select(self::Table;
 		keep_cols=Vector{Symbol}[], add_cols=D_SF())::Table
@@ -463,6 +496,7 @@ function select(self::Table;
 		n_row = Any[row[col] for col ∈ keep_cols]
 		## as we process the first row, we can get the return type...
 		## ...of each function defined in add_cols
+		## What if no row to process => tag with Any
 		for (_col_name, fn) ∈ add_cols
 			r = fn(row)
 			ix == 1 && push!(add_types, typeof(r))
@@ -470,14 +504,19 @@ function select(self::Table;
 		end
 		push!(n_rows, n_row)
 	end
-	
-	## Create result table
-	new_types = [keep_types..., add_types...]
-	@assert(length(new_cols) == length(new_types),
-		"length(new_cols) $(length(new_cols)) == length(new_types)")
 
-	n_table = id(self) ∈ keep_cols ? Table(new_cols, new_types) :
-		Table(new_cols, new_types; pkey=nothing => Nothing)
+	if length(add_cols) > 0 && length(add_types) == 0
+		## add as many Any as column in add_cols
+		push!(add_types, repeat(Any[Any], inner=length(add_cols)))
+	end
+
+	## Create result table
+	new_types = UDT[keep_types..., add_types...]
+	@assert(length(new_cols) == length(new_types),
+		"length(new_cols) == length(new_types)")
+
+	n_table = create_res_table(self, new_cols, new_types;
+		pred=s -> id(s) ∈ keep_cols)
 
 	insert(n_table, n_rows)
 	n_table
@@ -499,6 +538,9 @@ begin
 	insert(Users, Dict(:name => "Ayumi", :num_friends => 5))
 	insert(Users, [:name => "PasMas", :num_friends => 5])
 end
+
+# ╔═╡ 96386ab8-93ef-44c7-a524-1246379d7103
+Table([:user_id, :name, :num_friends], UDT[Int64, Union{Nothing, String}, Union{Nothing, Int64}])
 
 # ╔═╡ a5441766-92cd-11eb-1c8e-edcf3db0022e
 begin
@@ -529,8 +571,8 @@ function limit(self::Table, num_rows::Int=5)::Table
 	"""
 	@assert 1 ≤ num_rows ≤ length(self.rows) "1 ≤ $(num_rows) ≤ $(length(self.rows))"
 
-	n_table = id(self) !== nothing ? Table(self.columns, self.types) :
-		Table(self.columns, self.types; pkey=nothing => Nothing)
+ 	n_table = create_res_table(self, self.columns, self.types;
+		pred=s -> id(s) !== nothing)
 
 	## NOTE: mark vector as GRow type
 	rows = Vector{Any}[]
@@ -542,10 +584,10 @@ function limit(self::Table, num_rows::Int=5)::Table
 end
 
 # ╔═╡ 53c15148-1b04-4d85-aac6-874a6f750a00
-user_ids₁ = select(Users, keep_cols=[:name]) |> limit
+user_names₁ = select(Users, keep_cols=[:name]) |> limit
 
 # ╔═╡ 1ac32ed0-6e47-4606-8b70-524159660d93
-user_ids₂ = select(Users, keep_cols=[:name]) |>
+user_names₂ = select(Users, keep_cols=[:name]) |>
   u -> limit(u, 2)
 
 # ╔═╡ be425e03-c7b4-401d-9d29-fa2b07618ee5
@@ -561,8 +603,8 @@ function where(self::Table, pred::WhereClause=row -> true)::Table
 	"""
 	Only the rows that satisfy pred are returned
 	"""
-	n_table = id(self) !== nothing ? Table(self.columns, self.types) :
-		Table(self.columns, self.types; pkey=nothing => Nothing)
+	n_table = create_res_table(self, self.columns, self.types;
+		pred=s -> id(s) !== nothing)
 
 	n_rows = Vector{Any}[]
 	for row ∈ self.rows
@@ -576,14 +618,14 @@ end
 # ╔═╡ b08b9470-5d53-4420-bef6-ef1c0bb4414c
 begin
 	dunn_ids = where(Users, row -> row[:name] == "Dunn") |> 
-		u -> select(u, keep_cols=[:id])
-	@assert length(dunn_ids) == 1
+		u -> select(u, keep_cols=[id(Users)])
+	# @assert length(dunn_ids) == 1
 end
 
 # ╔═╡ 955fe2a1-22b3-44db-b23d-d595d58bac3d
 begin
 	amp_ids = where(Users, row -> row[:name][1] ∈ ['A', 'P']) |> 
-		u -> select(u, keep_cols=[:id, :name])
+		u -> select(u, keep_cols=[id(Users), :name])
 end
 
 # ╔═╡ 964507de-c48d-4f7c-ab05-9b7739ecd5f3
@@ -713,7 +755,7 @@ function group_by(self::Table; group_by_cols::Vector{Symbol}, agg::D_SF,
 				push!(agg_row, r)
 			end
 		end
-		push!(n_rows, agg_row)
+		length(agg_row) > 0 && (push!(n_rows, agg_row))
 	end
 
 	## 3 - res. table consists of group_by columns and aggregates
@@ -721,9 +763,8 @@ function group_by(self::Table; group_by_cols::Vector{Symbol}, agg::D_SF,
 	gp_by_types = [coltype(self, col) for col ∈ group_by_cols]
 	new_types = [gp_by_types..., agg_types...]
 
-	n_table = id(self) ∈ new_cols ? Table(new_cols, new_types) :
-		Table(new_cols, new_types; pkey=nothing => Nothing)
-
+	n_table = create_res_table(self, new_cols, new_types;
+		pred=s -> id(s) ∈ new_cols)
 	insert(n_table, n_rows)
 	n_table
 end
@@ -737,7 +778,7 @@ begin
 	FROM users
 	GROUP BY LENGTH(name);
 	"""
-	min_user_id = rows -> minimum(row[:id] for row ∈ rows)
+	min_user_id = rows -> minimum(row[id(Users)] for row ∈ rows)
 	num_rows = rows -> length(rows)
 
 	stats_by_len = select(Users, add_cols=D_SF(:name_length => name_len_fn)) |>
@@ -763,8 +804,10 @@ begin
 	HAVING AVG(num_friends) > 1;
 	"""
 	first_letter_fn = row -> row[:name] !== nothing ? string(row[:name][1]) : ""
+
 	avg_num_friends_fn =
 		rows -> sum([row[:num_friends] for row in rows]) / length(rows)
+
 	enough_friends_fn = rows -> avg_num_friends_fn(rows) > 1.
 
 	avg_friends_by_letter =
@@ -822,13 +865,65 @@ md"""
 """
 
 # ╔═╡ f1af4256-8e02-11eb-0238-2515d39a89cd
+##
+## API (cont'ed)
+##
+function join(self::Table, otable::Table; left_join=false)::Table
+	join_on_cols = [c for c ∈ self.columns if c ∈ otable.columns]
 
+	add_cols = [c for c ∈ otable.columns if c ∉ join_on_cols && c != id(otable)]
+	new_cols = [self.columns..., add_cols...]
+	new_types = UDT[self.types..., coltype.(Ref(otable), add_cols)...]
+
+	n_table = Table(new_cols, new_types; pkey=nothing => Nothing)
+
+	n_rows = Vector{Any}[]
+	for row ∈ self.rows
+		is_join = orow -> all(orow[c] == row[c] for c ∈ join_on_cols)
+
+		o_rows = where(otable, is_join).rows
+		for o_row ∈ o_rows
+			push!(n_rows, Any[[row[c] for c ∈ self.columns]...,
+					[o_row[c] for c ∈ add_cols]...])
+		end
+
+		if left_join && length(o_rows) == 0
+			push!(n_rows, Any[[row[c] for c ∈ self.columns]...,
+					[nothing for _ ∈ add_cols]...])
+		end
+	end
+	@show "join/4", n_rows, length(n_rows)
+	insert(n_table, n_rows)
+	n_table
+end
 
 # ╔═╡ 26571096-f30c-476a-ad0e-ef133ba2562f
+begin
+	User_Interests = Table([:user_id => Int, :interest => String]) ## Default pkey
+	insert(User_Interests, [
+			[1, 0, "SQL"],
+			[2, 0, "NoSQL"],
+			[3, 2, "SQL"],
+			[4, 2, "MySQL"],
+			[5, 7, "PostgreSQL"],
+			[6, 7, "SQL"]
+	])
+end
 
+# ╔═╡ a1a91e04-ffdb-49b1-a999-e1cf1a730cb4
+begin
+	sql_users = join(Users, User_Interests) |>
+		u -> where(u, r -> r[:interest] == "SQL") |>
+		u -> select(u, keep_cols=[:name])
+end
 
 # ╔═╡ 43a52692-8e10-11eb-2043-8f0be195f58a
-
+begin
+	## REs incorrect - not all rows are inserteed in resulting table!
+	sql_users₂ = join(Users, User_Interests; left_join=true) |>
+		u -> where(u, r -> r[:interest] == "SQL") |>
+		u -> select(u, keep_cols=[:name])
+end
 
 # ╔═╡ Cell order:
 # ╟─8c80e072-8b59-11eb-3c21-a18fe43c4536
@@ -844,6 +939,7 @@ md"""
 # ╠═6f9c58d4-92d1-11eb-2c09-cb1ea5afcd6d
 # ╠═040a7354-92d2-11eb-2825-7bac34b9fdf9
 # ╠═17d214a7-be15-4236-a614-3127b535ef66
+# ╠═85211d8a-be50-454d-a6c5-cd820a20f8d4
 # ╠═adf67244-92d4-11eb-3004-41e62e906e32
 # ╠═650237ee-928e-11eb-0e43-17ab98a0cc11
 # ╟─d146a8ac-92cc-11eb-29b1-bb065a468477
@@ -855,6 +951,7 @@ md"""
 # ╟─0292e48e-92cd-11eb-1882-81a2faaad136
 # ╠═8545d17c-929e-11eb-0989-ffd4749bbb25
 # ╠═95d2b19e-92a4-11eb-0f91-e343c9317983
+# ╠═8a945abc-012f-4ace-a67a-b7e0f520346b
 # ╟─28ba0bf6-92cd-11eb-0669-75eadb768518
 # ╠═d4562f7e-9290-11eb-2d8c-952f2e0edfed
 # ╠═f877c3e6-929c-11eb-00cd-c15568f99627
@@ -877,8 +974,10 @@ md"""
 # ╟─e95983ba-8ceb-11eb-38fd-ed92cdcf754c
 # ╟─d3a749a2-8cec-11eb-1f06-b568f244b576
 # ╟─31d3226a-8cf4-11eb-0897-39989ba76b58
+# ╠═3ec9f5d5-6d6d-4586-b68b-84e3ee5aee27
 # ╠═a56253c8-92cd-11eb-31b9-51e1fd5ae026
 # ╠═e6348294-92cb-11eb-3bfd-09d80933b33a
+# ╠═96386ab8-93ef-44c7-a524-1246379d7103
 # ╠═a5441766-92cd-11eb-1c8e-edcf3db0022e
 # ╠═3bfad78b-2ebd-4067-b306-b687f5a92a10
 # ╟─cfed19ac-94e2-4c84-85b4-6134765cce0b
@@ -916,4 +1015,5 @@ md"""
 # ╟─80dff352-8d02-11eb-06b1-5f5e325046f5
 # ╠═f1af4256-8e02-11eb-0238-2515d39a89cd
 # ╠═26571096-f30c-476a-ad0e-ef133ba2562f
+# ╠═a1a91e04-ffdb-49b1-a999-e1cf1a730cb4
 # ╠═43a52692-8e10-11eb-2043-8f0be195f58a
