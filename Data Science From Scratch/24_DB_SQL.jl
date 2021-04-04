@@ -35,9 +35,6 @@ md"""
   - [Group by](#group-by)
   - [Order by](#order-by)
   - [Join](#join)
-  - [Sub-queries](#sub-queries)
-  - [Query Optimization](#query-optimization)
-  - [NoSQL](#nosql)
 """
 
 # ╔═╡ 81290d1c-8ce2-11eb-3340-337957fd81b7
@@ -57,23 +54,30 @@ md"""
 # ╔═╡ d3ee2138-8ce2-11eb-0b29-659a3be01512
 md"""
 We will represent our table in memory by a dictionary (not really space efficient).   
+
+Also, we will:
+  - Support the primary key for our table (some table do not and will not have a primary key).
+  - Allow for NULL value for any column of our table (but for the primary key).
 """
 
 # ╔═╡ 6d759180-928b-11eb-1cc1-0593c7f3b0c2
 begin
-	const Row = Dict{Symbol, <: Any}
-	const GRow = Union{Row, Vector{Pair{Symbol, <: Any}}, Vector{<: Any}} ## Generic Row
-
+	const Row = Dict{Symbol, Any}
+	const GRow = Union{Row, Vector{Pair{Symbol, Any}}, Vector{Any}}  ## Generic Row
 	const WhereClause = Function
 	const HavingClause = Function
-	const D_SF = Dict{Symbol, Function}
-
 	const S_N = Union{Symbol, Nothing}
+	# const PK = Pair{S_N, DataType}
+	const D_SF = Dict{Symbol, Function}
 	const U_IN = Union{Int, Nothing}
 	const U_SN = Union{String, Nothing}
-
-	const UDT = Union{Union, DataType}
+	const UDT = Union{Union, DataType, Type};
 end
+
+# ╔═╡ 2e8684fc-2ba6-48ec-81b3-f1c31cdde43a
+md"""
+Let us define our custom type for a relational table:
+"""
 
 # ╔═╡ 53accaea-92d4-11eb-0bc2-3d2ee10f9bfb
 mutable struct Table
@@ -82,32 +86,28 @@ mutable struct Table
 	pkey::Union{Symbol, Nothing}
 	rows::Vector{Row}
 	
-	function Table(col_types::Vector{Pair{Symbol, DT}};
-			pkey::Pair=(:id => Int)) where DT <: UDT
- 		# vector of pairs keeps implicit order
-		@assert length(col_types) ≥ 1
-		#
-		cols = map(((k, _)=p) -> k, col_types)
-		types = map(((_, v)=p) -> v, col_types)
-		#
-		if pkey.first !== nothing && pkey.first ∉ cols
-			# check pkey[2] <: Integer
-			cols  = [pkey[1], cols...]
-			types = [pkey[2], types...] 
-		end
-		#
-		new(cols, types, pkey.first, Vector{Row}[])
-	end
-	
-	function Table(cols::Vector{Symbol}, types::Vector{DT};
-			pkey::Pair=(:id => Int)) where DT <: UDT
-		if pkey.first !== nothing && pkey.first ∉ cols
-			cols  = [pkey[1], cols...]
-			types = [pkey[2], types...] 
-		end
-		new(cols, types, pkey.first, Vector{Row}[])
-	end
+  function Table(col_types::Vector{Pair{Symbol, DT}};
+               pkey::Pair=(:id => Int)) where DT <: UDT
+    # vector of pairs keeps implicit order
+    @assert length(col_types) ≥ 1
+    #
+    cols = map(((k, _)=p) -> k, col_types)
+    types = map(((_, v)=p) -> v, col_types)
+    cols, types = check_pk(cols, types, pkey)
+    new(cols, types, pkey.first, Vector{Row}[])
+  end
+
+  function Table(cols::Vector{Symbol}, types::Vector{DT};
+               pkey::Pair=(:id => Int)) where DT <: UDT
+    cols, types = check_pk(cols, types, pkey)
+    new(cols, types, pkey.first, Vector{Row}[])
+  end
 end
+
+# ╔═╡ 1b1b8d8c-3803-43fa-b3af-7a58d75bb13b
+md"""
+And let us start developing our API and utilities:
+"""
 
 # ╔═╡ 6f9c58d4-92d1-11eb-2c09-cb1ea5afcd6d
 begin
@@ -117,14 +117,28 @@ begin
 	##
 
 	id(self::Table) = self.pkey
-	
+
 	length(self::Table) = length(self.rows)
-	
+
 	function gen_pkey_value(self::Table)
-		"""
-		Assuming pkey is instance of a numeric type
-		"""
-		(map(r -> r[id(self)], self.rows) |> maximum)  + 1
+	  """
+	  Assuming pkey is instance of a numeric type
+	  """
+	  length(self.rows) == 0 && (return 1)
+	  (map(r -> r[id(self)], self.rows) |> maximum)  + 1
+	end
+
+	## utility
+	function check_pk(cols, types, pkey)
+	  if pkey.first !== nothing
+		@assert pkey[2] <: Integer "Expecting an Integer, got: $(pkey[2])"
+	  end
+
+	  if pkey.first !== nothing && pkey.first ∉ cols
+		cols  = [pkey[1], cols...]
+		types = [pkey[2], types...]
+	  end
+	  (cols, types)
 	end
 end
 
@@ -136,13 +150,14 @@ YaUsers = Table([:name => String, :num_friends => Int];
 AltUsers = Table([:name => String, :num_friends => Int]) ## Default pkey
 
 # ╔═╡ 85211d8a-be50-454d-a6c5-cd820a20f8d4
-AltUsers₂ = Table([:name, :num_friends], [U_SN, U_IN]) ## Default pkey
+## Default pkey and NULL values allowed
+AltUsers₂ = Table([:name, :num_friends], [U_SN, U_IN])
 
 # ╔═╡ adf67244-92d4-11eb-3004-41e62e906e32
 begin
 	##
 	## Convention: by default all tables have a primary key called :id,
-	## TODO: unless explicitly stated otherwise, something like:
+	## unless explicitly stated otherwise, something like:
 	##   :pkey => (:user_id, Int)
 	##
 	Users = Table([:name => U_SN, :num_friends => U_IN];
@@ -157,55 +172,64 @@ begin
 	## API for Table (cont'ed)
 	##
 
-	function insert(self::Table, row::Vector{Pair{Symbol, Any}})
-		@show "1 - insert/vec/pair", row
-		res = filter(p -> p.first == id(self), row)
-		has_pkey = length(res) > 0
-		length(row) ≠ length(self.types) && has_pkey &&
-				throw(ArgumentError("Mismatch with expected number of columns"))
-		check_value_dtype(self, row)
-		## find the pair <pkey, value>  pkey is given by id(self)
-		row_ids = filter(p -> p.first == id(self), row)
-		if length(row_ids) == 0 
-			push!(row, id(self) => gen_pkey_value(self))
-		else
-			id_val = row_ids[1][2]  ## value assoc with this pkey
-			row_already_inserted(self, id_val) && (return nothing)
-		end
-		push!(self.rows, Dict(row...))
+	function insert(self::Table, row::Vector{Pair{Symbol, DT}}) where DT <: Any
+	  """
+	  row is something like [:name => "FooBar", :num_friends => 3, id(Users) => 3]
+	  """
+	  res = filter(p -> p.first == id(self), row)
+	  has_pkey = length(res) > 0
+	  ##
+	  ## NULL values permitted
+	  #length(row) ≠ length(self.types) && has_pkey &&
+	  #  throw(ArgumentError("Mismatch with expected number of columns"))
+	  ##
+	  check_value_dtype(self, row)
+	  ## find the pair <pkey, value> pkey is given by id(self)
+	  row_ids = filter(p -> p.first == id(self), row)
+	  if length(row_ids) == 0
+		pk_id =  gen_pkey_value(self)
+		row = [row..., id(self) => pk_id]
+	  else
+		id_val = row_ids[1][2]  ## value assoc with this pkey
+		row_already_inserted(self, id_val) && (return nothing)
+	  end
+	  push!(self.rows, Dict(row...))
 	end
 
-	function insert(self::Table, row::Vector{<: Any})
-		@show "2 - insert/vec/any", row
-		length(row) ≠ length(self.types) &&
-			throw(ArgumentError("Mismatch with expected number of columns: $(length(row)) => $(row) // $(length(self.types)) => $(self.types)"))
-		check_value_dtype(self, row)
-		## row[1] is the value assoc. with pkey
-		row_already_inserted(self, row[1]) && (return nothing)
-		push!(self.rows, Dict(zip(self.columns, row)))
+	function insert(self::Table, row::Vector{Any})
+	  """
+	  row is something like: [9, "Foo", 2 ] - just pure values
+	  """
+	  length(row) ≠ length(self.types) && id(self) ∈ map(p -> p[1], row) &&
+		throw(ArgumentError("Mismatch with expected number of columns "))
+	  #
+	  check_value_dtype(self, row)
+	  ## row[1] is the value assoc. with pkey
+	  row_already_inserted(self, row[1]) && (return nothing)
+	  push!(self.rows, Dict(zip(self.columns, row)))
 	end
 
 	function insert(self::Table, row::Row)
-		@show "3 - insert/row", row
-		length(row) ≠ length(self.types) && haskey(row, id(self)) &&
-				throw(ArgumentError("Mismatch with expected number of columns"))
-		@show "Insert Row: ", row
-		check_value_dtype(self, row)
-		if haskey(row, id(self))
-				row_already_inserted(self, row[id(self)]) && (return nothing)
-			else
-				row[id(self)] = gen_pkey_value(self)
-			end
-			push!(self.rows, row)
+	  """
+	  row is a  Dict, like: insert(Users, Dict(:name => "Foo", :num_friends => 5))
+	  """
+	  length(row) ≠ length(self.types) && haskey(row, id(self)) &&
+		throw(ArgumentError("Mismatch with expected number of columns"))
+	  check_value_dtype(self, row)
+	  if haskey(row, id(self))
+		row_already_inserted(self, row[id(self)]) && (return nothing)
+	  else
+		row[id(self)] = gen_pkey_value(self)
+	  end
+	  push!(self.rows, row)
 	end
 
-	insert(self::Table, rows::Vector{T}) where T <: GRow = 
-		insert.(Ref(self), rows)
+	insert(self::Table, rows::Vector{T}) where T <: GRow = insert.(Ref(self), rows)
 
 	function coltype(self::Table, colname::Symbol)::UDT
-		ix = findfirst(col -> col == colname, self.columns)
-		ix === nothing && throw(ArgumentError("column $(colname) inexistent"))
-		self.types[ix]
+	  ix = findfirst(col -> col == colname, self.columns)
+	  ix === nothing && throw(ArgumentError("column $(colname) inexistent"))
+	  self.types[ix]
 	end
 
 	# function Base.show(io::IO, self::Table)
@@ -225,23 +249,23 @@ begin
 	## Internal checkers
 	##
 
-	function check_value_dtype(self::Table, values::Vector{Any})
-		dtypes = self.types
-		for (v, dt) ∈ zip(values, dtypes)
-			!(typeof(v) <: dt) && !isnothing(v) && 
-				throw("Expected type for $(v): $(dt), got $(typeof(v))")
-		end
+	function check_value_dtype(self::Table, values::Vector{DT}) where DT <: Any
+	  dtypes = self.types
+	  for (v, dt) ∈ zip(values, dtypes)
+		!(typeof(v) <: dt) && v !== nothing &&
+		  throw("Expected type for <$(v)>: $(dt), got: $(typeof(v))")
+	  end
 	end
 
-	function check_value_dtype(self::Table, 
-			row::Union{Row,  Vector{Pair{Symbol, Any}}})
-		(cols, types) = self.columns, self.types
-		col_type = Dict(zip(cols, types))
-		
-		for (k, v) ∈ row
-			(haskey(col_type, k) && typeof(v) <: col_type[k]) || 
-				throw("Expected type: $(col_type[k]), got $(typeof(v))")
-		end
+
+	function check_value_dtype(self::Table,
+							   row::Union{Row, Vector{Pair{Symbol, DT}}}) where DT <: Any
+	  (cols, types) = self.columns, self.types
+	  col_type = Dict(zip(cols, types))
+	  for (k, v) ∈ row
+		(haskey(col_type, k) && typeof(v) <: col_type[k]) ||
+		  throw("Expected type/2: $(col_type[k]), got: $(typeof(v))")
+	  end
 	end
 
 	function row_already_inserted(self::Table, id_val::Any)::Bool
@@ -390,23 +414,23 @@ function update(self::Table, updates::Row, pred::WhereClause=row -> true)
 end
 
 # ╔═╡ 2af6dbec-92c6-11eb-1155-596ed44b04f8
-update(Users, Dict{Symbol, Any}(:num_friends => 7),
-	row -> row[:name] == "Ayumi")
-
-# ╔═╡ 2ad5cdbe-92c6-11eb-34d6-dbd22dc5bc29
-Users
+begin
+	update(Users, Dict{Symbol, Any}(:num_friends => 7),
+		row -> row[:name] == "Ayumi")
+	Users
+end
 
 # ╔═╡ 2abb0114-92c6-11eb-01d5-cd34aa6426b2
-update(Users, Dict{Symbol, Any}(:num_friends => 4), row -> row[:num_friends] == 2)
-
-# ╔═╡ f901a110-92c9-11eb-2818-c9e91f4445fc
-Users
+begin
+	update(Users, Dict{Symbol, Any}(:num_friends => 4), row -> row[:num_friends] == 2)
+	Users
+end
 
 # ╔═╡ bc1fb8d2-92ca-11eb-14e0-c9586461bc1e
-update(Users, Dict{Symbol, Any}(:num_friends => 1))
-
-# ╔═╡ d55872ae-92ca-11eb-1262-19679db23f71
-Users
+begin
+	update(Users, Dict{Symbol, Any}(:num_friends => 1))
+	Users
+end
 
 # ╔═╡ d2b198b6-8ce2-11eb-170e-0f17904c9f2c
 html"""
@@ -919,10 +943,11 @@ end
 
 # ╔═╡ 43a52692-8e10-11eb-2043-8f0be195f58a
 begin
-	## REs incorrect - not all rows are inserteed in resulting table!
 	sql_users₂ = join(Users, User_Interests; left_join=true) |>
-		u -> where(u, r -> r[:interest] == "SQL") |>
+		u -> where(u, r -> r[:interest] !== nothing &&
+							occursin(r"SQL\z", r[:interest])) |>
 		u -> select(u, keep_cols=[:name])
+	@test length(sql_users₂.rows) == 6
 end
 
 # ╔═╡ Cell order:
@@ -935,7 +960,9 @@ end
 # ╟─8ff1bb20-8ce2-11eb-1de6-fd84daec8930
 # ╟─d3ee2138-8ce2-11eb-0b29-659a3be01512
 # ╠═6d759180-928b-11eb-1cc1-0593c7f3b0c2
+# ╟─2e8684fc-2ba6-48ec-81b3-f1c31cdde43a
 # ╠═53accaea-92d4-11eb-0bc2-3d2ee10f9bfb
+# ╟─1b1b8d8c-3803-43fa-b3af-7a58d75bb13b
 # ╠═6f9c58d4-92d1-11eb-2c09-cb1ea5afcd6d
 # ╠═040a7354-92d2-11eb-2825-7bac34b9fdf9
 # ╠═17d214a7-be15-4236-a614-3127b535ef66
@@ -961,11 +988,8 @@ end
 # ╟─d1ed1e36-8ce5-11eb-34ee-4db60fb0db8a
 # ╠═4ccdb1ce-92c2-11eb-18dd-c510e88474c6
 # ╠═2af6dbec-92c6-11eb-1155-596ed44b04f8
-# ╠═2ad5cdbe-92c6-11eb-34d6-dbd22dc5bc29
 # ╠═2abb0114-92c6-11eb-01d5-cd34aa6426b2
-# ╠═f901a110-92c9-11eb-2818-c9e91f4445fc
 # ╠═bc1fb8d2-92ca-11eb-14e0-c9586461bc1e
-# ╠═d55872ae-92ca-11eb-1262-19679db23f71
 # ╟─d2b198b6-8ce2-11eb-170e-0f17904c9f2c
 # ╟─d37f37b8-8ce8-11eb-2c00-3f98ca407f41
 # ╠═5bf7729e-8dfd-11eb-070f-9b7ec0746bd7
