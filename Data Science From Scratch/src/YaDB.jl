@@ -1,28 +1,32 @@
 module YaDB
 
-import Base: length #, show
+import Base: length, join #, show
 
 export Table, Row, GRow, WhereClause, HavingClause, D_SF,
   id, length, insert, update, delete, coltype,
-  select, where, limit, group_by, order_by #, show
-
+  select, where, limit, group_by, order_by, #, show
+  U_IN, U_SN
 
 const Row = Dict{Symbol, Any}
 const GRow = Union{Row, Vector{Pair{Symbol, Any}}, Vector{Any}}  ## Generic Row
-const WhereClause = Function  # Base.Callable
-const HavingClause = Function # Base.Callable
+const WhereClause = Function
+const HavingClause = Function
 const S_N = Union{Symbol, Nothing}
 # const PK = Pair{S_N, DataType}
 const D_SF = Dict{Symbol, Function}
+const U_IN = Union{Int, Nothing}
+const U_SN = Union{String, Nothing}
+const UDT = Union{Union, DataType, Type}
 
 
 mutable struct Table
   columns::Vector{Symbol}
-  types::Vector{DataType}
+  types::Vector{UDT}
   _pkey::S_N
   rows::Vector{Row}
 
-  function Table(col_types::Vector{Pair{Symbol, DataType}}; pkey::Pair=(:id => Int))
+  function Table(col_types::Vector{Pair{Symbol, DT}};
+               pkey::Pair=(:id => Int)) where DT <: UDT
     # vector of pairs keeps implicit order
     @assert length(col_types) ≥ 1
     #
@@ -32,7 +36,8 @@ mutable struct Table
     new(cols, types, pkey.first, Vector{Row}[])
   end
 
-  function Table(cols::Vector{Symbol}, types::Vector{DataType}; pkey::Pair=(:id => Int))
+  function Table(cols::Vector{Symbol}, types::Vector{DT};
+               pkey::Pair=(:id => Int)) where DT <: UDT
     cols, types = check_pk(cols, types, pkey)
     new(cols, types, pkey.first, Vector{Row}[])
   end
@@ -47,25 +52,24 @@ id(self::Table) = self._pkey
 
 length(self::Table) = length(self.rows)
 
-
-function gen_pkey_value(self::Table)
+function insert(self::Table, row::Vector{Pair{Symbol, DT}}) where DT <: Any
   """
-  Assuming pkey is instance of a numeric type
+  row is something like [:name => "FooBar", :num_friends => 3, id(Users) => 3]
   """
-  (map(r -> r[id(self)], self.rows) |> maximum)  + 1
-end
-
-
-function insert(self::Table, row::Vector{Pair{Symbol, Any}})
   res = filter(p -> p.first == id(self), row)
   has_pkey = length(res) > 0
-  length(row) ≠ length(self.types) && has_pkey &&
-  throw(ArgumentError("Mismatch with expected number of columns"))
+  ##
+  ## NULL values permitted
+  ##
+  #length(row) ≠ length(self.types) && has_pkey &&
+  #  throw(ArgumentError("Mismatch with expected number of columns"))
+  ##
   check_value_dtype(self, row)
-  ## find the pair <pkey, value>  pkey is given by id(self)
+  ## find the pair <pkey, value> pkey is given by id(self)
   row_ids = filter(p -> p.first == id(self), row)
   if length(row_ids) == 0
-    push!(row, id(self) => gen_pkey_value(self))
+    pk_id =  gen_pkey_value(self)
+    row = [row..., id(self) => pk_id] # push!(row, id(self) => pk_id)
   else
     id_val = row_ids[1][2]  ## value assoc with this pkey
     row_already_inserted(self, id_val) && (return nothing)
@@ -74,8 +78,12 @@ function insert(self::Table, row::Vector{Pair{Symbol, Any}})
 end
 
 function insert(self::Table, row::Vector{Any})
-  length(row) ≠ length(self.types) &&
-  throw(ArgumentError("Mismatch with expected number of columns"))
+  """
+  row is something like: [9, "Kate", 2 ] - just pure values
+  """
+  length(row) ≠ length(self.types) && id(self) ∈ map(p -> p[1], row) &&
+    throw(ArgumentError("Mismatch with expected number of columns / $(length(row)) vs $(length(self.types))"))
+  #
   check_value_dtype(self, row)
   ## row[1] is the value assoc. with pkey
   row_already_inserted(self, row[1]) && (return nothing)
@@ -83,8 +91,11 @@ function insert(self::Table, row::Vector{Any})
 end
 
 function insert(self::Table, row::Row)
+  """
+  row is a  Dict, like: insert(Users, Dict(:name => "Ayumi", :num_friends => 5))
+  """
   length(row) ≠ length(self.types) && haskey(row, id(self)) &&
-  throw(ArgumentError("Mismatch with expected number of columns"))
+    throw(ArgumentError("Mismatch with expected number of columns"))
   check_value_dtype(self, row)
   if haskey(row, id(self))
     row_already_inserted(self, row[id(self)]) && (return nothing)
@@ -182,8 +193,8 @@ function limit(self::Table, num_rows::Int=5)::Table
   """
   @assert 1 ≤ num_rows ≤ length(self.rows) "1 ≤ $(num_rows) ≤ $(length(self.rows))"
 
-  n_table = id(self) !== nothing ? Table(self.columns, self.types) :
-    Table(self.columns, self.types; pkey=nothing => Nothing)
+  n_table = create_res_table(self, self.columns, self.types;
+                             pred=s -> id(s) !== nothing)
 
   ## NOTE: mark vector as GRow type
   # rows = GRow[Any[v] for r ∈ self.rows[1:num_rows] for (_, v) ∈ r]
@@ -230,7 +241,7 @@ function group_by(self::Table; group_by_cols::Vector{Symbol}, agg::D_SF,
   new_types = [gp_by_types..., agg_types...]
 
   n_table = create_res_table(self, new_cols, new_types;
-                             pred=s -> id(s) ∈ new_cols )
+                             pred=s -> id(s) ∈ new_cols)
   insert(n_table, n_rows)
   n_table
 end
@@ -239,6 +250,34 @@ end
 function order_by(self::Table, order::Function)::Table
   n_table = select(self)
   sort!(n_table.rows, by=order)
+  n_table
+end
+
+
+function join(self::Table, otable::Table; left_join=false)::Table
+  join_on_cols = [c for c ∈ self.columns if c ∈ otable.columns]
+  add_cols = [c for c ∈ otable.columns if c ∉ join_on_cols && c != id(otable)]
+  new_cols = [self.columns..., add_cols...]
+  new_types = UDT[self.types..., coltype.(Ref(otable), add_cols)...]
+
+  n_table = Table(new_cols, new_types; pkey=nothing => Nothing)
+
+  n_rows = Vector{Any}[]
+  for row ∈ self.rows
+    is_join = orow -> all(orow[c] == row[c] for c ∈ join_on_cols)
+
+    o_rows = where(otable, is_join).rows
+    for o_row ∈ o_rows
+      push!(n_rows, Any[[row[c] for c ∈ self.columns]...,
+          [o_row[c] for c ∈ add_cols]...])
+    end
+
+    if left_join && length(o_rows) == 0
+      push!(n_rows, Any[[row[c] for c ∈ self.columns]...,
+                        [nothing for _ ∈ add_cols]...])
+    end
+  end
+  insert(n_table, n_rows)
   n_table
 end
 
@@ -256,7 +295,7 @@ end
 # end
 
 
-function coltype(self::Table, colname::Symbol)::DataType
+function coltype(self::Table, colname::Symbol)::UDT
   ix = findfirst(col -> col == colname, self.columns)
   ix === nothing && throw(ArgumentError("column $(colname) inexistent"))
   self.types[ix]
@@ -268,9 +307,12 @@ end
 
 function create_res_table(self::Table, new_cols, new_types;
                           pred::Function=_a -> true)
-  pred(self) ? Table(new_cols, new_types) :
+  ## keep pkey or not...
+  pred(self) ?
+    Table(new_cols, new_types; pkey=id(self) => coltype(self, id(self))) :
     Table(new_cols, new_types; pkey=nothing => Nothing)
 end
+
 
 function check_pk(cols, types, pkey) # ::Pair
   if pkey.first !== nothing
@@ -285,24 +327,34 @@ function check_pk(cols, types, pkey) # ::Pair
 end
 
 
-function check_value_dtype(self::Table, values::Vector{Any})
+function check_value_dtype(self::Table, values::Vector{DT}) where DT <: Any
+                           # values::Vector{Any})
   dtypes = self.types
   for (v, dt) ∈ zip(values, dtypes)
-    !(typeof(v) <: dt) && !isnothing(v) &&
-    throw("Expected type for $(v): $(dt), got $(typeof(v))")
+    !(typeof(v) <: dt) && v !== nothing &&
+      throw("Expected type for <$(v)>: $(dt), got: $(typeof(v))")
   end
 end
 
 
 function check_value_dtype(self::Table,
-                           row::Union{Row, Vector{Pair{Symbol, Any}}})
+                           row::Union{Row, Vector{Pair{Symbol, DT}}}) where DT <: Any
+                           # row::Union{Row, Vector{Pair{Symbol, Any}}, Vector{Pair{Symbol, Union{Nothing, Any}}}})
   (cols, types) = self.columns, self.types
   col_type = Dict(zip(cols, types))
-
   for (k, v) ∈ row
     (haskey(col_type, k) && typeof(v) <: col_type[k]) ||
-    throw("Expected type: $(col_type[k]), got $(typeof(v))")
+      throw("Expected type/2: $(col_type[k]), got: $(typeof(v))")
   end
+end
+
+
+function gen_pkey_value(self::Table)
+  """
+  Assuming pkey is instance of a numeric type
+  """
+  length(self.rows) == 0 && (return 1)
+  (map(r -> r[id(self)], self.rows) |> maximum)  + 1
 end
 
 

@@ -4,8 +4,12 @@ using Test
 using YaDB
 
 
-function feed_db()
-  Users = Table([:name => String, :num_friends => Int])
+function feed_db(;pkey=:id)
+  Users = if pkey == :id
+    Table([:name => String, :num_friends => Int])
+  else
+    Table([:name => String, :num_friends => Int]; pkey=pkey => Int)
+  end
 
   insert(Users, [[0, "Hero", 0],
       [1, "Dunn", 2],
@@ -421,3 +425,30 @@ end
 #   @test friendliest_letters₂.rows[1][:first_letter] == "A"
 #   @test length(friendliest_letters₂.rows) == 3
 # end
+
+
+@testset "Join" begin
+  Users = feed_db(pkey=:user_id)
+
+  User_Interests = Table([:user_id => Int, :interest => String]) ## Default pkey
+  insert(User_Interests, [
+      [1, 0, "SQL"],
+      [2, 0, "NoSQL"],
+      [3, 2, "SQL"],
+      [4, 2, "MySQL"],
+      [5, 7, "PostgreSQL"],
+      [6, 7, "SQL"]
+  ])
+
+  sql_users = join(Users, User_Interests) |>
+    u -> where(u, r -> r[:interest] == "SQL") |>
+    u -> select(u, keep_cols=[:name])
+
+  @test length(sql_users.rows) == 3
+
+  sql_users₂ = join(Users, User_Interests; left_join=true) |>
+    u -> where(u, r -> r[:interest] !== nothing && occursin(r"SQL\z", r[:interest])) |>
+    u -> select(u, keep_cols=[:name])
+
+  @test length(sql_users₂.rows) == 6
+end
