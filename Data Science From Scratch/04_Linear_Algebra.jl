@@ -1,13 +1,15 @@
 ### A Pluto.jl notebook ###
-# v0.12.21
+# v0.14.1
 
 using Markdown
 using InteractiveUtils
 
 # ╔═╡ c96551a0-881e-11eb-0d92-61edbb6c86e6
 begin
-  using Pkg; Pkg.activate("MLJ_env", shared=true)
-	using Test 
+	using Pkg; Pkg.activate("MLJ_env", shared=true)
+  using PlutoUI
+	using Test
+	
 end
 
 # ╔═╡ accc6f84-881d-11eb-3b49-e9cd25a3b6fd
@@ -15,26 +17,26 @@ md"""
 ## Linear Algebra
 
 ref. from book **"Data Science from Scratch"**, Chap 4
-"""
 
-# ╔═╡ 1439cfec-8835-11eb-31c6-a31ee138f43c
-html"""
-<a id='toc'></a> 
+$(html"<div><sub>&copy; Pascal, March 2021</sub></div>")
 """
 
 # ╔═╡ 136cdd48-8835-11eb-0482-737cf7bd5a3e
-md"""
-#### TOC
-  - [Vectors](#vectors)
-  - [Matrices](#matrices)
-"""
+PlutoUI.TableOfContents(indent=true, depth=4, aside=true)
 
 # ╔═╡ b22cf860-8834-11eb-02de-d3ad803d1db6
 html"""
-<p style="text-align: right;">
-  <a id='vectors'></a>
-  <a href="#toc">back to TOC</a>
-</p>
+<style>
+  main {
+	max-width: calc(800px + 25px + 6px);
+  }
+  .plutoui-toc.aside {
+    background: linen;
+  }
+  h3, h4 {
+	background: wheat;
+  }
+</style>
 """
 
 # ╔═╡ b1e26cfa-8834-11eb-16f5-85efb64c6a4c
@@ -204,10 +206,7 @@ end
 
 # ╔═╡ 0539916a-8835-11eb-3407-41f17efc2ee4
 html"""
-<p style="text-align: right;">
-  <a id='matrices'></a>
-  <a href="#toc">back to TOC</a>
-</p>
+<hr />
 """
 
 # ╔═╡ 73e7de7a-8830-11eb-05ef-b93f6c774587
@@ -286,7 +285,6 @@ html"""
 
 # ╔═╡ Cell order:
 # ╟─accc6f84-881d-11eb-3b49-e9cd25a3b6fd
-# ╟─1439cfec-8835-11eb-31c6-a31ee138f43c
 # ╟─136cdd48-8835-11eb-0482-737cf7bd5a3e
 # ╟─b22cf860-8834-11eb-02de-d3ad803d1db6
 # ╟─b1e26cfa-8834-11eb-16f5-85efb64c6a4c

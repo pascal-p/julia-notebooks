@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.12.21
+# v0.14.1
 
 using Markdown
 using InteractiveUtils
@@ -22,30 +22,31 @@ md"""
 ## Gradient Descent
 
 ref. from book **"Data Science from Scratch"**, Chap 8
+
+$(html"<div><sub>&copy; Pascal, April 2021</sub></div>")
 """
 
 # ╔═╡ 83e01f80-884a-11eb-1ef7-e9cb5ab3ed20
-html"""
-<a id='toc'></a>
-"""
+PlutoUI.TableOfContents(indent=true, depth=4, aside=true)
 
 # ╔═╡ 853ab02c-884a-11eb-01bf-1712dc177ffb
-md"""
-#### TOC
-  - [Context](#context)
-  - [Estimating the Gradient](#estimating-graident)
-  - [Using the Gradient](#using-gradient)
-  - [Choosing the right step](#right-step)
-  - [Using Gradient Descent (GD) to fit models](#using-gd-fit-model)
-  - [Mini-batch and Stochastic Gradient Descent](#mgd-sgd)
+html"""
+<style>
+  main {
+	max-width: calc(800px + 25px + 6px);
+  }
+  .plutoui-toc.aside {
+    background: linen;
+  }
+  h3, h4 {
+	background: wheat;
+  }
+</style>
 """
 
 # ╔═╡ 4c951444-8869-11eb-0b88-55a9fb9e51e6
 html"""
-<p style="text-align: right;">
-  <a id='context'></a>
-  <a href="#toc">back to TOC</a>
-</p>
+<hr />
 """
 
 # ╔═╡ 8c87c3b8-884a-11eb-10c8-73e2dab560ea
@@ -77,10 +78,7 @@ end
 
 # ╔═╡ 221734fe-8869-11eb-331a-b5810d0b784c
 html"""
-<p style="text-align: right;">
-  <a id='estimating-gradient'></a>
-  <a href="#toc">back to TOC</a>
-</p>
+<hr />
 """
 
 # ╔═╡ d297fa06-884c-11eb-294e-85992f901be1
@@ -205,10 +203,7 @@ end
 
 # ╔═╡ e767c1bc-8858-11eb-1b29-596a25a4fea4
 html"""
-<p style="text-align: right;">
-  <a id='using-gradient'></a>
-  <a href="#toc">back to TOC</a>
-</p>
+<hr />
 """
 
 # ╔═╡ e747b052-8858-11eb-3c50-5355fef542c9
@@ -258,10 +253,7 @@ end9.93698
 
 # ╔═╡ 306b8d52-8864-11eb-1cbd-1341afcd52ff
 html"""
-<p style="text-align: right;">
-  <a id='right-step'></a>
-  <a href="#toc">back to TOC</a>
-</p>
+<hr />
 """
 
 # ╔═╡ 304ff894-8864-11eb-1449-b71da9112247
@@ -277,10 +269,7 @@ Not easy. There are mutliple options like fixed step size, gradual shrinking of 
 
 # ╔═╡ 8c4d28fc-884a-11eb-0de2-b58988dc7422
 html"""
-<p style="text-align: right;">
-  <a id='using-gd-fit-model'></a>
-  <a href="#toc">back to TOC</a>
-</p>
+<hr />
 """
 
 # ╔═╡ 8a07d906-8869-11eb-0bae-2582b352c05c
@@ -365,10 +354,7 @@ end
 
 # ╔═╡ 1ad358e4-8882-11eb-0559-bd43867dacfd
 html"""
-<p style="text-align: right;">
-  <a id='mgd-sgd'></a>
-  <a href="#toc">back to TOC</a>
-</p>
+<hr />
 """
 
 # ╔═╡ d8d3bb0a-8881-11eb-35b2-8f486d6cc094

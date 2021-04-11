@@ -1,12 +1,12 @@
 ### A Pluto.jl notebook ###
-# v0.12.21
+# v0.14.1
 
 using Markdown
 using InteractiveUtils
 
 # ╔═╡ 5eebac68-891b-11eb-37ba-c1d9481c6134
 begin
-  	using Pkg; Pkg.activate("MLJ_env", shared=true)
+  using Pkg; Pkg.activate("MLJ_env", shared=true)
 	using Test
 	using Random
 	using PlutoUI
@@ -18,27 +18,31 @@ md"""
 ## Naive Bayes
 
 ref. from book **"Data Science from Scratch"**, Chap 13
+
+$(html"<div><sub>&copy; Pascal, April 2021</sub></div>")
 """
 
 # ╔═╡ cb25501a-8915-11eb-3626-a1ae6d233f92
-html"""
-<a id='toc'></a>
-"""
+PlutoUI.TableOfContents(indent=true, depth=4, aside=true)
 
 # ╔═╡ cb0838ae-8915-11eb-082f-3991192a101f
-md"""
-#### TOC
-  - [Implementation](#implementation)
-  - [Testing our Model](#testing-model)
-  - [Using our Model](#using_model)
+html"""
+<style>
+  main {
+	max-width: calc(800px + 25px + 6px);
+  }
+  .plutoui-toc.aside {
+    background: linen;
+  }
+  h3, h4 {
+	background: wheat;
+  }
+</style>
 """
 
 # ╔═╡ caf03ada-8915-11eb-2935-01e110accba6
 html"""
-<p style="text-align: right;">
-  <a id='implementation'></a>
-  <a href="#toc">back to TOC</a>
-</p>
+<hr />
 """
 
 # ╔═╡ cad66356-8915-11eb-0173-ada200678f63
@@ -174,10 +178,7 @@ end
 
 # ╔═╡ dc0c5a5e-8915-11eb-2c62-5328b42add69
 html"""
-<p style="text-align: right;">
-  <a id='testing-model'></a>
-  <a href="#toc">back to TOC</a>
-</p>
+<hr />
 """
 
 # ╔═╡ dbefe77a-8915-11eb-39f1-5d0c84729739
@@ -236,10 +237,7 @@ And next let us try on some real data.
 
 # ╔═╡ dbbf22a2-8915-11eb-00eb-4b0278c0283d
 html"""
-<p style="text-align: right;">
-  <a id='using_model'></a>
-  <a href="#toc">back to TOC</a>
-</p>
+<hr />
 """
 
 ## ================================

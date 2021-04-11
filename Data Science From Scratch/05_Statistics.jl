@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.12.21
+# v0.14.1
 
 using Markdown
 using InteractiveUtils
@@ -10,6 +10,7 @@ begin
 	using Plots
 	using Test
 	using LinearAlgebra
+	using PlutoUI
 
 	push!(LOAD_PATH, "./src")
 	using YaCounter
@@ -20,24 +21,30 @@ md"""
 ## Statistics
 
 ref. from book **"Data Science from Scratch"**, Chap 5
-"""
 
-# ╔═╡ 6ff0dd16-8836-11eb-3683-573a27674dff
-html"""
-<a id='toc'></a> 
-"""
-
-# ╔═╡ ae9bcffe-8835-11eb-0dd2-c3d39f0ae10e
-md"""
-#### TOC
-  - [Describing a Single Set of Data](#describe)
-    - [Central Tendencies](#central-tendencies)
-    - [Dispersion](#dispersion)
-  - [Correlation](#correlation)
+$(html"<div><sub>&copy; Pascal, March 2021</sub></div>")
 """
 
 # ╔═╡ f1dc5cc6-9018-11eb-1768-7d3c85e942fa
 const F = Float64
+
+# ╔═╡ ae9bcffe-8835-11eb-0dd2-c3d39f0ae10e
+PlutoUI.TableOfContents(indent=true, depth=4, aside=true)
+
+# ╔═╡ e98ef570-2d8e-457f-af69-e600a879b42e
+html"""
+<style>
+  main {
+	max-width: calc(800px + 25px + 6px);
+  }
+  .plutoui-toc.aside {
+    background: linen;
+  }
+  h3, h4 {
+	background: wheat;
+  }
+</style>
+"""
 
 # ╔═╡ 0cba28ec-8836-11eb-3dba-df3987947923
 html"""
@@ -127,10 +134,7 @@ end
 
 # ╔═╡ 2d07f7f0-8836-11eb-3fe7-010ea1a62e11
 html"""
-<p style="text-align: right;">
-  <a id='central-tendencies'></a>
-  <a href="#toc">back to TOC</a>
-</p>
+<hr />
 """
 
 # ╔═╡ 72f52228-815c-11eb-135e-cd8437424521
@@ -239,10 +243,7 @@ end
 
 # ╔═╡ 533f5418-8836-11eb-00d4-1d1e2dcb878a
 html"""
-<p style="text-align: right;">
-  <a id='dispersion'></a>
-  <a href="#toc">back to TOC</a>
-</p>
+<hr />
 """
 
 # ╔═╡ 3c8002a8-816b-11eb-2697-6356a438995d
@@ -320,10 +321,7 @@ end
 
 # ╔═╡ ca1377ae-8836-11eb-2366-6355fd427373
 html"""
-<p style="text-align: right;">
-  <a id='correlation'></a>
-  <a href="#toc">back to TOC</a>
-</p>
+<hr />
 """
 
 # ╔═╡ 285912ac-816d-11eb-1359-d5ee97622b95
@@ -417,10 +415,10 @@ Without the outlier, there is a much stronger correlation.
 
 # ╔═╡ Cell order:
 # ╟─36396ea6-814e-11eb-0d9a-9b4ac175c109
-# ╟─6ff0dd16-8836-11eb-3683-573a27674dff
-# ╟─ae9bcffe-8835-11eb-0dd2-c3d39f0ae10e
 # ╠═a5df7598-814e-11eb-03c8-b1450e513104
 # ╠═f1dc5cc6-9018-11eb-1768-7d3c85e942fa
+# ╠═ae9bcffe-8835-11eb-0dd2-c3d39f0ae10e
+# ╟─e98ef570-2d8e-457f-af69-e600a879b42e
 # ╟─0cba28ec-8836-11eb-3dba-df3987947923
 # ╟─c8a24b96-8835-11eb-22f2-954d90b6ca80
 # ╟─accc7d4e-815b-11eb-03e6-053884a6d2f2
