@@ -23,26 +23,31 @@ md"""
 ## NLP
 
 ref. from book **"Data Science from Scratch"**, Chap 21
+
+$(html"<div><sub>&copy; Pascal, April 2021</sub></div>")
 """
 
 # ╔═╡ cb25501a-8915-11eb-3626-a1ae6d233f92
-html"""
-<a id='toc'></a>
-"""
+PlutoUI.TableOfContents(indent=true, depth=4, aside=true)
 
 # ╔═╡ cb0838ae-8915-11eb-082f-3991192a101f
-md"""
-#### TOC
-  - [Gibbs Sampling](#gibbs-sampling)
-  - [Topic Modeling](#topic-modeling)
+html"""
+<style>
+  main {
+	max-width: calc(800px + 25px + 6px);
+  }
+  .plutoui-toc.aside {
+    background: linen;
+  }
+  h3, h4 {
+	background: wheat;
+  }
+</style>
 """
 
 # ╔═╡ caf03ada-8915-11eb-2935-01e110accba6
 html"""
-<p style="text-align: right;">
-  <a id='gibbs-sampling'></a>
-  <a href="#toc">back to TOC</a>
-</p>
+<hr />
 """
 
 # ╔═╡ 09066aa6-9049-11eb-27d6-b10b3120c900
@@ -160,10 +165,7 @@ cmp_distributions()
 
 # ╔═╡ dc0c5a5e-8915-11eb-2c62-5328b42add69
 html"""
-<p style="text-align: right;">
-  <a id='topic-modeling'></a>
-  <a href="#toc">back to TOC</a>
-</p>
+<hr />
 """
 
 # ╔═╡ dbefe77a-8915-11eb-39f1-5d0c84729739

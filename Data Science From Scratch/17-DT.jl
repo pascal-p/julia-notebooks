@@ -1,12 +1,12 @@
 ### A Pluto.jl notebook ###
-# v0.12.21
+# v0.14.1
 
 using Markdown
 using InteractiveUtils
 
 # ╔═╡ 5eebac68-891b-11eb-37ba-c1d9481c6134
 begin
-  	using Pkg; Pkg.activate("MLJ_env", shared=true)
+  using Pkg; Pkg.activate("MLJ_env", shared=true)
 	using Test
 	using Random
 	using PlutoUI
@@ -20,6 +20,8 @@ md"""
 ## Decision Trees (DT)
 
 ref. from book **"Data Science from Scratch"**, Chap 17
+
+$(html"<div><sub>&copy; Pascal, April 2021</sub></div>")
 """
 
 # ╔═╡ 8e2aca8e-8a8f-11eb-1e68-1316740f4697
@@ -30,25 +32,26 @@ begin
 end
 
 # ╔═╡ cb25501a-8915-11eb-3626-a1ae6d233f92
-html"""
-<a id='toc'></a>
-"""
+PlutoUI.TableOfContents(indent=true, depth=4, aside=true)
 
 # ╔═╡ cb0838ae-8915-11eb-082f-3991192a101f
-md"""
-#### TOC
-  - [Entropy](#entropy)
-  - [Entropy Partition](#entropy-partition)
-  - [Creating our DT](#creating-dt)
-  - [Putting it all Together](#all-together)
+html"""
+<style>
+  main {
+	max-width: calc(800px + 25px + 6px);
+  }
+  .plutoui-toc.aside {
+    background: linen;
+  }
+  h3, h4 {
+	background: wheat;
+  }
+</style>
 """
 
 # ╔═╡ caf03ada-8915-11eb-2935-01e110accba6
 html"""
-<p style="text-align: right;">
-  <a id='entropy'></a>
-  <a href="#toc">back to TOC</a>
-</p>
+<hr />
 """
 
 # ╔═╡ cad66356-8915-11eb-0173-ada200678f63
@@ -118,10 +121,7 @@ data_entropy([0, 0, 0, 1, 1]), data_entropy([1, 1, 0, 1, 0])
 
 # ╔═╡ dc0c5a5e-8915-11eb-2c62-5328b42add69
 html"""
-<p style="text-align: right;">
-  <a id='entropy-partition'></a>
-  <a href="#toc">back to TOC</a>
-</p>
+<hr />
 """
 
 # ╔═╡ dbefe77a-8915-11eb-39f1-5d0c84729739
@@ -151,10 +151,7 @@ end
 
 # ╔═╡ dbbf22a2-8915-11eb-00eb-4b0278c0283d
 html"""
-<p style="text-align: right;">
-  <a id='creating-dt'></a>
-  <a href="#toc">back to TOC</a>
-</p>
+<hr />
 """
 
 ## ================================
@@ -278,10 +275,7 @@ end
 
 # ╔═╡ 432cd594-89b9-11eb-2d4a-6f46f08a511d
 html"""
-<p style="text-align: right;">
-  <a id='all-together'></a>
-  <a href="#toc">back to TOC</a>
-</p>
+<hr />
 """
 
 # ╔═╡ 48db121e-8a8e-11eb-189f-d9f41e4b1d9d

@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.12.21
+# v0.14.1
 
 using Markdown
 using InteractiveUtils
@@ -21,31 +21,31 @@ md"""
 ## Deep Learning (DL)
 
 ref. from book **"Data Science from Scratch"**, Chap 19
+
+$(html"<div><sub>&copy; Pascal, April 2021</sub></div>")
 """
 
 # ╔═╡ e7373726-8b59-11eb-2a2b-b5138e4f5268
-html"""
-<a id='toc'></a>
-"""
+PlutoUI.TableOfContents(indent=true, depth=4, aside=true)
 
 # ╔═╡ f5ee64b2-8b59-11eb-2751-0778efd589cd
-md"""
-#### TOC
-  - [Tensors](#tensor)
-  - [The Layer Abstraction](#abstraction-layer)
-  - [Neural Network as a sequence of layers](#nn-a-seq-of-layers)
-  - [Loss and Optimization](#loss-n-optimization)
-  - [XOR example](#xor-example)
-  - [FizzBuzz example](#fizzbuzz-example)
-  - [Softmax and Cross-Entropy Loss](#softmax-n-xentropy)
+html"""
+<style>
+  main {
+	max-width: calc(800px + 25px + 6px);
+  }
+  .plutoui-toc.aside {
+    background: linen;
+  }
+  h3, h4 {
+	background: wheat;
+  }
+</style>
 """
 
 # ╔═╡ 164b4054-8b5a-11eb-03cc-9fc52eed5937
 html"""
-<p style="text-align: right;">
-  <a id='tensor'></a>
-  <a href="#toc">back to TOC</a>
-</p>
+<hr />
 """
 
 # ╔═╡ 31d3fa52-8b5d-11eb-017f-4308a2a06930
@@ -163,10 +163,7 @@ end
 
 # ╔═╡ ab6ef588-8b62-11eb-04fa-ab3051ddd7db
 html"""
-<p style="text-align: right;">
-  <a id='abstraction-layer'></a>
-  <a href="#toc">back to TOC</a>
-</p>
+<hr />
 """
 
 # ╔═╡ ab54224e-8b62-11eb-3f76-8506247531dc
@@ -418,10 +415,7 @@ parms(self::Linear) = [self.w, self.b]
 
 # ╔═╡ c01aade4-8b74-11eb-0af8-73ad690afddb
 html"""
-<p style="text-align: right;">
-  <a id='nn-a-seq-of-layers'></a>
-  <a href="#toc">back to TOC</a>
-</p>
+<hr />
 """
 
 # ╔═╡ c0024696-8b74-11eb-321f-0dd3d94a8d48
@@ -491,10 +485,7 @@ end
 
 # ╔═╡ 7c12872a-8b88-11eb-1de6-fd84daec8930
 html"""
-<p style="text-align: right;">
-  <a id='loss-n-optimization'></a>
-  <a href="#toc">back to TOC</a>
-</p>
+<hr />
 """
 
 # ╔═╡ 7bf6740e-8b88-11eb-34ee-4db60fb0db8a
@@ -603,10 +594,7 @@ end
 
 # ╔═╡ 21614b5a-8b8c-11eb-01e9-bd2517364992
 html"""
-<p style="text-align: right;">
-  <a id='xor-example'></a>
-  <a href="#toc">back to TOC</a>
-</p>
+<hr />
 """
 
 # ╔═╡ 212a4800-8b8c-11eb-0b29-659a3be01512
@@ -676,10 +664,7 @@ xor_accuracy(xor_net, xs, ys)
 
 # ╔═╡ 593338dc-8c3f-11eb-3978-75a4a2df9116
 html"""
-<p style="text-align: right;">
-  <a id='fizzbuzz-example'></a>
-  <a href="#toc">back to TOC</a>
-</p>
+<hr />
 """
 
 # ╔═╡ 319822fc-8c2a-11eb-397a-4971fb64f900
@@ -794,10 +779,7 @@ Fifth, let us define our training loop.
 
 # ╔═╡ 3e34451e-8c51-11eb-3978-75a4a2df9116
 html"""
-<p style="text-align: right;">
-  <a id='softmax-n-xentropy'></a>
-  <a href="#toc">back to TOC</a>
-</p>
+<hr />
 """
 
 # ╔═╡ 48ba66fa-8c51-11eb-34ee-4db60fb0db8a

@@ -1,17 +1,17 @@
 ### A Pluto.jl notebook ###
-# v0.12.21
+# v0.14.1
 
 using Markdown
 using InteractiveUtils
+
+# ╔═╡ de098278-8e74-11eb-13e3-49c1b6e06e7d
+using Pkg; Pkg.activate("MLJ_env", shared=true)
 
 # ╔═╡ 10d6d90e-8d43-11eb-216c-8f94a3946fab
 begin
 	push!(LOAD_PATH, "./src")
 	using YaDeepLearning
 end
-
-# ╔═╡ de098278-8e74-11eb-13e3-49c1b6e06e7d
-using Pkg; Pkg.activate("MLJ_env", shared=true)
 
 # ╔═╡ ac463e7a-8b59-11eb-229e-db560e17c5f5
 begin
@@ -29,6 +29,8 @@ md"""
 ## Deep Learning (DL) (cont'ed)
 
 ref. from book **"Data Science from Scratch"**, Chap 19
+
+$(html"<div><sub>&copy; Pascal, April 2021</sub></div>")
 """
 
 # ╔═╡ 3972ef40-8d4f-11eb-3369-6dd94e7cfc13
@@ -39,15 +41,21 @@ Layers.Linear <: AbstractLayers.AbstractLayer, Layers.Linear <: AbstractLayers.A
 # cf. https://towardsdatascience.com/julias-big-problem-with-namespace-996d2e9ed71e
 
 # ╔═╡ e7373726-8b59-11eb-2a2b-b5138e4f5268
-html"""
-<a id='toc'></a>
-"""
+PlutoUI.TableOfContents(indent=true, depth=4, aside=true)
 
 # ╔═╡ f5ee64b2-8b59-11eb-2751-0778efd589cd
-md"""
-#### TOC
-  - [Dropout](#dropout)
-  - [MNIST](#mnist)
+html"""
+<style>
+  main {
+	max-width: calc(800px + 25px + 6px);
+  }
+  .plutoui-toc.aside {
+    background: linen;
+  }
+  h3, h4 {
+	background: wheat;
+  }
+</style>
 """
 
 # ╔═╡ 81290d1c-8ce2-11eb-3340-337957fd81b7
@@ -113,10 +121,7 @@ Then let us define our dropout  layer.
 
 # ╔═╡ 80ddf0f4-8ce2-11eb-3046-331119a0dc9b
 html"""
-<p style="text-align: right;">
-  <a id='mnist'></a>
-  <a href="#toc">back to TOC</a>
-</p>
+<hr />
 """
 
 # ╔═╡ 80a71408-8ce2-11eb-3978-75a4a2df9116
