@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.14.0
+# v0.14.1
 
 using Markdown
 using InteractiveUtils
@@ -18,31 +18,31 @@ md"""
 ## Databases and SQL
 
 ref. from book **"Data Science from Scratch"**, Chap 24
+
+$(html"<div><sub>&copy; Pascal, April 2021</sub></div>")
 """
 
 # ╔═╡ e7373726-8b59-11eb-2a2b-b5138e4f5268
-html"""
-<a id='toc'></a>
-"""
+PlutoUI.TableOfContents(indent=true, depth=4, aside=true)
 
 # ╔═╡ f5ee64b2-8b59-11eb-2751-0778efd589cd
-md"""
-#### TOC
-  - [Create table and insert rows](#create-insert)
-  - [Update](#update)
-  - [Delete](#delete)
-  - [Select](#select)
-  - [Group by](#group-by)
-  - [Order by](#order-by)
-  - [Join](#join)
+html"""
+<style>
+  main {
+	max-width: calc(800px + 25px + 6px);
+  }
+  .plutoui-toc.aside {
+    background: linen;
+  }
+  h3, h4 {
+	background: wheat;
+  }
+</style>
 """
 
 # ╔═╡ 81290d1c-8ce2-11eb-3340-337957fd81b7
 html"""
-<p style="text-align: right;">
-  <a id='create-insert'></a>
-  <a href="#toc">back to TOC</a>
-</p>
+<hr />
 """
 
 # ╔═╡ 8ff1bb20-8ce2-11eb-1de6-fd84daec8930
@@ -370,10 +370,7 @@ end
 
 # ╔═╡ 80ddf0f4-8ce2-11eb-3046-331119a0dc9b
 html"""
-<p style="text-align: right;">
-  <a id='update'></a>
-  <a href="#toc">back to TOC</a>
-</p>
+<hr />
 """
 
 # ╔═╡ 80a71408-8ce2-11eb-3978-75a4a2df9116
@@ -434,10 +431,7 @@ end
 
 # ╔═╡ d2b198b6-8ce2-11eb-170e-0f17904c9f2c
 html"""
-<p style="text-align: right;">
-  <a id='delete'></a>
-  <a href="#toc">back to TOC</a>
-</p>
+<hr />
 """
 
 # ╔═╡ d37f37b8-8ce8-11eb-2c00-3f98ca407f41
@@ -471,10 +465,7 @@ end
 
 # ╔═╡ e95983ba-8ceb-11eb-38fd-ed92cdcf754c
 html"""
-<p style="text-align: right;">
-  <a id='select'></a>
-  <a href="#toc">back to TOC</a>
-</p>
+<hr />
 """
 
 # ╔═╡ d3a749a2-8cec-11eb-1f06-b568f244b576
@@ -733,10 +724,7 @@ get_fn_retype(str_fn), get_fn_retype(str_fn₂)
 
 # ╔═╡ 6e7e7896-8cf8-11eb-062e-99492ec8cff8
 html"""
-<p style="text-align: right;">
-  <a id='group-by'></a>
-  <a href="#toc">back to TOC</a>
-</p>
+<hr />
 """
 
 # ╔═╡ 70f707c0-8cf6-11eb-11c2-73d7b28f7a0c
@@ -843,10 +831,7 @@ end
 
 # ╔═╡ 84946000-8d02-11eb-3160-571efee8fb0b
 html"""
-<p style="text-align: right;">
-  <a id='order-by'></a>
-  <a href="#toc">back to TOC</a>
-</p>
+<hr />
 """
 
 # ╔═╡ d05f1c40-8d17-11eb-2724-4d989c4c6b92
@@ -877,10 +862,7 @@ friendliest_letters₂ =  avg_friends_by_letter |>
 
 # ╔═╡ 40d46802-8e0f-11eb-2e47-53096e24dbd8
 html"""
-<p style="text-align: right;">
-  <a id='join'></a>
-  <a href="#toc">back to TOC</a>
-</p>
+<hr />
 """
 
 # ╔═╡ 80dff352-8d02-11eb-06b1-5f5e325046f5

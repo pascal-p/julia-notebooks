@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.12.21
+# v0.14.1
 
 using Markdown
 using InteractiveUtils
@@ -27,6 +27,26 @@ md"""
 ## NLP, part 2 - Word Vectors
 
 ref. from book **"Data Science from Scratch"**, Chap 21
+
+$(html"<div><sub>&copy; Pascal, April 2021</sub></div>")
+"""
+
+# ╔═╡ 83e01f80-884a-11eb-1ef7-e9cb5ab3ed20
+PlutoUI.TableOfContents(indent=true, depth=4, aside=true)
+
+# ╔═╡ 853ab02c-884a-11eb-01bf-1712dc177ffb
+html"""
+<style>
+  main {
+	max-width: calc(800px + 25px + 6px);
+  }
+  .plutoui-toc.aside {
+    background: linen;
+  }
+  h3, h4 {
+	background: wheat;
+  }
+</style>
 """
 
 # ╔═╡ 8cf46618-9109-11eb-2094-d99ba49a5b89
@@ -88,27 +108,6 @@ begin
   idims(self::Embedding) = self.num_embedding
   odims(self::Embedding) = self.embedding_dim
 end
-
-# ╔═╡ cb25501a-8915-11eb-3626-a1ae6d233f92
-html"""
-<a id='toc'></a>
-"""
-
-# ╔═╡ cb0838ae-8915-11eb-082f-3991192a101f
-md"""
-#### TOC
-  - [Vocabulary](#vocabulary)
-  - [Embedding Layer](#embedding-layer)
-  - [Run it](#run-it)
-"""
-
-# ╔═╡ dbbf22a2-8915-11eb-00eb-4b0278c0283d
-html"""
-<p style="text-align: right;">
-  <a id='vocabulary'></a>
-  <a href="#toc">back to TOC</a>
-</p>
-"""
 
 ## ================================
 
@@ -546,11 +545,10 @@ This shows that similar words tends to cluster together (almost...)
 
 # ╔═╡ Cell order:
 # ╟─87e5e2ec-8915-11eb-362b-6bf13a36b8e4
+# ╟─83e01f80-884a-11eb-1ef7-e9cb5ab3ed20
+# ╟─853ab02c-884a-11eb-01bf-1712dc177ffb
 # ╠═5eebac68-891b-11eb-37ba-c1d9481c6134
 # ╠═8cf46618-9109-11eb-2094-d99ba49a5b89
-# ╟─cb25501a-8915-11eb-3626-a1ae6d233f92
-# ╟─cb0838ae-8915-11eb-082f-3991192a101f
-# ╟─dbbf22a2-8915-11eb-00eb-4b0278c0283d
 # ╟─5f5e6d02-892a-11eb-32d8-dfc1a7f259fa
 # ╟─c1cb6562-90c8-11eb-2095-cbf63bb8b59d
 # ╠═073f6442-892e-11eb-0fc2-bbeb1d12619e

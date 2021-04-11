@@ -1,8 +1,11 @@
 ### A Pluto.jl notebook ###
-# v0.12.21
+# v0.14.1
 
 using Markdown
 using InteractiveUtils
+
+# ╔═╡ de098278-8e74-11eb-13e3-49c1b6e06e7d
+using Pkg; Pkg.activate("MLJ_env", shared=true)
 
 # ╔═╡ ac463e7a-8b59-11eb-229e-db560e17c5f5
 begin
@@ -20,36 +23,36 @@ begin
 	using YaDistances: cosine_similarity
 end
 
-# ╔═╡ de098278-8e74-11eb-13e3-49c1b6e06e7d
-using Pkg; Pkg.activate("MLJ_env", shared=true)
-
 # ╔═╡ 8c80e072-8b59-11eb-3c21-a18fe43c4536
 md"""
 ## Recommender Systems
 
 ref. from book **"Data Science from Scratch"**, Chap 23
+
+$(html"<div><sub>&copy; Pascal, April 2021</sub></div>")
 """
 
 # ╔═╡ e7373726-8b59-11eb-2a2b-b5138e4f5268
-html"""
-<a id='toc'></a>
-"""
+PlutoUI.TableOfContents(indent=true, depth=4, aside=true)
 
 # ╔═╡ f5ee64b2-8b59-11eb-2751-0778efd589cd
-md"""
-#### TOC
-  - [Recommending What is Popular](#recom-whats-popular)
-  - [User-Based Collaborative Filtering](#user-based-collaborative-filtering)
-  - [Item-Based Collaborative Filtering](#item-based-collaborative-filtering)
-  - [Matrix Factorization](#matrix-factorization)
+html"""
+<style>
+  main {
+	max-width: calc(800px + 25px + 6px);
+  }
+  .plutoui-toc.aside {
+    background: linen;
+  }
+  h3, h4 {
+	background: wheat;
+  }
+</style>
 """
 
 # ╔═╡ 81290d1c-8ce2-11eb-3340-337957fd81b7
 html"""
-<p style="text-align: right;">
-  <a id='recom-whats-popular'></a>
-  <a href="#toc">back to TOC</a>
-</p>
+<hr />
 """
 
 # ╔═╡ 8ff1bb20-8ce2-11eb-1de6-fd84daec8930
@@ -139,10 +142,7 @@ If you are user 4, who is already interested in many of those things, you would 
 
 # ╔═╡ 80ddf0f4-8ce2-11eb-3046-331119a0dc9b
 html"""
-<p style="text-align: right;">
-  <a id='user-based-collaborative-filtering'></a>
-  <a href="#toc">back to TOC</a>
-</p>
+<hr />
 """
 
 # ╔═╡ 80a71408-8ce2-11eb-3978-75a4a2df9116
@@ -309,10 +309,7 @@ Note however that this approach does not scale well and in large dimensional vec
 
 # ╔═╡ 6f3fc602-8ed5-11eb-050b-977276cabfee
 html"""
-<p style="text-align: right;">
-  <a id='item-based-collaborative-filtering'></a>
-  <a href="#toc">back to TOC</a>
-</p>
+<hr />
 """
 
 # ╔═╡ 6f006b24-8ed5-11eb-11d5-c32ce953dcaf
@@ -418,10 +415,7 @@ end
 
 # ╔═╡ d9e37240-8f31-11eb-1caf-dbbf84b424f0
 html"""
-<p style="text-align: right;">
-  <a id='matrix-factorization'></a>
-  <a href="#toc">back to TOC</a>
-</p>
+<hr />
 """
 
 # ╔═╡ d962551e-8f31-11eb-3ddf-8bc8b04b3086
