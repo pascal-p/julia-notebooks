@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.12.20
+# v0.14.1
 
 using Markdown
 using InteractiveUtils
@@ -14,15 +14,18 @@ macro bind(def, element)
 end
 
 # ╔═╡ 12333bc8-68ca-11eb-2e89-ab9b76b0595b
-using Plots
-
-# ╔═╡ 27b37bc0-68ca-11eb-0c16-914e5a5ec540
-using PlutoUI
+begin
+	using Plots
+	using PlutoUI
+end
 
 # ╔═╡ f61ae738-68c9-11eb-03c1-efb38291b3ae
 md"""
 ### Plots
 """
+
+# ╔═╡ 27b37bc0-68ca-11eb-0c16-914e5a5ec540
+PlutoUI.TableOfContents(indent=true, depth=4, aside=true)
 
 # ╔═╡ 2c7cfabe-68ca-11eb-1bee-338af63e7e37
 begin
@@ -112,7 +115,22 @@ end
 plot!(nx, ny, leg=false, title="A sample plot")
 
 # ╔═╡ 903feeaa-68cb-11eb-1544-c18b07df0652
-plot(nx, ny, leg=false, title="A sample plot")
+plot(nx, ny, leg=false, title="Another sample plot")
+
+# ╔═╡ 223e2023-c974-45ac-920a-489e20bfc3f3
+html"""
+<style>
+  main {
+        max-width: calc(800px + 25px + 6px);
+  }
+  .plutoui-toc.aside {
+    background: linen;
+  }
+  h3, h4 {
+        background: wheat;
+  }
+</style>
+"""
 
 # ╔═╡ Cell order:
 # ╟─f61ae738-68c9-11eb-03c1-efb38291b3ae
@@ -130,3 +148,4 @@ plot(nx, ny, leg=false, title="A sample plot")
 # ╠═5bb58dae-68cb-11eb-0f14-15a9b6a27a93
 # ╠═84c33e12-68cb-11eb-2c3f-91955e670357
 # ╠═903feeaa-68cb-11eb-1544-c18b07df0652
+# ╟─223e2023-c974-45ac-920a-489e20bfc3f3

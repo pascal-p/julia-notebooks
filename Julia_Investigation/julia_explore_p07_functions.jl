@@ -1,14 +1,17 @@
 ### A Pluto.jl notebook ###
-# v0.12.20
+# v0.14.1
 
 using Markdown
 using InteractiveUtils
 
-# ╔═╡ 3ed2de2e-68cf-11eb-1122-091e57ea014e
+# ╔═╡ b37139ed-ca54-4a70-a4aa-190fc4ff223a
 using PlutoUI
 
 # ╔═╡ 48988162-68d1-11eb-22dc-2bbc0e41043b
 using Test
+
+# ╔═╡ cb0ae3b2-42b8-485b-9c04-c1190e5eed94
+PlutoUI.TableOfContents(indent=true, depth=4, aside=true)
 
 # ╔═╡ b6e6f16a-68ce-11eb-320d-6b292123f85a
 md"""
@@ -210,11 +213,27 @@ begin
 	@test jy(:reset) == 0
 end
 
+# ╔═╡ 3dc862b0-a58a-4731-a3c8-4eb44ded1443
+html"""
+<style>
+  main {
+        max-width: calc(800px + 25px + 6px);
+  }
+  .plutoui-toc.aside {
+    background: linen;
+  }
+  h3, h4 {
+        background: wheat;
+  }
+</style>
+"""
+
 # ╔═╡ Cell order:
+# ╠═b37139ed-ca54-4a70-a4aa-190fc4ff223a
+# ╠═cb0ae3b2-42b8-485b-9c04-c1190e5eed94
 # ╟─b6e6f16a-68ce-11eb-320d-6b292123f85a
 # ╠═d8456146-68ce-11eb-2872-3d66933b3385
 # ╠═fbec986e-68ce-11eb-1598-619db8bca4cc
-# ╠═3ed2de2e-68cf-11eb-1122-091e57ea014e
 # ╠═48988162-68d1-11eb-22dc-2bbc0e41043b
 # ╠═3750513e-68cf-11eb-0e76-7169551337af
 # ╠═50a85e6a-68cf-11eb-0e5e-2f2cbbfcce73
@@ -242,3 +261,4 @@ end
 # ╠═8d553214-68d1-11eb-29d7-d791c9dff9f4
 # ╠═b2a41b98-68d1-11eb-21b3-9b48c657591d
 # ╠═eadfe19a-68d1-11eb-05c0-43915ae2d1b1
+# ╟─3dc862b0-a58a-4731-a3c8-4eb44ded1443
