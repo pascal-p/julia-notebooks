@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.12.20
+# v0.14.1
 
 using Markdown
 using InteractiveUtils
@@ -21,6 +21,9 @@ md"""
 Resources:
 - https://github.com/BenLauwens/ThinkJulia.jl
 """
+
+# ╔═╡ b8800646-8364-4cd9-8ab5-c010c666fb65
+PlutoUI.TableOfContents(indent=true, depth=4, aside=true)
 
 # ╔═╡ 7d6fa0de-6910-11eb-00df-39e0c9733dd2
 """
@@ -212,9 +215,25 @@ begin
 	@test time_to_int(nts₃) == 86_411 # "24h and 11s is 86411s"
 end
 
+# ╔═╡ d2836738-c72c-4348-aede-7db694123f70
+html"""
+<style>
+  main {
+        max-width: calc(800px + 25px + 6px);
+  }
+  .plutoui-toc.aside {
+    background: linen;
+  }
+  h3, h4 {
+        background: wheat;
+  }
+</style>
+"""
+
 # ╔═╡ Cell order:
 # ╟─57e617da-6910-11eb-0e3f-33b08ab72b7a
 # ╠═d3435ffa-6910-11eb-1169-5f99095f1fdf
+# ╟─b8800646-8364-4cd9-8ab5-c010c666fb65
 # ╠═7d6fa0de-6910-11eb-00df-39e0c9733dd2
 # ╟─a5a13cf2-6910-11eb-1db3-392525cb52dc
 # ╠═b5c2de12-6910-11eb-3ade-73ae4245aaf9
@@ -233,3 +252,4 @@ end
 # ╠═1ced8ab4-6915-11eb-1de5-3de099efa35c
 # ╟─e4bc1df8-6915-11eb-130f-e1b1bdd1e940
 # ╠═6526d230-6916-11eb-07f2-63fe39f294c7
+# ╟─d2836738-c72c-4348-aede-7db694123f70

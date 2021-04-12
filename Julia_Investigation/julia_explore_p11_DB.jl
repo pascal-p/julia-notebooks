@@ -1,42 +1,33 @@
 ### A Pluto.jl notebook ###
-# v0.12.20
+# v0.14.1
 
 using Markdown
 using InteractiveUtils
 
-# ╔═╡ 1b354ec4-68fb-11eb-2963-2bf081ae52ad
-using JuliaDB, Distributions
-
 # ╔═╡ fb086364-68fc-11eb-32f6-ab7218186246
 begin
-	# using Pkg
-	# Pkg.add("OnlineStats")
-	
+	# using Pkg; Pkg.add("Distributions")
+	using JuliaDB, Distributions
 	using OnlineStats
+	using PlutoUI
 end
-
-# ╔═╡ e0cc6636-690d-11eb-0885-9790a38923c8
-using PlutoUI
 
 # ╔═╡ aeb3b894-68fa-11eb-18c7-516e32b88d55
 md"""
 ## JuliaDB - tutorial
 
-ref. [Using table](https://www.youtube.com/watch?v=pv5zfIs2lyU)  
-
-ref. [Selections in JuliaDB ](https://www.youtube.com/watch?v=eQORf4m_8Hk)  
-
-ref. [Reductions in JuliaDB](https://www.youtube.com/watch?v=tCVgn9m2ajM)
-
-ref. [Grouping in JuliaDB to calculate descriptive statistics](https://www.youtube.com/watch?v=hU7N-EWnC2A)
-
-ref. [Joining 2 tables](https://www.youtube.com/watch?v=CIBxY7PUjc0)
-
-ref. [Importing a csv file in JuliaDB] (https://www.youtube.com/watch?v=slL_oj5Dmzc)   
-
-ref. [JuliaDB](https://juliacomputing.github.io/JuliaDB)
+- ref. [Using table](https://www.youtube.com/watch?v=pv5zfIs2lyU)
+- ref. [Selections in JuliaDB ](https://www.youtube.com/watch?v=eQORf4m_8Hk)
+- ref. [Reductions in JuliaDB](https://www.youtube.com/watch?v=tCVgn9m2ajM)
+- ref. [Grouping in JuliaDB to calculate descriptive statistics](https://www.youtube.com/watch?v=hU7N-EWnC2A)
+- ref. [Joining 2 tables](https://www.youtube.com/watch?v=CIBxY7PUjc0)
+- ref. [Importing a csv file in JuliaDB] (https://www.youtube.com/watch?v=slL_oj5Dmzc) 
+- ref. [JuliaDB](https://juliacomputing.github.io/JuliaDB)
 
 """
+
+# ╔═╡ e0cc6636-690d-11eb-0885-9790a38923c8
+PlutoUI.TableOfContents(indent=true, depth=4, aside=true)
 
 # ╔═╡ 21d810d6-68fb-11eb-3542-5906971c0c1a
 md"""
@@ -166,7 +157,7 @@ md"""
 
 # ╔═╡ c83fda3c-68fe-11eb-3112-3d01bf2d0693
 ## csv file is in the current directory
-db = loadtable("Data.csv", header_exists=true)
+db = loadtable("data/Data.csv", header_exists=true)
 
 # ╔═╡ 9e8aa658-68ff-11eb-1a80-f50efa89f446
 length(db)
@@ -188,11 +179,25 @@ end
 # ╔═╡ 72b6b062-690e-11eb-1abc-d9ddf9f363e1
 summarize((m = mean, s = std), db)
 
+# ╔═╡ 89332e45-974b-4814-9bd5-b34b98eeb9d7
+html"""
+<style>
+  main {
+        max-width: calc(800px + 25px + 6px);
+  }
+  .plutoui-toc.aside {
+    background: linen;
+  }
+  h3, h4 {
+        background: wheat;
+  }
+</style>
+"""
+
 # ╔═╡ Cell order:
 # ╟─aeb3b894-68fa-11eb-18c7-516e32b88d55
-# ╠═1b354ec4-68fb-11eb-2963-2bf081ae52ad
 # ╠═fb086364-68fc-11eb-32f6-ab7218186246
-# ╠═e0cc6636-690d-11eb-0885-9790a38923c8
+# ╟─e0cc6636-690d-11eb-0885-9790a38923c8
 # ╟─21d810d6-68fb-11eb-3542-5906971c0c1a
 # ╠═53c79c1a-68fb-11eb-26a2-bf3828728dbb
 # ╠═715cd434-68fb-11eb-177f-eb8052e0787c
@@ -228,3 +233,4 @@ summarize((m = mean, s = std), db)
 # ╠═da1b2fee-690e-11eb-2ca1-1785bbccb4e5
 # ╠═882f3840-6901-11eb-2329-f3ab3b4c22a1
 # ╠═72b6b062-690e-11eb-1abc-d9ddf9f363e1
+# ╟─89332e45-974b-4814-9bd5-b34b98eeb9d7
