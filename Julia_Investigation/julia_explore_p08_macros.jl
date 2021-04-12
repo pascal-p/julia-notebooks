@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.12.20
+# v0.14.1
 
 using Markdown
 using InteractiveUtils
@@ -31,6 +31,9 @@ using Test
 md"""
 ## Macros in Julia
 """
+
+# ╔═╡ eb0c80ff-9b03-4391-a2b1-ff56e3e4c8a9
+PlutoUI.TableOfContents(indent=true, depth=4, aside=true)
 
 # ╔═╡ f88b338e-68d2-11eb-1fa8-0bf5b252e9b6
 md"""
@@ -224,9 +227,25 @@ with_terminal() do
 	dump(:(-c + 2 - a * b))
 end
 
+# ╔═╡ a87243cb-3c70-4ecd-ad6e-80a876d6d261
+html"""
+<style>
+  main {
+        max-width: calc(800px + 25px + 6px);
+  }
+  .plutoui-toc.aside {
+    background: linen;
+  }
+  h3, h4 {
+        background: wheat;
+  }
+</style>
+"""
+
 # ╔═╡ Cell order:
 # ╟─dc528154-68d2-11eb-2f60-f3499c34b532
 # ╠═2e0f805a-68d3-11eb-35c6-95c237883fcd
+# ╟─eb0c80ff-9b03-4391-a2b1-ff56e3e4c8a9
 # ╟─f88b338e-68d2-11eb-1fa8-0bf5b252e9b6
 # ╠═04400be6-68d3-11eb-35b3-79c07b358527
 # ╠═1148416e-68d3-11eb-24b3-b1a15aa812a0
@@ -259,3 +278,4 @@ end
 # ╟─a5bdc6f6-68e3-11eb-2248-fb359467846d
 # ╠═c3b46a5c-68e3-11eb-0edd-9f98a253f055
 # ╠═dee8a4f0-68e3-11eb-2336-abcb7af27dcf
+# ╟─a87243cb-3c70-4ecd-ad6e-80a876d6d261

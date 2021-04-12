@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.12.20
+# v0.14.1
 
 using Markdown
 using InteractiveUtils
@@ -19,6 +19,9 @@ md"""
 md"""
 ##### Partial Application
 """
+
+# ╔═╡ 43c74f81-2272-48df-b10a-fc6d345fe836
+PlutoUI.TableOfContents(indent=true, depth=4, aside=true)
 
 # ╔═╡ 75354800-68e4-11eb-1d71-79b19115a8ab
 function partial(fn::Function, x...)
@@ -75,10 +78,26 @@ f123 = @partial(f, 1, 2, 3)
 # ╔═╡ 7f23d1cc-68e6-11eb-13fe-3b28848804ba
 @test f123(1, 2, 0) == 3
 
+# ╔═╡ 0562f2a6-0a70-440c-99b7-61e3441dcb96
+html"""
+<style>
+  main {
+        max-width: calc(800px + 25px + 6px);
+  }
+  .plutoui-toc.aside {
+    background: linen;
+  }
+  h3, h4 {
+        background: wheat;
+  }
+</style>
+"""
+
 # ╔═╡ Cell order:
 # ╟─4c32defe-68e4-11eb-2ccd-2b7bd29fbebd
 # ╟─676fac42-68e4-11eb-207b-19080677a358
 # ╠═b8dda4e4-68e4-11eb-36ba-9df2d25c7737
+# ╟─43c74f81-2272-48df-b10a-fc6d345fe836
 # ╠═75354800-68e4-11eb-1d71-79b19115a8ab
 # ╠═8dc62d9e-68e4-11eb-0d1d-61902cf5bd41
 # ╠═9c57cbce-68e4-11eb-0617-5f9625aed520
@@ -94,3 +113,4 @@ f123 = @partial(f, 1, 2, 3)
 # ╠═6e09faa6-68e6-11eb-3478-39a74c43259f
 # ╠═7645d79c-68e6-11eb-0c4e-056ac6abb291
 # ╠═7f23d1cc-68e6-11eb-13fe-3b28848804ba
+# ╟─0562f2a6-0a70-440c-99b7-61e3441dcb96
