@@ -3,7 +3,7 @@
   Ref. `DataFrame.jl` [Bogumił Kamiński](http://bogumilkaminski.pl/about/), November 2020
 
   A `pluto` port of the DataFrames tutorial, which is a brief (yet rather complete) introduction to basic usage of [DataFrames](https://github.com/JuliaData/DataFrames.jl).
- 
+
   This is a work in progress,
 
 ### TOC
@@ -12,11 +12,11 @@
 |-------------------------------------------------------------------------------------------------------------------|-----------------------------------|
 | [01_constructors.jl](https://github.com/pascal-p/julia-notebooks/blob/main/06-DataFrames/01_constructors.jl)   | Creating DataFrame and conversion |
 | [02_basicinfo.jl](https://github.com/pascal-p/julia-notebooks/blob/main/06-DataFrames/02_basicinfo.jl)         | Getting summary information       |
+| [03_missingvalues.jl](https://github.com/pascal-p/julia-notebooks/blob/main/06-DataFrames/03_missingvalues.jl) | Handling missing values           |
+
 
 
 <!--
-| [03_missingvalues.jl](https://github.com/pascal-p/julia-notebooks/blob/main/06-DataFrames/03_missingvalues.jl) | Handling missing values           |
-
 | [04_loadsave.jl]()           | Loading and saving DataFrames     |
 | [05_columns.jl]()             | Working with columns of DataFrame |
 | [06_rows.jl]()                   | Working with row of DataFrame     |
