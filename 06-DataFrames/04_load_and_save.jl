@@ -25,7 +25,7 @@ end
 
 # ╔═╡ b3dcf3f4-9d68-11eb-01a6-317fe0e0cd7e
 md"""
-## Introduction to DataFrames / 4 - Load and Save
+## Introduction DataFrames / 4 - Load and Save
 
 ref. [Introduction to DataFrames, Bogumił Kamiński](https://github.com/bkamins/Julia-DataFrames-Tutorial/blob/master/04_loadsave.ipynb)
 
@@ -35,9 +35,6 @@ Here we will load `CSV.jl` to read and write CSV files and `Arrow.jl`, `JLSO.jl`
 
 $(html"<div><sub>&copy; Pascal, April 2021</sub></div>")
 """
-
-# ╔═╡ 6ba0cb33-81e2-4a14-b408-71acaa0f25b1
-# using Pkg; Pkg.add("Mmap")
 
 # ╔═╡ d6993a5b-8158-4ce3-accb-8e8c514229b3
 PlutoUI.TableOfContents(indent=true, depth=4, aside=true)
@@ -482,17 +479,101 @@ df₂ = CSV.File(transcode(GzipDecompressor,
 md"""
 #### Using zip files
 
-TODO...
+Sometimes you may have files compressed inside a zip file.
+
+In such a situation you may use `ZipFile.jl` in conjunction an an appropriate reader to read the files.
+
+Here we first create a ZIP file and then read back its contents into a DataFrame.
+"""
+
+# ╔═╡ 50eee498-9548-4ee7-8375-90c17b376c0a
+zdf₁ = DataFrame(rand(1:10, 3, 4), :auto)
+
+# ╔═╡ 90eb146e-9dbf-45ef-a093-437fb938b10d
+zdf₂ = DataFrame(rand(1:10, 3, 4), :auto)
+
+# ╔═╡ f5cb08ba-814e-4a7b-b676-5967a352d2a7
+md"""
+And we show yet another way to write a DataFrame into a CSV file
+"""
+
+# ╔═╡ 223e5415-0ab4-4016-b506-658adc75c57b
+begin
+	# write a CSV file into the zip file
+	w = ZipFile.Writer("./Data/x.zip")
+
+	f₁ = ZipFile.addfile(w, "x₁.csv")
+	write(f₁, sprint(show, "text/csv", zdf₁))
+
+	# write a second CSV file into zip file
+	f₂ = ZipFile.addfile(w, "x₂.csv", method=ZipFile.Deflate)
+	write(f₂, sprint(show, "text/csv", zdf₂))
+
+	close(w)
+end
+
+# ╔═╡ dd26958e-55f1-4b2e-b557-1bd24eb43fa0
+md"""
+Now we read the CSV we have written.
 """
 
 # ╔═╡ 8b87edb5-d8a7-4234-ac8d-f9e0c8f5f8a0
-
+z = ZipFile.Reader("./Data/x.zip");
 
 # ╔═╡ f257c2c9-6cdf-4df8-8b53-7a8d3794b7c3
+begin
+	# find the index index of file called x₁.csv
+	ix_xcsv₁ = findfirst(x -> x.name == "x₁.csv", z.files);
 
+	# to read the x₁.csv file in the zip file
+	rzdf₁ = read(z.files[ix_xcsv₁]) |> f -> CSV.read(f, DataFrame);
+end
 
 # ╔═╡ ec462215-2451-4e8e-b440-58503378faae
+@assert rzdf₁ == zdf₁
 
+# ╔═╡ 4fb9645f-ee4d-410a-aec3-06f13fdec761
+begin
+	# find the index index of file called x₂.csv
+	ix_xcsv₂ = findfirst(x->x.name == "x₂.csv", z.files)
+
+	# to read the x2.csv file in the zip file
+	rzdf₂ = read(z.files[ix_xcsv₂]) |> f -> CSV.read(f, DataFrame);
+end
+
+# ╔═╡ cc833913-383f-46ac-8ff2-5b6c8c8cbff4
+@assert rzdf₂ == zdf₂
+
+# ╔═╡ c3f1fae0-4422-4023-b43f-de1651a89983
+md"""
+Note that once you read a given file from z object its stream is all used-up (it is at its end). Therefore to read it again you need to close z and open it again.
+
+Also do not forget to close the zip file once done.
+"""
+
+# ╔═╡ 5a1bd5be-9329-44e8-848e-efb7bac1e5f4
+close(z)
+
+# ╔═╡ 1d8e3b27-8af6-4541-923a-a7744b271464
+md"""
+Finally, let's clean up. Do not run the next cell unless you are sure that it will not erase your important files.
+"""
+
+# ╔═╡ d775d1a6-906c-4013-8ab7-5951cb5fe071
+foreach(f -> rm(string("./Data/", f), force=true),
+	["x0.csv", "x₀.bin", "x₀.jlso", "x₁.json", "x₂.json", "bigdf1.csv", "bigdf.bin", 
+		"bigdf.jlso", "bigdf1.json", "bigdf2.json", "x.zip"])
+
+# ╔═╡ 2ad38587-5e55-4e24-9c23-a3180dd1bf99
+begin
+	rm("bigdf.jdf", recursive=true, force=true)
+	rm("x₀.jdf", recursive=true, force=true)
+end
+
+# ╔═╡ e0fa8b35-19fd-4155-959d-51c2817199e6
+md"""
+Note that we did not remove `x₀.arrow`, `bigdf.arrow` and `df_compress_test.csv.gz` - you have to do it manually, as these files are memory mapped.
+"""
 
 # ╔═╡ c54cdbf1-7787-4f0f-b9ff-d4389f4a7c5e
 html"""
@@ -511,13 +592,9 @@ html"""
 </style>
 """
 
-# ╔═╡ 1d8e3b27-8af6-4541-923a-a7744b271464
-
-
 # ╔═╡ Cell order:
 # ╟─b3dcf3f4-9d68-11eb-01a6-317fe0e0cd7e
 # ╠═794a5356-6e05-44b4-ad9d-375a1fa3613b
-# ╠═6ba0cb33-81e2-4a14-b408-71acaa0f25b1
 # ╟─d6993a5b-8158-4ce3-accb-8e8c514229b3
 # ╟─de97ded0-3952-4188-9a43-a8f383e1ae65
 # ╠═887ea560-b824-44bd-96ba-7756271993e7
@@ -583,8 +660,20 @@ html"""
 # ╠═c33160d1-b12e-42ab-a3c3-b8d6bc58bd9d
 # ╠═544fbeae-ca73-487d-92b5-8d619d9b8db7
 # ╟─bcee6550-63e7-4ff2-a324-37bef45a28b9
+# ╠═50eee498-9548-4ee7-8375-90c17b376c0a
+# ╠═90eb146e-9dbf-45ef-a093-437fb938b10d
+# ╟─f5cb08ba-814e-4a7b-b676-5967a352d2a7
+# ╠═223e5415-0ab4-4016-b506-658adc75c57b
+# ╟─dd26958e-55f1-4b2e-b557-1bd24eb43fa0
 # ╠═8b87edb5-d8a7-4234-ac8d-f9e0c8f5f8a0
 # ╠═f257c2c9-6cdf-4df8-8b53-7a8d3794b7c3
 # ╠═ec462215-2451-4e8e-b440-58503378faae
+# ╠═4fb9645f-ee4d-410a-aec3-06f13fdec761
+# ╠═cc833913-383f-46ac-8ff2-5b6c8c8cbff4
+# ╟─c3f1fae0-4422-4023-b43f-de1651a89983
+# ╠═5a1bd5be-9329-44e8-848e-efb7bac1e5f4
+# ╟─1d8e3b27-8af6-4541-923a-a7744b271464
+# ╠═d775d1a6-906c-4013-8ab7-5951cb5fe071
+# ╠═2ad38587-5e55-4e24-9c23-a3180dd1bf99
+# ╟─e0fa8b35-19fd-4155-959d-51c2817199e6
 # ╟─c54cdbf1-7787-4f0f-b9ff-d4389f4a7c5e
-# ╠═1d8e3b27-8af6-4541-923a-a7744b271464
