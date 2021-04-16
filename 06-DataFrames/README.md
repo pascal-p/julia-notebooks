@@ -18,11 +18,10 @@
 | [06_rows.jl](https://github.com/pascal-p/julia-notebooks/blob/main/06-DataFrames/06_rows.jl)                   | Working with row of DataFrame     |
 | | |
 | [08_joins.jl](https://github.com/pascal-p/julia-notebooks/blob/main/06-DataFrames/08_joins.jl)                 | Joining DataFrames                |
-
+| [09_reshaping.jl](https://github.com/pascal-p/julia-notebooks/blob/main/06-DataFrames/09_reshaping.jl)         | Reshaping DataFrames              |
 
 <!--
 | [07_factors.jl]()             | Working with categorical data     |
-| [09_reshaping.jl]()         | Reshaping DataFrames              |
 | [10_transforms.jl]()       | Transforming DataFrames           |
 | [11_performance.jl]()     | Performance tips                  |
 | [12_pitfalls.jl]()           | Possible pitfalls                 |
