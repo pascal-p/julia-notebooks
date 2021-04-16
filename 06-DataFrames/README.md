@@ -13,13 +13,13 @@
 | [01_constructors.jl](https://github.com/pascal-p/julia-notebooks/blob/main/06-DataFrames/01_constructors.jl)   | Creating DataFrame and conversion |
 | [02_basicinfo.jl](https://github.com/pascal-p/julia-notebooks/blob/main/06-DataFrames/02_basicinfo.jl)         | Getting summary information       |
 | [03_missingvalues.jl](https://github.com/pascal-p/julia-notebooks/blob/main/06-DataFrames/03_missingvalues.jl) | Handling missing values           |
-| [04_loadsave.jl]()           | Loading and saving DataFrames     |
-
-
+| [04_loadsave.jl](https://github.com/pascal-p/julia-notebooks/blob/main/06-DataFrames/04_load_and_save.jl)      | Loading and saving DataFrames     |
+| | |
+| [06_rows.jl](https://github.com/pascal-p/julia-notebooks/blob/main/06-DataFrames/06_rows.jl)                   | Working with row of DataFrame     |
 
 <!--
 | [05_columns.jl]()             | Working with columns of DataFrame |
-| [06_rows.jl]()                   | Working with row of DataFrame     |
+
 | [07_factors.jl]()             | Working with categorical data     |
 | [08_joins.jl]()                 | Joining DataFrames                |
 | [09_reshaping.jl]()         | Reshaping DataFrames              |
