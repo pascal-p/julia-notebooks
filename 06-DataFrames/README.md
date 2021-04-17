@@ -16,19 +16,13 @@
 | [04_loadsave.jl](https://github.com/pascal-p/julia-notebooks/blob/main/06-DataFrames/04_load_and_save.jl)      | Loading and saving DataFrames     |
 | [05_columns.jl](https://github.com/pascal-p/julia-notebooks/blob/main/06-DataFrames/05_columns.jl)             | Working with columns of DataFrame |
 | [06_rows.jl](https://github.com/pascal-p/julia-notebooks/blob/main/06-DataFrames/06_rows.jl)                   | Working with row of DataFrame     |
-| | |
+| [07_factors.jl](https://github.com/pascal-p/julia-notebooks/blob/main/06-DataFrames/07_factors.jl)             | Working with categorical data     |
 | [08_joins.jl](https://github.com/pascal-p/julia-notebooks/blob/main/06-DataFrames/08_joins.jl)                 | Joining DataFrames                |
 | [09_reshaping.jl](https://github.com/pascal-p/julia-notebooks/blob/main/06-DataFrames/09_reshaping.jl)         | Reshaping DataFrames              |
-
-<!--
-| [07_factors.jl]()             | Working with categorical data     |
-| [10_transforms.jl]()       | Transforming DataFrames           |
-| [11_performance.jl]()     | Performance tips                  |
-| [12_pitfalls.jl]()           | Possible pitfalls                 |
-| [13_extras.jl]()               | Additional interesting packages   |
-
--->
-
+| TODO: [10_transforms.jl]()       | Transforming DataFrames           |
+| TODO: [11_performance.jl]()     | Performance tips                  |
+| TODO: [12_pitfalls.jl]()           | Possible pitfalls                 |
+| TODO: [13_extras.jl]()               | Additional interesting packages   |
 
 <hr />
 <p><sub><em>2020, 2021 Corto Inc</sub></em></p>
