@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.14.2
+# v0.14.4
 
 using Markdown
 using InteractiveUtils
@@ -69,7 +69,7 @@ Let us take at look at the data to get some understanding about what is going on
 """
 
 # ╔═╡ 7e812f27-4129-48ba-b4f5-a49ddc4169ca
-describe(df, :eltype, :nmissing, :first => first, :last => last)
+describe(df, :eltype, :nmissing, first => :first, last => :last)
 
 # ╔═╡ 3a0b11b9-a51e-47f1-833c-8c9a2e4d73ce
 md"""
