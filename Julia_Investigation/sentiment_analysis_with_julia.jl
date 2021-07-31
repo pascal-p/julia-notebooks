@@ -15,18 +15,18 @@ end
 
 # ╔═╡ 3d4d751a-b972-4e88-b568-1f19f0f20564
 begin
-	const DIR = "$(ENV["HOME"])/Projects/ML_DL/Notebooks/julia-notebooks/Julia_Investigation/"
-	
-	using Pkg
-	Pkg.activate(DIR)
+        const DIR = "$(ENV["HOME"])/Projects/ML_DL/Notebooks/julia-notebooks/Julia_Investigation/"
+
+        using Pkg
+        Pkg.activate(DIR)
 end
 
 # ╔═╡ e95db99e-a9ec-437c-9557-4dec4f42926f
 begin
-	using PlutoUI
-	using CSV, DataFrames, TextAnalysis
-	using Pipe: @pipe
-	using Plots
+        using PlutoUI
+        using CSV, DataFrames, TextAnalysis
+        using Pipe: @pipe
+        using Plots
 end
 
 # ╔═╡ 35b8ad6d-7c5e-43bf-b014-ce24010a959a
@@ -57,8 +57,8 @@ md"""
 
 # ╔═╡ 3ab74396-3e42-4545-af0b-f5746345324d
 begin
-	cd(DIR)
-	df = CSV.File("./data/Tweets.csv") |> DataFrame
+        cd(DIR)
+        df = CSV.File("./data/Tweets.csv") |> DataFrame
 end
 
 # ╔═╡ 13a43945-1a9c-4526-9f63-03a306b8d459
@@ -78,27 +78,27 @@ It looks like the column `:airline_sentiment` is our label.
 
 # ╔═╡ 5f3e9cc0-fb07-4f2d-be7c-590f13bbd03d
 let gp = combine(groupby(df, :airline_sentiment), nrow)
-	bar(gp.airline_sentiment, gp.nrow,
-		title="Airline Sentiment",
-		label="",
-		# legend=:topleft
-	)
+        bar(gp.airline_sentiment, gp.nrow,
+                title="Airline Sentiment",
+                label="",
+                # legend=:topleft
+        )
 end
 
 # ╔═╡ 1c0d74d4-aac6-4fa4-8957-84457c73107e
 md"""
-OK, so this dataset is unbalanced, there are more negative sentiment than positivie one (maybe not surprising - we write to complain about...) 
+OK, so this dataset is unbalanced, there are more negative sentiment than positivie one (maybe not surprising - we write to complain about...)
 """
 
 # ╔═╡ 668b9aac-454a-43a6-8c40-44a0c023129a
-histogram(df.airline_sentiment_confidence; 
-	legend=nothing, title="Airline Sentiment Confidence")
+histogram(df.airline_sentiment_confidence;
+        legend=nothing, title="Airline Sentiment Confidence")
 
 # ╔═╡ 23c79d73-3431-44c3-a4ef-4dd8337f7931
-let gp = groupby(dropmissing(df, :negativereason), :negativereason) |> 
-		df_ -> combine(df_, nrow)
-	bar(gp.negativereason, gp.nrow;
-		title="Negative Reasons", label=nothing, xrotation=45)
+let gp = groupby(dropmissing(df, :negativereason), :negativereason) |>
+                df_ -> combine(df_, nrow)
+        bar(gp.negativereason, gp.nrow;
+                title="Negative Reasons", label=nothing, xrotation=45)
 end
 
 # ╔═╡ ca585d7b-d7f1-48f6-ac88-10aa582b6dbe
@@ -110,18 +110,18 @@ Before we go further, it would be nice to display a single record in table forma
 
 # ╔═╡ 1289f7cf-6c2a-4b67-a817-3de3926d46ec
 function table(nt)
-	io = IOBuffer()   ## the link with the bind macro
-	println(io, "|name|value|")
-	println(io, "|---:|:----|")
-	for k ∈ keys(nt)
-		println(io, "|`", k, "`|", nt[k], "|")
-	end
-	return Markdown.parse(String(take!(io)))
+        io = IOBuffer()   ## the link with the bind macro
+        println(io, "|name|value|")
+        println(io, "|---:|:----|")
+        for k ∈ keys(nt)
+                println(io, "|`", k, "`|", nt[k], "|")
+        end
+        return Markdown.parse(String(take!(io)))
 end;
 
 # ╔═╡ dbc871c5-9ca9-432c-98f8-af386ebdb22e
 md"""
-Let us define a variable called `row` and bind it to a slider for quick experimentation. 
+Let us define a variable called `row` and bind it to a slider for quick experimentation.
 """
 
 # ╔═╡ e4c7dc20-f703-4d56-9835-af4fdcb32668
@@ -157,14 +157,14 @@ If we just ignore these problems then it can be a disaster.
 
 # ╔═╡ e31a7663-6705-450e-9100-346b8fe51e15
 let s = df[36, :text]
-	sd = StringDocument(lowercase(s))
-	op = 0x00
-	op |= strip_punctuation
-	op |= strip_stopwords
-	op |= strip_html_tags
-	prepare!(sd, op)
-	stem!(sd)
-	table(ngrams(sd))
+        sd = StringDocument(lowercase(s))
+        op = 0x00
+        op |= strip_punctuation
+        op |= strip_stopwords
+        op |= strip_html_tags
+        prepare!(sd, op)
+        stem!(sd)
+        table(ngrams(sd))
 end
 
 # ╔═╡ 8db4042d-fba1-4bb7-ba43-0acc718e1389
@@ -174,28 +174,28 @@ We can see some problems here. It seems that when we stripped punctuations, it a
 
 # ╔═╡ 5fc69267-810a-479c-acdf-6026ca901f64
 md"""
-#### Extracting mentions, hash tags, and URL's. 
+#### Extracting mentions, hash tags, and URL's.
 
 This neat idea came from José Bayoán Santiago Calderón when I asked the question on Slack. Let's define some functions using regular expressions.
 """
 
 # ╔═╡ 50e09727-5fb9-4f02-9a71-f2fa65eb19b9
 const Regexp = Dict{Symbol, Regex}(
-	:mention => r"@\w+",
-	:hashtag => r"#\w+",
-	:url => r"http[s]?://(?:[a-zA-Z]|[0-9]|[$/\-_@\.&\+]|[!\*\(\),]|(?:%[0-9a-fA-F]{2}))+",
+        :mention => r"@\w+",
+        :hashtag => r"#\w+",
+        :url => r"http[s]?://(?:[a-zA-Z]|[0-9]|[$/\-_@\.&\+]|[!\*\(\),]|(?:%[0-9a-fA-F]{2}))+",
 )
 
 # ╔═╡ 9ea51080-e3f8-4d70-a139-aa29ddf6d13b
-extract_tokens(s::AbstractString, token_type::Symbol) = 
-	collect(x.match for x in eachmatch(Regexp[token_type], s))
+extract_tokens(s::AbstractString, token_type::Symbol) =
+        collect(x.match for x in eachmatch(Regexp[token_type], s))
 
 # ╔═╡ d55d2b3c-82cf-4328-9aee-279e839d0a92
 function remove_tokens(s::AbstractString)
-	for re ∈ values(Regexp)
-		s = replace(s, re => "")
-	end
-	s
+        for re ∈ values(Regexp)
+                s = replace(s, re => "")
+        end
+        s
 end
 
 # ╔═╡ 69c18f2f-7e22-4188-9464-9705f4aed7e3
@@ -211,15 +211,15 @@ md"""
 
 # ╔═╡ 10a4ddbc-66c4-472d-999e-99838da6652d
 begin
-	d = Dict(
-		:airline_sentiment => df.airline_sentiment,
-		:text => df.text,
-		:mentions => extract_tokens.(df.text, :mention),
-		:hashtags => extract_tokens.(df.text, :hashtag),
-		:urls => extract_tokens.(df.text, :url),
-		:clean_text => remove_tokens.(df.text) .|> strip .|> lowercase
-	)
-	df₂ = DataFrame(d);
+        d = Dict(
+                :airline_sentiment => df.airline_sentiment,
+                :text => df.text,
+                :mentions => extract_tokens.(df.text, :mention),
+                :hashtags => extract_tokens.(df.text, :hashtag),
+                :urls => extract_tokens.(df.text, :url),
+                :clean_text => remove_tokens.(df.text) .|> strip .|> lowercase
+        )
+        df₂ = DataFrame(d);
 end
 
 # ╔═╡ a65e9da9-0e8b-4356-820f-266eaba857c8
@@ -243,27 +243,28 @@ In our DataFrame, we already have a column `x_string_doc` with `StringDocuments`
 
 # ╔═╡ 41a18e5c-7e01-4828-9df0-53d446da9eb1
 function create_string_doc(s::AbstractString)::StringDocument
-	sd = StringDocument(s)
-	op = 0x00
-	op |= strip_punctuation
-	op |= strip_stopwords
-	op |= strip_html_tags
-	prepare!(sd, op)
-	stem!(sd)
-	sd
+        sd = StringDocument(s)
+        op = 0x00
+        op |= strip_punctuation
+        op |= strip_stopwords
+        op |= strip_html_tags
+        prepare!(sd, op)
+        stem!(sd)
+        sd
 end
 
 # ╔═╡ 3ac25d84-b396-4341-956b-c550054038c0
 model = let
-	labels = df₂.airline_sentiment .|> strip |> unique  ## ≡ labels
-	nbc = NaiveBayesClassifier(labels)
+        labels = df₂.airline_sentiment .|> strip |>
+                unique ## ≡ labels = ["neutral", "positive", "negative"]
+        nbc = NaiveBayesClassifier(labels)
 
-	for (clean_txt, y) ∈ zip(df₂.clean_text, df₂.airline_sentiment)
-		x = create_string_doc(clean_txt)
-		fit!(nbc, x, y |> strip)
-	end
+        for (clean_txt, y) ∈ zip(df₂.clean_text, df₂.airline_sentiment)
+                x = create_string_doc(clean_txt)
+                fit!(nbc, x, y |> strip)
+        end
 
-	nbc
+        nbc
 end;
 
 # ╔═╡ cd495081-805b-4e71-814a-10add9a65d03
@@ -274,29 +275,29 @@ typeof(NaiveBayesClassifier)
 
 # ╔═╡ 032ddbf5-5995-4ff9-be43-3cfa16eaac91
 function test_model(model, tweets::Vector{<: AbstractString})
-	df = DataFrame(text=tweets)
-	df.doc = remove_tokens.(tweets) .|>
-		create_string_doc .|>
-		TextAnalysis.text
-	# TextAnalysis.text.(create_string_doc.(remove_tokens.(tweets)))
-	df.analysis = predict.(Ref(model), df.doc)
-	
-	df.positive = getindex.(df.analysis, "positive")
-	df.negative = getindex.(df.analysis, "negative")
-	df.neutral = getindex.(df.analysis, "neutral")
-	
-	select!(df, Not(:analysis))
-	df
+        df = DataFrame(text=tweets)
+        df.doc = remove_tokens.(tweets) .|>
+                create_string_doc .|>
+                TextAnalysis.text
+        # TextAnalysis.text.(create_string_doc.(remove_tokens.(tweets)))
+        df.analysis = predict.(Ref(model), df.doc)
+
+        df.positive = getindex.(df.analysis, "positive")
+        df.negative = getindex.(df.analysis, "negative")
+        df.neutral = getindex.(df.analysis, "neutral")
+
+        select!(df, Not(:analysis))
+        df
 end
 
 # ╔═╡ 6887b10b-0c44-4a1a-bbe0-e08032ac1dff
 let
-	tweets = [
-		"whatever airline sucks!", 
-		"i love @american service :-)", 
-		"just ok", 
-		"hello world"]
-	test_model(model, tweets)
+        tweets = [
+                "whatever airline sucks!",
+                "i love @american service :-)",
+                "just ok",
+                "hello world"]
+        test_model(model, tweets)
 end
 
 # ╔═╡ 0c7ad5a2-e8b1-4189-82f5-d39cbc122d2d
@@ -305,12 +306,12 @@ md"""
 
 OK, so how well does the Naive Bayes Classifier perform?
 
-As the `predict` fucntion returns a `Dict` object with the probabilities assigned to each class, we need to choose the best one. So let us write a function for that:  
+As the `predict` fucntion returns a `Dict` object with the probabilities assigned to each class, we need to choose the best one. So let us write a function for that:
 """
 
 # ╔═╡ 2c853e55-843c-43c8-87b4-9ef6810dc03d
 function best_pred(model::NaiveBayesClassifier, sd::StringDocument)
-	predict(model, sd) |> argmax
+        predict(model, sd) |> argmax
 end
 
 # ╔═╡ 2484eca4-198c-4178-8b78-26ee246f786b
@@ -320,7 +321,7 @@ Now le us make predictions over all 14K tweets.
 
 # ╔═╡ 902b8634-7cde-4808-9e77-c13caac19c8f
 ŷ = let x = remove_tokens.(df₂.text) .|> lowercase .|> create_string_doc
-	best_pred.(Ref(model), x)
+        best_pred.(Ref(model), x)
 end;
 
 # ╔═╡ 53c34fd9-f9c4-4321-94f3-2e4a6c3cd70a
@@ -331,35 +332,35 @@ misses = length(ŷ) - hits
 
 # ╔═╡ 92378e5b-c5e9-4a75-ae1e-216d67f4fd60
 way_off = count(
-	(df₂.airline_sentiment .≠ ŷ) .&
-	(df₂.airline_sentiment .≠ "neutral") .&
-	(ŷ .≠ "neutral")
+        (df₂.airline_sentiment .≠ ŷ) .&
+        (df₂.airline_sentiment .≠ "neutral") .&
+        (ŷ .≠ "neutral")
 )
 
 ## predicted positive and actually negative and conversely.
 
 # ╔═╡ 240e86a4-4787-41ca-91ad-27893db438cc
 begin
-	accuracy_perc = hits / (hits + misses) * 100.
-	round(accuracy_perc; digits=2)
+        accuracy_perc = hits / (hits + misses) * 100.
+        round(accuracy_perc; digits=2)
 end
 
 # ╔═╡ f9e6c472-3dfb-4617-a0ef-99d1cbd34427
 begin
-	slightly_off_perc = (misses - way_off) / (hits + misses) * 100.
-	round(slightly_off_perc; digits=2)
+        slightly_off_perc = (misses - way_off) / (hits + misses) * 100.
+        round(slightly_off_perc; digits=2)
 end
 
 # ╔═╡ 05e7f1ba-ac19-4160-b158-0ef83af00e89
 begin
-	way_off_perc = way_off / (hits + misses) * 100.
-	round(way_off_perc; digits=2)
+        way_off_perc = way_off / (hits + misses) * 100.
+        round(way_off_perc; digits=2)
 end
 
 # ╔═╡ fab2cd7c-cecc-41a8-ab28-b71ba00fec95
-bar(["hits", "misses slightly", "misses way-off"], 
-	[accuracy_perc, slightly_off_perc , way_off_perc];
-	legend = :none)
+bar(["hits", "misses slightly", "misses way-off"],
+        [accuracy_perc, slightly_off_perc , way_off_perc];
+        legend = :none)
 
 # ╔═╡ 52eef2d7-27b5-418f-b432-64f8561472b3
 md"""
@@ -377,8 +378,8 @@ Using the tweet API (ok, requires an account)...
 
 # ╔═╡ fdfabb92-3be3-4644-906a-eae308bdda0e
 # begin
-# 	data = JSON3.read(response.body);
-# 	data[:statuses][1]
+#       data = JSON3.read(response.body);
+#       data[:statuses][1]
 # end
 
 # ╔═╡ 7e4bcd5e-0378-4c18-941d-feddba9ae872
@@ -391,17 +392,17 @@ Using the tweet API (ok, requires an account)...
 # table(result[9,:])
 
 # ╔═╡ b10fe2c1-b451-48c4-8088-c03c85d31ed1
-html"""                                                 
-<style>                                                 
-  main {                                                
-        max-width: calc(800px + 25px + 6px);            
-  }                                                     
-  .plutoui-toc.aside {                                  
-    background: linen;                                  
-  }                                                     
-  h3, h4 {                                              
-        background: wheat;                              
-  }                                                     
+html"""
+<style>
+  main {
+        max-width: calc(800px + 25px + 6px);
+  }
+  .plutoui-toc.aside {
+    background: linen;
+  }
+  h3, h4 {
+        background: wheat;
+  }
 </style>
 """
 
@@ -438,7 +439,7 @@ html"""
 # ╟─7f5d2d98-e170-46ff-a470-e7708cbe3fb3
 # ╠═10a4ddbc-66c4-472d-999e-99838da6652d
 # ╠═a65e9da9-0e8b-4356-820f-266eaba857c8
-# ╠═09441471-d246-4511-8d8e-e941b1166159
+# ╟─09441471-d246-4511-8d8e-e941b1166159
 # ╟─5855ee27-4d34-41e4-9881-70ad4b5f064e
 # ╟─819af8d7-c242-4f7b-a61f-121263bdb54c
 # ╠═35b8ad6d-7c5e-43bf-b014-ce24010a959a
