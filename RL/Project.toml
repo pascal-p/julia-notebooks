@@ -1,0 +1,7 @@
+[deps]
+DiscreteValueIteration = "4b033969-44f6-5439-a48b-c11fa3648068"
+POMDPModelTools = "08074719-1b2a-587c-a292-00f91cc44415"
+POMDPs = "a93abf59-7444-517b-a68a-c42f96afdd7d"
+Pluto = "c3e4b0f8-55cb-11ea-2926-15256bba5781"
+PlutoUI = "7f904dfe-b85e-4ff6-b463-dae2292396a8"
+QuickPOMDPs = "8af83fb2-a731-493c-9049-9e19dbce6165"
