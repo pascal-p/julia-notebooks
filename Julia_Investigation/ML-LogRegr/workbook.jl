@@ -1,6 +1,11 @@
 ### A Pluto.jl notebook ###
 # v0.19.5
 
+#> [frontmatter]
+#> title = "Logistic Regression with JUlia"
+#> date = "2022-05-28"
+#> tags = ["julia", "Logisitc Regression"]
+
 using Markdown
 using InteractiveUtils
 
@@ -27,8 +32,9 @@ using Lathe.preprocess:TrainTestSplit
 md"""
 ## Logistic Regression with Julia
 
-ref. TBD
+ref. [Logistic Regression for Classification](https://www.coursera.org/learn/logistic-regression-classification-julia/home)
 
+May 2022.
 """
 
 # ╔═╡ 5cab410f-a2cc-4e55-a6f7-28740767bbf9
@@ -164,12 +170,10 @@ md"""
 """
 
 # ╔═╡ 0402c30e-da3b-44dd-90b8-d3544391ff6c
-begin
-	predictions = predict(logit, test)
-	prediction_class = [
-		x < 0.5 ? false : true for x ∈ predictions 
-	]
-end
+predictions = predict(logit, test);
+
+# ╔═╡ f46af035-6f67-4354-835f-e0554bcd7cc1
+prediction_class = [x < 0.5 ? false : true for x ∈ predictions];
 
 # ╔═╡ fd35496d-e570-402f-8c91-c93dd9eb075e
 md"""
@@ -177,10 +181,10 @@ md"""
 """
 
 # ╔═╡ a09a5f03-4800-4195-8955-272ed59890c8
-prediction_df = DataFrame(y=test.fiction, ŷ=prediction_class, prob_predicted=predictions)
+prediction_df = DataFrame(y=test.fiction, ŷ=prediction_class, prob_predicted=predictions);
 
 # ╔═╡ 2646689c-8f83-4bd4-960c-0603adc16fbf
-prediction_df_correctly_classified = prediction_df.y .== prediction_df.ŷ
+prediction_df_correctly_classified = prediction_df.y .== prediction_df.ŷ;
 
 # ╔═╡ 468e4a05-6236-4f41-9844-14f222ae4f46
 accuracy = prediction_df_correctly_classified |> mean
@@ -213,7 +217,7 @@ Now we are going to focus on the false negative and try to lower this rate.
 
 # ╔═╡ 94b50c8c-1a46-494f-894e-76432d16f85a
 md"""
-### Class Imbalance 
+### Class Imbalance and SMOTE
 """
 
 # ╔═╡ 4575eeb6-d1e2-4e1a-bd4b-39809343d77a
@@ -231,14 +235,14 @@ X₂, y₂ = smote(
 	k=1, pct_under=200, pct_over=100
 	# the value chosen for the percentages are derived from the class imbalacne (classes) 
 	# thus 200 because max is 310 and minimum is 240 - with 200 we incraese the likelihood of achieving balance 
-)
+);
 
 # ╔═╡ a19d8d02-dd5e-4663-9145-d549817954d2
-balanced_classes = freqtable(y₂)
+balanced_classes = freqtable(y₂);
 # smote add some synthetic values - this is why we get 480 in both cases now
 
 # ╔═╡ 79d0252f-039e-48fe-90c0-6fd84e1af905
-ndf₂ = hcat(X₂, y₂)
+ndf₂ = hcat(X₂, y₂);
 
 # ╔═╡ 92c9ce2a-a355-442c-8cb9-ef44ed4b01bd
 begin
@@ -258,20 +262,16 @@ begin
 end
 
 # ╔═╡ 784dfc3b-32fd-4471-9bd7-7a9930db0325
+predictions₂ = predict(logit₂, test);
 
-
-begin
-	predictions₂ = predict(logit₂, test)
-	prediction₂_class = [
-		x < 0.5 ? false : true for x ∈ predictions₂ 
-	]
-end
+# ╔═╡ 74b8b71d-f765-4152-b725-15f960f17725
+prediction₂_class = [x < 0.5 ? false : true for x ∈ predictions₂];
 
 # ╔═╡ 8f7f9e3b-e000-40db-9ea4-a75ea8d93ca9
-prediction₂_df = DataFrame(y=test.fiction, ŷ=prediction₂_class, prob_predicted=predictions₂)
+prediction₂_df = DataFrame(y=test.fiction, ŷ=prediction₂_class, prob_predicted=predictions₂);
 
 # ╔═╡ ef083554-9586-4136-8c0b-08a5f39a19bf
-prediction₂_df_correctly_classified = prediction₂_df.y .== prediction₂_df.ŷ
+prediction₂_df_correctly_classified = prediction₂_df.y .== prediction₂_df.ŷ;
 
 # ╔═╡ 44873853-7348-4c4b-8507-19919d2905bd
 md"""
@@ -820,7 +820,7 @@ uuid = "3f19e933-33d8-53b3-aaab-bd5110c3b7a0"
 """
 
 # ╔═╡ Cell order:
-# ╠═4409281e-de31-11ec-0a35-9b335b8e6b36
+# ╟─4409281e-de31-11ec-0a35-9b335b8e6b36
 # ╠═58be9293-5a04-4c05-9160-cb612e67b639
 # ╟─5cab410f-a2cc-4e55-a6f7-28740767bbf9
 # ╠═112e1901-6ff2-47f0-8d77-26ca31be4495
@@ -854,6 +854,7 @@ uuid = "3f19e933-33d8-53b3-aaab-bd5110c3b7a0"
 # ╠═073b8f6c-8eda-49cb-a9a7-5d22071c688f
 # ╟─5556a389-e3bd-4b66-bee0-e8023675c806
 # ╠═0402c30e-da3b-44dd-90b8-d3544391ff6c
+# ╠═f46af035-6f67-4354-835f-e0554bcd7cc1
 # ╟─fd35496d-e570-402f-8c91-c93dd9eb075e
 # ╠═a09a5f03-4800-4195-8955-272ed59890c8
 # ╠═2646689c-8f83-4bd4-960c-0603adc16fbf
@@ -874,6 +875,7 @@ uuid = "3f19e933-33d8-53b3-aaab-bd5110c3b7a0"
 # ╟─0d5450de-16d7-430c-b116-b60ad757d29b
 # ╠═58ee0fb2-c70d-4090-a477-a7afdcbf8818
 # ╠═784dfc3b-32fd-4471-9bd7-7a9930db0325
+# ╠═74b8b71d-f765-4152-b725-15f960f17725
 # ╠═8f7f9e3b-e000-40db-9ea4-a75ea8d93ca9
 # ╠═ef083554-9586-4136-8c0b-08a5f39a19bf
 # ╟─44873853-7348-4c4b-8507-19919d2905bd
