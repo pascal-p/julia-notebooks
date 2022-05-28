@@ -1,0 +1,10 @@
+[deps]
+CSV = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
+ClassImbalance = "04a18a73-7590-580c-b363-eeca0919eb2a"
+DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
+GLM = "38e38edf-8417-5370-95a0-9cbb8c7f171a"
+Lathe = "38d8eb38-e7b1-11e9-0012-376b6c802672"
+MLBase = "f0e99cf1-93fa-52ec-9ecc-5026115318e0"
+Pluto = "c3e4b0f8-55cb-11ea-2926-15256bba5781"
+PlutoUI = "7f904dfe-b85e-4ff6-b463-dae2292396a8"
+ROCAnalysis = "f535d66d-59bb-5153-8d2b-ef0a426c6aff"
