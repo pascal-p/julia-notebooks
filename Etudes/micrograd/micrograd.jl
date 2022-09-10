@@ -7,6 +7,9 @@ using InteractiveUtils
 # ╔═╡ 4544523e-e72d-48ba-8418-655f397145b6
 using GraphViz, FileIO, Cairo
 
+# ╔═╡ ab8703e5-e8e8-499d-b4ad-82b4160e4e0d
+using Printf
+
 # ╔═╡ 870398aa-30cc-11ed-3869-f5f7935be279
 md"""
 ## Micrograd
@@ -26,19 +29,70 @@ mutable struct Value{T <: Real}
 	_prev::Set
 	_op::Symbol
 	label::String
+	grad::T
 	
 	function Value{T}(data::T; 
 		_children::Tuple=(), 
 		_op::Symbol=:_, 
 		label::String=""
 	) where {T <: Real}
-		new{T}(data, Set(_children), _op, label)
+		grad = zero(T)
+		new{T}(data, Set(_children), _op, label, grad)
 	end
 end
 
+# ╔═╡ dbe5cd66-702b-40b0-8134-4d897a7cb05a
+const DT = Float64
+
+# ╔═╡ caa3d111-e372-4d1a-ad80-fe041e10d317
+# default constructor for Float64
+function YaValue(data::T; _children::Tuple=(), _op::Symbol=:_, label::String="") where {T <: Real}
+	Value{T}(data; _children, _op, label)
+end
+
+# ╔═╡ 08edfe4c-c6d5-42ab-973c-34c34bf62f06
+import Base: +, -, *, /
+
+# ╔═╡ 53b65fae-2dca-4f2d-9aa0-388a3a127136
+Base.:+(self::Value{T}, other::Value{T}) where {T <: Real} = 
+	YaValue(self.data + other.data; _children=(self, other), _op=:+)
+
+# ╔═╡ e1592d55-a9c3-4da8-b295-79a2284c04c6
+Base.:-(self::Value{T}, other::Value{T}) where {T <: Real} = 
+	YaValue(self.data + other.data; _children=(self, other), _op=:+)
+
+# ╔═╡ b5983179-aeb3-4d38-a2fb-2b17522c98a3
+Base.:*(self::Value{T}, other::Value{T}) where {T <: Real} = 
+	YaValue(self.data * other.data; _children=(self, other), _op=:*)
+
+# ╔═╡ 11ae3bac-7f86-4435-a087-1eacbdd2945e
+Base.show(io::IO, self::Value) = print(io, "Value(data=$(self.data))")
+
+# ╔═╡ b3c4625f-29f3-48e7-927e-4951e0352c97
+function Base.tanh(self::Value{T}) where {T <: Real}
+	x = self.data
+	y = exp(2x)
+	YaValue((y - 1) / (y + 1); _children=(self, ), _op=:tanh, label="tanh")
+end
+
+# ╔═╡ 2b382d36-9ccf-4bd1-85b0-318946e6a039
+begin
+	a = YaValue(2.0; label="a") 
+	b = YaValue(-3.0; label="b")
+	c = YaValue(10.0; label="c")
+
+	d = a * b; d.label = "d"
+	e = d + c; e.label = "e"
+	
+	f = YaValue(-2.0; label="f")
+	L = e * f; L.label="Output"
+end
+
+# ╔═╡ c7830bbf-faf4-4994-a340-921167b351d5
+d._prev, d._op
+
 # ╔═╡ 102bd441-a350-4360-8ed0-612eae994f80
 begin
-	using Printf
 	# for visualization
 
 	function trace(root::Value)
@@ -61,7 +115,7 @@ begin
 		gr = """ 
 			format=svg;
 			rankdir="LR";
-			dpi=70;
+			dpi=72;
 			bgcolor=lightblue;
 			imagepos="mc";
 		 	landscape=false;
@@ -74,7 +128,7 @@ begin
 			uid = string(objectid(n))
 			gr = string(gr, 
 				"""
-			   	$(uid) [name=$(uid),label="$(Printf.@sprintf "%s | data: %.4f" n.label n.data)",fontsize=9];
+			   	$(uid) [name=$(uid),label="$(Printf.@sprintf "%s | data: %.4f | grad: %.4f" n.label n.data n.grad)",fontsize=8];
 				"""
 			)
 			if n._op != :_
@@ -94,7 +148,6 @@ begin
 			)
 		end
 		gr = string("""graph G {""", gr, """}""")
-
 		# dot"""
 		# 	$(gr)
 		# """
@@ -108,44 +161,98 @@ begin
 	end
 end
 
-# ╔═╡ 08edfe4c-c6d5-42ab-973c-34c34bf62f06
-import Base: +, -, *, /
-
-# ╔═╡ 53b65fae-2dca-4f2d-9aa0-388a3a127136
-Base.:+(self::Value{T}, other::Value{T}) where {T <: Real} = 
-	Value{T}(self.data + other.data, _children=(self, other), _op=:+)
-
-# ╔═╡ e1592d55-a9c3-4da8-b295-79a2284c04c6
-Base.:-(self::Value{T}, other::Value{T}) where {T <: Real} = 
-	Value{T}(self.data - other.data, _children=(self, other), _op=:-)
-
-# ╔═╡ b5983179-aeb3-4d38-a2fb-2b17522c98a3
-Base.:*(self::Value{T}, other::Value{T}) where {T <: Real} = 
-	Value{T}(self.data * other.data, _children=(self, other), _op=:*)
-
-# ╔═╡ 11ae3bac-7f86-4435-a087-1eacbdd2945e
-Base.show(io::IO, self::Value) = print(io, "Value(data=$(self.data))")
-
-# ╔═╡ 2b382d36-9ccf-4bd1-85b0-318946e6a039
-begin
-	const DT = Float64
-	
-	a = Value{DT}(2.0; label="a")
-	b = Value{DT}(-3.0; label="b")
-	c = Value{DT}(10.0; label="c")
-
-	d = a * b; d.label = "d"
-	e = d + c; e.label = "e"
-	
-	f = Value{DT}(-2.0; label="f")
-	L = e * f; L.label="Output"
-end
-
-# ╔═╡ c7830bbf-faf4-4994-a340-921167b351d5
-d._prev, d._op
-
 # ╔═╡ 3a83bb02-e9be-4102-a862-5e17abbd6f1c
 draw_dot(L)
+
+# ╔═╡ f996e2ff-4d4e-45ce-83e1-bc9749e8cb32
+function try_grad()
+	h = 0.001
+	
+	a = YaValue(2.0; label="a")
+	b = YaValue(-3.0; label="b")
+	c = YaValue(10.0; label="c")
+	f = YaValue(-2.0; label="f")
+	# compose
+	d = a * b; d.label = "d"
+	e = d + c; e.label = "e"
+	L = e * f; L.label="Output"
+
+	a₁ = YaValue(a.data; label="a")
+	b₁ = YaValue(b.data; label="b")
+	c₁ = YaValue(c.data; label="c")
+	f₁ = YaValue(f.data; label="f")
+	# compose
+	d₁ = a₁ * b₁; d₁.label = "d"
+	d₁.data += h
+	e₁ = d₁ + c₁; e₁.label = "e"
+	L₁ = e₁ * f₁; L₁.label="Output"
+
+	Δh = (L₁.data - L.data) / h 
+end
+
+# ╔═╡ 93144f22-e9ce-4d7f-9ef7-7f223f435421
+# got 7 var => 
+try_grad()
+
+# ╔═╡ c4da7d5a-dba3-4242-bb5f-156cde691676
+function one_neuron()
+	# 2 inputs
+	x₁, x₂ = YaValue(2.0; label="x₁"), YaValue(0.0; label="x₂")
+	# 2 weights
+	w₁, w₂ = YaValue(-3.0; label="w₁"), YaValue(1.0; label="w₂")
+	# bias
+	b = YaValue(6.8813735870195432; label="b")
+
+	x₁w₁ = x₁ * w₁
+	x₁w₁.label = "x₁×w₁"
+	x₂w₂ = x₂ * w₂
+	x₂w₂.label = "x₂×w₂"
+
+	# x₁w₁ + x₂w₂ + b
+	x₁w₁x₂w₂ = x₁w₁ + x₂w₂
+	x₁w₁x₂w₂.label = "x₁×w₁ + x₂×w₂"
+	n = x₁w₁x₂w₂ + b
+	n.label = "n"
+
+	o = tanh(n)
+	o.label = "output"
+	(o, n, x₁w₁x₂w₂, b, x₁w₁, x₂w₂, x₁, x₂, w₁, w₂)
+end
+
+# ╔═╡ db3a36c2-4113-4df7-95f2-d64a42db4ae3
+begin
+	(o, n, x₁w₁x₂w₂, bias, x₁w₁, x₂w₂, x₁, x₂, w₁, w₂) = one_neuron()
+	o.grad = 1.0
+	draw_dot(o)
+end
+
+# ╔═╡ acf97b23-4113-420a-ad7d-cfaceba84569
+md"""
+Let's do backpropagation through tanh. So what is $\frac{do}{dn}$ given $o = tanh(n)$?
+
+By definition: $\frac{do}{dn} = 1 - o² = 1 - tanh(n)²$
+"""
+
+# ╔═╡ 7e8a56cd-1cb0-40f0-a163-de0716b1fe02
+begin
+	n.grad = 1 - o.data^2
+	
+	# we also can fill in the gradient for x₁w₁x₂w₂, b - applying + rule
+	x₁w₁x₂w₂.grad = bias.grad = n.grad
+
+	# and for x₁w₁, x₂w₂ - applying + rule
+	x₁w₁.grad, x₂w₂.grad = x₁w₁x₂w₂.grad, x₁w₁x₂w₂.grad
+end
+
+# ╔═╡ 3250073d-c4c1-4683-b182-edb953e10a45
+x₂.grad, w₂.grad = w₂.data * x₂w₂.grad, x₂.data * x₂w₂.grad
+
+# ╔═╡ 7b7e521b-167a-4bbb-8ea6-c678c74cb557
+x₁.grad, w₁.grad = w₁.data * x₁w₁.grad, x₁.data * x₁w₁.grad
+
+# ╔═╡ a9697bad-9dd0-4b54-bed6-4a1f98245711
+# redraw graph with gradient updated
+draw_dot(o)
 
 # ╔═╡ 5230e9a9-c8c4-4507-bbb4-9e549a8d6b48
 # begin
@@ -636,16 +743,29 @@ version = "17.4.0+0"
 # ╔═╡ Cell order:
 # ╟─870398aa-30cc-11ed-3869-f5f7935be279
 # ╠═8c19aa91-77a7-46b1-b1ab-e31696924f15
+# ╠═dbe5cd66-702b-40b0-8134-4d897a7cb05a
+# ╠═caa3d111-e372-4d1a-ad80-fe041e10d317
 # ╠═08edfe4c-c6d5-42ab-973c-34c34bf62f06
 # ╠═53b65fae-2dca-4f2d-9aa0-388a3a127136
 # ╠═e1592d55-a9c3-4da8-b295-79a2284c04c6
 # ╠═b5983179-aeb3-4d38-a2fb-2b17522c98a3
 # ╠═11ae3bac-7f86-4435-a087-1eacbdd2945e
+# ╠═b3c4625f-29f3-48e7-927e-4951e0352c97
 # ╠═2b382d36-9ccf-4bd1-85b0-318946e6a039
 # ╠═c7830bbf-faf4-4994-a340-921167b351d5
 # ╠═4544523e-e72d-48ba-8418-655f397145b6
+# ╠═ab8703e5-e8e8-499d-b4ad-82b4160e4e0d
 # ╠═102bd441-a350-4360-8ed0-612eae994f80
 # ╠═3a83bb02-e9be-4102-a862-5e17abbd6f1c
+# ╠═f996e2ff-4d4e-45ce-83e1-bc9749e8cb32
+# ╠═93144f22-e9ce-4d7f-9ef7-7f223f435421
+# ╠═c4da7d5a-dba3-4242-bb5f-156cde691676
+# ╠═db3a36c2-4113-4df7-95f2-d64a42db4ae3
+# ╟─acf97b23-4113-420a-ad7d-cfaceba84569
+# ╠═7e8a56cd-1cb0-40f0-a163-de0716b1fe02
+# ╠═3250073d-c4c1-4683-b182-edb953e10a45
+# ╠═7b7e521b-167a-4bbb-8ea6-c678c74cb557
+# ╠═a9697bad-9dd0-4b54-bed6-4a1f98245711
 # ╠═5230e9a9-c8c4-4507-bbb4-9e549a8d6b48
 # ╠═237f80c7-755e-450d-8b3b-8173914de65a
 # ╠═4c71c0fa-801d-4f24-b385-b9ec6f275841
