@@ -32,6 +32,8 @@ Links:
 # ╔═╡ 99bc0941-b430-4e54-b355-63ef2fc6a124
 md"""
 ### Data Structure
+
+--- 
 """
 
 # ╔═╡ 8c19aa91-77a7-46b1-b1ab-e31696924f15
@@ -57,6 +59,9 @@ mutable struct Value{T <: Real}
 	# 	Value{T}(T(data))
 end
 
+# ╔═╡ 08edfe4c-c6d5-42ab-973c-34c34bf62f06
+import Base: +, -, *, /, ^
+
 # ╔═╡ dbe5cd66-702b-40b0-8134-4d897a7cb05a
 const DT = Float64
 
@@ -66,8 +71,27 @@ function YaValue(data::T; _children::Tuple=(), _op::Symbol=:_, label::String="")
 	Value{T}(data; _children, _op, label)
 end
 
-# ╔═╡ 08edfe4c-c6d5-42ab-973c-34c34bf62f06
-import Base: +, -, *, /
+# ╔═╡ b5983179-aeb3-4d38-a2fb-2b17522c98a3
+function Base.:*(self::Value{T}, other::Value{T}) where {T <: Real}
+	y = YaValue(self.data * other.data; _children=(self, other), _op=:*)
+	function _backward_fn()
+		self.grad += other.data * y.grad
+		other.grad += self.data * y.grad
+	end
+	y._backward = _backward_fn
+	y
+end
+
+# ╔═╡ 53b65fae-2dca-4f2d-9aa0-388a3a127136
+function Base.:+(self::Value{T}, other::Value{T}) where {T <: Real}
+	y = YaValue(self.data + other.data; _children=(self, other), _op=:+)
+	function _backward_fn()
+		self.grad += 1.0 * y.grad
+		other.grad += 1.0 * y.grad
+	end
+	y._backward = _backward_fn
+	y
+end
 
 # ╔═╡ 11ae3bac-7f86-4435-a087-1eacbdd2945e
 Base.show(io::IO, self::Value) = print(io, "Value(data=$(self.data))")
@@ -95,15 +119,30 @@ md"""
 --- 
 """
 
+# ╔═╡ 2b382d36-9ccf-4bd1-85b0-318946e6a039
+begin
+	a = YaValue(2.0; label="a") 
+	b = YaValue(-3.0; label="b")
+	c = YaValue(10.0; label="c")
+
+	d = a * b; d.label = "d"
+	e = d + c; e.label = "e"
+	
+	f = YaValue(-2.0; label="f")
+	L = e * f; L.label="Output"
+end
+
+# ╔═╡ c7830bbf-faf4-4994-a340-921167b351d5
+d._prev, d._op
+
 # ╔═╡ bdda1937-6719-4f90-b6b0-656e9b20bc12
 md"""
 ### Visualization
 """
 
 # ╔═╡ 102bd441-a350-4360-8ed0-612eae994f80
+## for visualization
 begin
-	# for visualization
-
 	function trace(root::Value)
 		# builds a set of all nodes and all edges in a graph
 		nodes, edges = Set(), Set()
@@ -170,6 +209,9 @@ begin
 	end
 end
 
+# ╔═╡ 3a83bb02-e9be-4102-a862-5e17abbd6f1c
+draw_dot(L)
+
 # ╔═╡ 55e82545-c059-4c82-a301-71100f23b3d7
 md"""
 ### Manual backpropagation and gradient 
@@ -215,6 +257,16 @@ After defining the function `backward` on our datatype (`Value`) we can invoke i
 
 Let's do this...
 """
+
+# ╔═╡ d4bbe45f-a7d9-4bcd-b163-b8d50138a017
+begin
+	# need to use += in _backward() function on Value type.
+	aa = YaValue(-2.0, label="a")
+	bb = aa + aa 
+	bb.label = "b"
+	backward(bb)
+	draw_dot(bb)  # double arrow from a to :+ - expected ∇(aa) == 2.  
+end
 
 # ╔═╡ 64696b32-a4f2-4601-985f-86b00906bbb1
 md"""
@@ -265,77 +317,135 @@ begin
 end
 
 # ╔═╡ 43b8b610-bfa5-47e4-8445-59170d9b9d71
-begin
-	# from Int -> Value{Int}
+begin # from Int -> Value{Int}
 	i64, i32 = 4, Int32(16)
 	promote(vi64, i64), promote(vi64, i32)
 end
 
 # ╔═╡ c397358c-b467-46a4-b063-65cf6df76e8a
-begin
-	# from Float -> Value{Float}
+begin # from Float -> Value{Float}
 	f64 = 2.0
 	promote(vf64, f64)
 end
 
 # ╔═╡ 17ae88d3-ba1c-4146-ada7-316d31491632
-begin
-	# from Float32 -> Value{Float64}
-	#      Float16 -> Value{Float32} ...
+begin # from Float32 -> Value{Float64}, Float16 -> Value{Float32} ...
 	f32 = Float32(π)
 	promote(vf64, f32)
 end
 
 # ╔═╡ cd005e82-a71d-4f3f-be87-60834342f935
-# from Int -> Value{Float}
-promote(vf64, i32)
+promote(vf64, i32)  # from Int -> Value{Float}
 
-# ╔═╡ 3b6fdeeb-7ee3-41a4-bc46-67c122da3320
-## Allowing Value{T} + T  =>  Value{T}
-Base.:+(self::Value{T}, other::T) where {T <: Real} = +(self, Value{T}(other))
+# ╔═╡ e0f59457-6031-4281-a95c-ce45999b5f4b
+##
+## Extending operator for DataType Value{T 
+##
+for op ∈ (:+, :* )
+	@eval begin
+		## Allowing:
+		#   - Value{T} :op T  =>  Value{T}
+		#   - T :op Value{T}  =>  Value{T}
+		($op)(self::Value{T}, other::T) where {T <: Real} = ($op)(self, Value{T}(other))
+		($op)(other::T, self::Value{T}) where {T <: Real} = ($op)(self, Value{T}(other))
+		
+		# Allowing Value{T} :op S =>  Value{T} where S <: T
+		($op)(self::Value{T}, other::S) where {T <: Real, S <: Integer} = 
+			($op)(self, Value{T}(T(other)))
+		($op)(other::S, self::Value{T}) where {T <: Real, S <: Integer} = 
+			($op)(self, Value{T}(T(other)))
 
-# ╔═╡ c42d26bb-0922-4332-acc5-0308ee06b709
-# Allowing Value{T} + S =>  Value{T}   where S <: T
-Base.:+(self::Value{T}, other::S) where {T <: Real, S <: Integer} = 
-	+(self, Value{T}(T(other)))
+		# Allowing Value{T} :op Value{S} =>  Value{T} where S <: T
+		($op)(self::Value{T}, other::Value{S}) where {T <: Real, S <: Real} = 
+  			($op)(self, Value{T}(T(other.data)))
+		($op)(other::Value{S}, self::Value{T}) where {T <: Real, S <: Real} = 
+  			($op)(self, Value{T}(T(other.data)))
+	end
+end
 
-# ╔═╡ c021c6bf-8ce8-416f-a22c-35f1045ed9c6
-# Allowing Value{T} + Value{S} =>  Value{T} where S <: T
-Base.:+(self::Value{T}, other::Value{S}) where {T <: Real, S <: Real} = 
-  	+(self, Value{T}(T(other.data)))
+# ╔═╡ ed9e2edb-4052-4a3d-8b7c-5b5bdd42a1d1
+vi64 + i64, vi64 + i32, typeof(vi64 + i64), typeof(vi64 + i32)
 
-# ╔═╡ b5983179-aeb3-4d38-a2fb-2b17522c98a3
-function Base.:*(self::Value{T}, other::Value{T}) where {T <: Real}
-	y = YaValue(self.data * other.data; _children=(self, other), _op=:*)
+# ╔═╡ f6dbefe7-1073-41b3-a1cb-72d02a66bea0
+vf64 + i64, vf64 + i32, typeof(vf64 + i64), typeof(vf64 + i32)
+
+# ╔═╡ 8518e039-f8c9-45c4-a972-2b421ab46984
+vf64 + f64, typeof(vf64), typeof(f64)
+
+# ╔═╡ 296a8bdb-1a49-4ecf-a17f-1cf6971968ba
+vf64 + vi64, typeof(vf64), typeof(vi32)  # Value{Float64} + Value{Int64}
+
+# ╔═╡ ffa7cf3f-a937-468f-b48e-9a85a85c01b1
+vf64 + vf32, vf32 + vf64, typeof(vf64), typeof(vf32)  # Value{Float64} + Value{Float32}
+
+# ╔═╡ f4241f8b-1189-487c-b256-3f2b196501ef
+supertype.((Float32, Float64))
+
+# ╔═╡ 74182a22-4c99-4e79-89ab-ffe7accc3a79
+function subtypetree(rtype, level=1, indent=2)
+	level == 1 && (println(rtype))
+	for st ∈ subtypes(rtype)
+		println(string(repeat(" ", level * indent), st))
+		subtypetree(st, level + 1, indent)
+	end
+end
+
+# ╔═╡ 5ee2cc46-ac0b-402e-b922-4e7c4586fc9b
+subtypetree(Real)
+
+# ╔═╡ 8bfa956c-40ca-48e4-9deb-a52e54219dbc
+# subtypetree(Integer)
+
+# ╔═╡ 3fe857c9-d4b3-41d6-87d6-02048edd74fb
+# subtypetree(AbstractFloat)
+
+# ╔═╡ 6401511c-a8e2-4a92-9957-c06bde822c1c
+begin
+	z₂ = YaValue(2.0)
+	2 * z₂
+end
+
+# ╔═╡ daa8a844-80f0-4ba4-a54b-9307eaaabc71
+md"""
+#### tanh in terms of exp.
+"""
+
+# ╔═╡ 12405c4b-861d-452e-a998-ca2793c915bc
+function Base.exp(self::Value{T}) where {T <: Real}
+	x = self.data
+	y = YaValue(exp(x); _children=(self, ), _op=:exp, label="exp")
 	function _backward_fn()
-		self.grad += other.data * y.grad
-		other.grad += self.data * y.grad
+		self.grad += y.data * y.grad  # because ∂exp/∂x = exp
 	end
 	y._backward = _backward_fn
 	y
 end
 
-# ╔═╡ 53b65fae-2dca-4f2d-9aa0-388a3a127136
-function Base.:+(self::Value{T}, other::Value{T}) where {T <: Real}
-	y = YaValue(self.data + other.data; _children=(self, other), _op=:+)
+# ╔═╡ 5fa1b1ce-37fb-4d4f-a861-b1bbb15a4fff
+md"""
+### More operators
+"""
+
+# ╔═╡ 6dc7a448-b2ea-4465-8962-19f36bd41ef2
+md"""
+Note that a / b == a × 1/b == a × b⁻¹  
+"""
+
+# ╔═╡ f11f60dc-4b08-43d3-afb9-cf3f49c0eb07
+Base.:-(self::Value{T}, other::Value{T}) where {T <: Real} = Base.:+(self, other * -1.) 
+
+# ╔═╡ f63f9d2e-43f2-4fdd-8eee-ec922abd1a39
+function Base.:^(self::Value{T}, p::T) where {T <: Real} 
+	y = YaValue(self.data^p; _children=(self, ), _op=:^, label="^p")
 	function _backward_fn()
-		self.grad += 1.0 * y.grad
-		other.grad += 1.0 * y.grad
+		self.grad += p * self.data^(p - 1) * y.grad # because ∂x^p/∂x = p x^(p -1 ) 
 	end
 	y._backward = _backward_fn
 	y
 end
 
-# ╔═╡ e1592d55-a9c3-4da8-b295-79a2284c04c6
-function Base.:-(self::Value{T}, other::Value{T}) where {T <: Real} 
-	y = YaValue(self.data + other.data; _children=(self, other), _op=:+)
-	function _backward_fn()
-		self.grad += 1.0 * y.grad
-		other.grad += 1.0 * y.grad
-	end
-	y._backward = _backward_fn
-	y
-end
+# ╔═╡ 42880e3f-7479-4921-bc32-adca1df48efd
+Base.:/(self::Value{T}, other::Value{T}) where {T <: Real} = Base.:*(self, other^(-1.)) 
 
 # ╔═╡ b3c4625f-29f3-48e7-927e-4951e0352c97
 function Base.tanh(self::Value{T}) where {T <: Real} 
@@ -348,55 +458,6 @@ function Base.tanh(self::Value{T}) where {T <: Real}
 	y._backward = _backward_fn
 	y
 end
-
-# ╔═╡ 2b382d36-9ccf-4bd1-85b0-318946e6a039
-begin
-	a = YaValue(2.0; label="a") 
-	b = YaValue(-3.0; label="b")
-	c = YaValue(10.0; label="c")
-
-	d = a * b; d.label = "d"
-	e = d + c; e.label = "e"
-	
-	f = YaValue(-2.0; label="f")
-	L = e * f; L.label="Output"
-end
-
-# ╔═╡ c7830bbf-faf4-4994-a340-921167b351d5
-d._prev, d._op
-
-# ╔═╡ 3a83bb02-e9be-4102-a862-5e17abbd6f1c
-draw_dot(L)
-
-# ╔═╡ f996e2ff-4d4e-45ce-83e1-bc9749e8cb32
-function try_grad()
-	h = 0.001
-	
-	a = YaValue(2.0; label="a")
-	b = YaValue(-3.0; label="b")
-	c = YaValue(10.0; label="c")
-	f = YaValue(-2.0; label="f")
-	# compose
-	d = a * b; d.label = "d"
-	e = d + c; e.label = "e"
-	L = e * f; L.label="Output"
-
-	a₁ = YaValue(a.data; label="a")
-	b₁ = YaValue(b.data; label="b")
-	c₁ = YaValue(c.data; label="c")
-	f₁ = YaValue(f.data; label="f")
-	# compose
-	d₁ = a₁ * b₁; d₁.label = "d"
-	d₁.data += h
-	e₁ = d₁ + c₁; e₁.label = "e"
-	L₁ = e₁ * f₁; L₁.label="Output"
-
-	Δh = (L₁.data - L.data) / h 
-end
-
-# ╔═╡ 93144f22-e9ce-4d7f-9ef7-7f223f435421
-# got 7 var => 
-try_grad()
 
 # ╔═╡ c4da7d5a-dba3-4242-bb5f-156cde691676
 function one_neuron()
@@ -541,71 +602,86 @@ begin
 	draw_dot(o₂)	
 end
 
-# ╔═╡ d4bbe45f-a7d9-4bcd-b163-b8d50138a017
+# ╔═╡ f996e2ff-4d4e-45ce-83e1-bc9749e8cb32
+function try_grad()
+	h = 0.001
+	
+	a = YaValue(2.0; label="a")
+	b = YaValue(-3.0; label="b")
+	c = YaValue(10.0; label="c")
+	f = YaValue(-2.0; label="f")
+	# compose
+	d = a * b; d.label = "d"
+	e = d + c; e.label = "e"
+	L = e * f; L.label="Output"
+
+	a₁ = YaValue(a.data; label="a")
+	b₁ = YaValue(b.data; label="b")
+	c₁ = YaValue(c.data; label="c")
+	f₁ = YaValue(f.data; label="f")
+	# compose
+	d₁ = a₁ * b₁; d₁.label = "d"
+	d₁.data += h
+	e₁ = d₁ + c₁; e₁.label = "e"
+	L₁ = e₁ * f₁; L₁.label="Output"
+
+	Δh = (L₁.data - L.data) / h 
+end
+
+# ╔═╡ 93144f22-e9ce-4d7f-9ef7-7f223f435421
+# got 7 var => 
+try_grad()
+
+# ╔═╡ 9e5bb9f5-72a0-4008-a3ea-6b3b3ba1b4d6
+z₂ / YaValue(4.0)
+
+# ╔═╡ 568a95ba-97bc-40a3-a0af-3b511e94a70b
+z₂ - YaValue(5.0), YaValue(5.0) - 2
+
+# ╔═╡ 6d64e78e-4042-4d66-b60e-46c3afc3454e
+function one_neuron_alt()
+	# 2 inputs
+	x₁, x₂ = YaValue(2.0; label="x₁"), YaValue(0.0; label="x₂")
+	# 2 weights
+	w₁, w₂ = YaValue(-3.0; label="w₁"), YaValue(1.0; label="w₂")
+	# bias
+	b = YaValue(6.8813735870195432; label="b")
+
+	x₁w₁ = x₁ * w₁
+	x₁w₁.label = "x₁×w₁"
+	x₂w₂ = x₂ * w₂
+	x₂w₂.label = "x₂×w₂"
+
+	# x₁w₁ + x₂w₂ + b
+	x₁w₁x₂w₂ = x₁w₁ + x₂w₂
+	x₁w₁x₂w₂.label = "x₁×w₁ + x₂×w₂"
+	n = x₁w₁x₂w₂ + b
+	n.label = "n"
+
+	# ------------------------------
+	# o = tanh(n)
+	e = exp(2 * n)
+	o = (e - 1) / (e + 1)
+	o.label = "output"
+	# ------------------------------
+	# (o, n, x₁w₁x₂w₂, b, x₁w₁, x₂w₂, x₁, x₂, w₁, w₂)
+	o
+end
+
+# ╔═╡ adf5f57c-9fc2-49fd-9245-2e60edfc37a2
 begin
-	# need to use += in _backward() function on Value type.
-	aa = YaValue(-2.0, label="a")
-	bb = aa + aa 
-	bb.label = "b"
-	backward(bb)
-	draw_dot(bb)  # double arrow from a to :+ - expected ∇(aa) == 2.  
+	o₄ = one_neuron_alt()
+	backward(o₄)
+	draw_dot(o₄)	
 end
 
-# ╔═╡ ed9e2edb-4052-4a3d-8b7c-5b5bdd42a1d1
-vi64 + i64, vi64 + i32, typeof(vi64 + i64), typeof(vi64 + i32)
-
-# ╔═╡ f6dbefe7-1073-41b3-a1cb-72d02a66bea0
-vf64 + i64, vf64 + i32, typeof(vf64 + i64), typeof(vf64 + i32)
-
-# ╔═╡ 8518e039-f8c9-45c4-a972-2b421ab46984
-vf64 + f64, typeof(vf64), typeof(f64)
-
-# ╔═╡ 296a8bdb-1a49-4ecf-a17f-1cf6971968ba
-# Value{Float64} + Value{Int64}
-vf64 + vi64, typeof(vf64), typeof(vi32)
-
-# ╔═╡ 97574495-5f5e-4ea1-be18-753ffffd77d8
-function myadd(self::Value{T}, other::Value{S}) where {T <: AbstractFloat, S <: T}
-	ST = supertype(T) # supertype.((T, S))[1]
-	+(Value{ST}(ST(self.data)), Value{ST}(ST(other.data)))
-end
-# Causing issues => xa + xi: stackoverflow, xa + rx: stackoverflow, xa + i: stackoverflow
-
-# ╔═╡ ffa7cf3f-a937-468f-b48e-9a85a85c01b1
-# Value{Float64} + Value{Float32}
-vf64 + vf32, typeof(vf64), typeof(vf32)
-
-# ╔═╡ f4241f8b-1189-487c-b256-3f2b196501ef
-supertype.((Float32, Float64))
-
-# ╔═╡ 74182a22-4c99-4e79-89ab-ffe7accc3a79
-function subtypetree(rtype, level=1, indent=2)
-	level == 1 && (println(rtype))
-	for st ∈ subtypes(rtype)
-		println(string(repeat(" ", level * indent), st))
-		subtypetree(st, level + 1, indent)
-	end
-end
-
-# ╔═╡ 5ee2cc46-ac0b-402e-b922-4e7c4586fc9b
-subtypetree(Real)
-
-# ╔═╡ 8bfa956c-40ca-48e4-9deb-a52e54219dbc
-subtypetree(Integer)
-
-# ╔═╡ 3fe857c9-d4b3-41d6-87d6-02048edd74fb
-subtypetree(AbstractFloat)
-
-# ╔═╡ 9604e5d0-ead8-4ea0-9749-5ebab24af7df
-subtypetree(Value{Real})
-
-# ╔═╡ 7a91c65d-df02-4c01-9b2e-ce7c295b4b4a
+# ╔═╡ b3574970-a905-4d7e-8289-a91d3cd611d1
 
 
-# ╔═╡ 2e3fe7ce-1762-4ec6-8e46-b5d057732d96
+# ╔═╡ f2da5df8-0704-430e-be74-b12d1cb4d429
 
 
-# ╔═╡ ad6cda53-b161-4185-b54c-a4ded0425299
+# ╔═╡ 0e2ff158-69bd-4e07-a3c2-2fb4c2cb71c3
 
 
 # ╔═╡ a5e92195-d95e-4723-9c80-8d690517d1dd
@@ -1123,11 +1199,10 @@ version = "17.4.0+0"
 # ╠═bbd26197-1aaa-4869-9bf0-ea04326a0791
 # ╟─99bc0941-b430-4e54-b355-63ef2fc6a124
 # ╠═8c19aa91-77a7-46b1-b1ab-e31696924f15
+# ╠═08edfe4c-c6d5-42ab-973c-34c34bf62f06
 # ╠═dbe5cd66-702b-40b0-8134-4d897a7cb05a
 # ╠═caa3d111-e372-4d1a-ad80-fe041e10d317
-# ╠═08edfe4c-c6d5-42ab-973c-34c34bf62f06
 # ╠═53b65fae-2dca-4f2d-9aa0-388a3a127136
-# ╠═e1592d55-a9c3-4da8-b295-79a2284c04c6
 # ╠═b5983179-aeb3-4d38-a2fb-2b17522c98a3
 # ╠═11ae3bac-7f86-4435-a087-1eacbdd2945e
 # ╠═b3c4625f-29f3-48e7-927e-4951e0352c97
@@ -1168,24 +1243,32 @@ version = "17.4.0+0"
 # ╠═c397358c-b467-46a4-b063-65cf6df76e8a
 # ╠═17ae88d3-ba1c-4146-ada7-316d31491632
 # ╠═cd005e82-a71d-4f3f-be87-60834342f935
-# ╠═3b6fdeeb-7ee3-41a4-bc46-67c122da3320
+# ╠═e0f59457-6031-4281-a95c-ce45999b5f4b
 # ╠═ed9e2edb-4052-4a3d-8b7c-5b5bdd42a1d1
-# ╠═c42d26bb-0922-4332-acc5-0308ee06b709
 # ╠═f6dbefe7-1073-41b3-a1cb-72d02a66bea0
 # ╠═8518e039-f8c9-45c4-a972-2b421ab46984
-# ╠═c021c6bf-8ce8-416f-a22c-35f1045ed9c6
 # ╠═296a8bdb-1a49-4ecf-a17f-1cf6971968ba
-# ╠═97574495-5f5e-4ea1-be18-753ffffd77d8
 # ╠═ffa7cf3f-a937-468f-b48e-9a85a85c01b1
 # ╠═f4241f8b-1189-487c-b256-3f2b196501ef
 # ╠═74182a22-4c99-4e79-89ab-ffe7accc3a79
 # ╠═5ee2cc46-ac0b-402e-b922-4e7c4586fc9b
 # ╠═8bfa956c-40ca-48e4-9deb-a52e54219dbc
 # ╠═3fe857c9-d4b3-41d6-87d6-02048edd74fb
-# ╠═9604e5d0-ead8-4ea0-9749-5ebab24af7df
-# ╠═7a91c65d-df02-4c01-9b2e-ce7c295b4b4a
-# ╠═2e3fe7ce-1762-4ec6-8e46-b5d057732d96
-# ╠═ad6cda53-b161-4185-b54c-a4ded0425299
+# ╠═6401511c-a8e2-4a92-9957-c06bde822c1c
+# ╟─daa8a844-80f0-4ba4-a54b-9307eaaabc71
+# ╠═12405c4b-861d-452e-a998-ca2793c915bc
+# ╟─5fa1b1ce-37fb-4d4f-a861-b1bbb15a4fff
+# ╟─6dc7a448-b2ea-4465-8962-19f36bd41ef2
+# ╠═42880e3f-7479-4921-bc32-adca1df48efd
+# ╠═f63f9d2e-43f2-4fdd-8eee-ec922abd1a39
+# ╠═f11f60dc-4b08-43d3-afb9-cf3f49c0eb07
+# ╠═9e5bb9f5-72a0-4008-a3ea-6b3b3ba1b4d6
+# ╠═568a95ba-97bc-40a3-a0af-3b511e94a70b
+# ╠═6d64e78e-4042-4d66-b60e-46c3afc3454e
+# ╠═adf5f57c-9fc2-49fd-9245-2e60edfc37a2
+# ╠═b3574970-a905-4d7e-8289-a91d3cd611d1
+# ╠═f2da5df8-0704-430e-be74-b12d1cb4d429
+# ╠═0e2ff158-69bd-4e07-a3c2-2fb4c2cb71c3
 # ╟─a5e92195-d95e-4723-9c80-8d690517d1dd
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
