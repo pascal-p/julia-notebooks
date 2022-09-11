@@ -220,6 +220,8 @@ Let's do this...
 md"""
 ### Re-implementing tanh using basic building blocks
 
+
+#### Julia Apparte - Conversion and Promotion rules
 First we want to be able to write something like
 
 ```Julia
@@ -234,40 +236,73 @@ OK, so let's add some methods (in `Julia` terminology) for our arithmetic operat
 # ╔═╡ ce0922f6-2e91-482e-9db7-c0a7f127b075
 begin
 	import Base: promote_rule, convert
+ 
+ 	# these two allow: promote(xr, r) where xr is Value{Float64} and r is Float64 => Value{Float64}
+	#                  promote(xi, i) where xi is Value{Int64} and i is Int64 => Value{Int64}
+	convert(::Type{Value{T}}, x::T) where {T <: Real} = Value{T}(x)
+	promote_rule(::Type{Value{T}}, ::Type{T}) where {T <: Real} = Value{T}
 
-	convert(::Type{Value{T}}, x::Real) where {T <: Real} = Value{T}(T(x))
+	# Value{Float64} and Float32 => Value{Float64} 
+	convert(::Type{Value{T}}, x::S) where {T <: Real, S <: AbstractFloat} = Value{T}(T(x))
+	promote_rule(::Type{Value{T}}, ::Type{S}) where {T <: Real, S <: AbstractFloat} = Value{T}
+
+	# Value{Float64} and Integer => Value{Float64} 
+	convert(::Type{Value{T}}, x::S) where {T <: Real, S <: Integer} = Value{T}(T(x))
 	promote_rule(::Type{Value{T}}, ::Type{S}) where {T <: Real, S <: Integer} = Value{T}
-	# these two allow: promote(xi, i) where xi is Value{Int64} and i is Int64 => Value{Int64} 
 
-	# convert(::Type{Value{T}}, x::Type{Value{S}}) {T <: Real, S <: T} = Value{T}(T(x))
-	
-	# promote_rule(::Type{Value{T}}, ::Type{S}) where {T <: Real, S <: Real} = Value{promote_type(T, S)}
-	# promote_rule(::Type{Value{T}}, ::Type{Value{S}}) where {T <: Real, S <: Integer} = Value{promote_type(T, S)}
-	# romote_rule(::Type{Value{T}}, ::Type{S}) where {T <: Real, S <: Integer} = promote_type(T, S)
-
+	convert(::Type{Value{T}}, x::Type{Value{S}}) where {T <: Real, S <: T} = Value{T}(T(x.data))
+	promote_rule(::Type{Value{T}}, ::Type{Value{S}}) where {T <: Real, S <: T} = Value{promote_type(T, S)}
 end
 
 # ╔═╡ 3e1f8cdb-9638-41d1-963e-2eb369f66440
 begin
-	xa = YaValue(2.0, label="a")
-	typeof(xa)
-end
-
-# ╔═╡ 9872b0f0-3c86-498b-9e91-dfb7387907b2
-begin
-	xi = YaValue(2, label="i")
-	typeof(xi)
+	vf64 = YaValue(2.0, label="vf64")
+	vf32 = YaValue(Float32(2.0), label="vf32")
+	vi64 = YaValue(2, label="vi64")
+	vi32 = YaValue(Int32(2), label="vi32")
+	
+	typeof(vf64), typeof(vf32), typeof(vi64), typeof(vi32)
 end
 
 # ╔═╡ 43b8b610-bfa5-47e4-8445-59170d9b9d71
 begin
-	i = 2
-	promote(xi, i)
+	# from Int -> Value{Int}
+	i64, i32 = 4, Int32(16)
+	promote(vi64, i64), promote(vi64, i32)
 end
 
+# ╔═╡ c397358c-b467-46a4-b063-65cf6df76e8a
+begin
+	# from Float -> Value{Float}
+	f64 = 2.0
+	promote(vf64, f64)
+end
+
+# ╔═╡ 17ae88d3-ba1c-4146-ada7-316d31491632
+begin
+	# from Float32 -> Value{Float64}
+	#      Float16 -> Value{Float32} ...
+	f32 = Float32(π)
+	promote(vf64, f32)
+end
+
+# ╔═╡ cd005e82-a71d-4f3f-be87-60834342f935
+# from Int -> Value{Float}
+promote(vf64, i32)
+
 # ╔═╡ 3b6fdeeb-7ee3-41a4-bc46-67c122da3320
-Base.:+(self::Value{T}, other::T) where {T <: Real} = 
-	+(self, Value{T}(other))
+## Allowing Value{T} + T  =>  Value{T}
+Base.:+(self::Value{T}, other::T) where {T <: Real} = +(self, Value{T}(other))
+
+# ╔═╡ c42d26bb-0922-4332-acc5-0308ee06b709
+# Allowing Value{T} + S =>  Value{T}   where S <: T
+Base.:+(self::Value{T}, other::S) where {T <: Real, S <: Integer} = 
+	+(self, Value{T}(T(other)))
+
+# ╔═╡ c021c6bf-8ce8-416f-a22c-35f1045ed9c6
+# Allowing Value{T} + Value{S} =>  Value{T} where S <: T
+Base.:+(self::Value{T}, other::Value{S}) where {T <: Real, S <: Real} = 
+  	+(self, Value{T}(T(other.data)))
 
 # ╔═╡ b5983179-aeb3-4d38-a2fb-2b17522c98a3
 function Base.:*(self::Value{T}, other::Value{T}) where {T <: Real}
@@ -517,36 +552,60 @@ begin
 end
 
 # ╔═╡ ed9e2edb-4052-4a3d-8b7c-5b5bdd42a1d1
-xi + i
-
-# ╔═╡ 6b111617-410c-4a02-8a62-eb42545536a9
-# Value{Float64}(2)
-
-# ╔═╡ c42d26bb-0922-4332-acc5-0308ee06b709
-#         Value{Float64}   Int64 =>  Value{Float64}
-# Base.:+(self::Value{T}, other::S) where {T <: Real, S <: T} = 
-# 	+(self, Value{T}(other)) # +(self, Value{T}(T(other)))
+vi64 + i64, vi64 + i32, typeof(vi64 + i64), typeof(vi64 + i32)
 
 # ╔═╡ f6dbefe7-1073-41b3-a1cb-72d02a66bea0
-# xa + i
+vf64 + i64, vf64 + i32, typeof(vf64 + i64), typeof(vf64 + i32)
 
-# ╔═╡ c021c6bf-8ce8-416f-a22c-35f1045ed9c6
-# Base.:+(self::Value{T}, other::Value{S}) where {T <: Real, S <: T} = 
-#  	+(self, Value{T}(other))
+# ╔═╡ 8518e039-f8c9-45c4-a972-2b421ab46984
+vf64 + f64, typeof(vf64), typeof(f64)
 
 # ╔═╡ 296a8bdb-1a49-4ecf-a17f-1cf6971968ba
-# xa + xi
+# Value{Float64} + Value{Int64}
+vf64 + vi64, typeof(vf64), typeof(vi32)
 
-# ╔═╡ d2e13f1c-02cf-4367-b802-990cfab7f272
+# ╔═╡ 97574495-5f5e-4ea1-be18-753ffffd77d8
+function myadd(self::Value{T}, other::Value{S}) where {T <: AbstractFloat, S <: T}
+	ST = supertype(T) # supertype.((T, S))[1]
+	+(Value{ST}(ST(self.data)), Value{ST}(ST(other.data)))
+end
+# Causing issues => xa + xi: stackoverflow, xa + rx: stackoverflow, xa + i: stackoverflow
+
+# ╔═╡ ffa7cf3f-a937-468f-b48e-9a85a85c01b1
+# Value{Float64} + Value{Float32}
+vf64 + vf32, typeof(vf64), typeof(vf32)
+
+# ╔═╡ f4241f8b-1189-487c-b256-3f2b196501ef
+supertype.((Float32, Float64))
+
+# ╔═╡ 74182a22-4c99-4e79-89ab-ffe7accc3a79
+function subtypetree(rtype, level=1, indent=2)
+	level == 1 && (println(rtype))
+	for st ∈ subtypes(rtype)
+		println(string(repeat(" ", level * indent), st))
+		subtypetree(st, level + 1, indent)
+	end
+end
+
+# ╔═╡ 5ee2cc46-ac0b-402e-b922-4e7c4586fc9b
+subtypetree(Real)
+
+# ╔═╡ 8bfa956c-40ca-48e4-9deb-a52e54219dbc
+subtypetree(Integer)
+
+# ╔═╡ 3fe857c9-d4b3-41d6-87d6-02048edd74fb
+subtypetree(AbstractFloat)
+
+# ╔═╡ 9604e5d0-ead8-4ea0-9749-5ebab24af7df
+subtypetree(Value{Real})
+
+# ╔═╡ 7a91c65d-df02-4c01-9b2e-ce7c295b4b4a
 
 
-# ╔═╡ a833e0f8-7d31-4886-84da-0df97fdb4eed
+# ╔═╡ 2e3fe7ce-1762-4ec6-8e46-b5d057732d96
 
 
-# ╔═╡ b80d3ff1-4b8b-4729-8ad2-d1698e973d20
-
-
-# ╔═╡ 50c9073c-2763-44d9-90bf-c9a48c63aefc
+# ╔═╡ ad6cda53-b161-4185-b54c-a4ded0425299
 
 
 # ╔═╡ a5e92195-d95e-4723-9c80-8d690517d1dd
@@ -1105,19 +1164,28 @@ version = "17.4.0+0"
 # ╟─64696b32-a4f2-4601-985f-86b00906bbb1
 # ╠═ce0922f6-2e91-482e-9db7-c0a7f127b075
 # ╠═3e1f8cdb-9638-41d1-963e-2eb369f66440
-# ╠═9872b0f0-3c86-498b-9e91-dfb7387907b2
 # ╠═43b8b610-bfa5-47e4-8445-59170d9b9d71
+# ╠═c397358c-b467-46a4-b063-65cf6df76e8a
+# ╠═17ae88d3-ba1c-4146-ada7-316d31491632
+# ╠═cd005e82-a71d-4f3f-be87-60834342f935
 # ╠═3b6fdeeb-7ee3-41a4-bc46-67c122da3320
 # ╠═ed9e2edb-4052-4a3d-8b7c-5b5bdd42a1d1
-# ╠═6b111617-410c-4a02-8a62-eb42545536a9
 # ╠═c42d26bb-0922-4332-acc5-0308ee06b709
 # ╠═f6dbefe7-1073-41b3-a1cb-72d02a66bea0
+# ╠═8518e039-f8c9-45c4-a972-2b421ab46984
 # ╠═c021c6bf-8ce8-416f-a22c-35f1045ed9c6
 # ╠═296a8bdb-1a49-4ecf-a17f-1cf6971968ba
-# ╠═d2e13f1c-02cf-4367-b802-990cfab7f272
-# ╠═a833e0f8-7d31-4886-84da-0df97fdb4eed
-# ╠═b80d3ff1-4b8b-4729-8ad2-d1698e973d20
-# ╠═50c9073c-2763-44d9-90bf-c9a48c63aefc
+# ╠═97574495-5f5e-4ea1-be18-753ffffd77d8
+# ╠═ffa7cf3f-a937-468f-b48e-9a85a85c01b1
+# ╠═f4241f8b-1189-487c-b256-3f2b196501ef
+# ╠═74182a22-4c99-4e79-89ab-ffe7accc3a79
+# ╠═5ee2cc46-ac0b-402e-b922-4e7c4586fc9b
+# ╠═8bfa956c-40ca-48e4-9deb-a52e54219dbc
+# ╠═3fe857c9-d4b3-41d6-87d6-02048edd74fb
+# ╠═9604e5d0-ead8-4ea0-9749-5ebab24af7df
+# ╠═7a91c65d-df02-4c01-9b2e-ce7c295b4b4a
+# ╠═2e3fe7ce-1762-4ec6-8e46-b5d057732d96
+# ╠═ad6cda53-b161-4185-b54c-a4ded0425299
 # ╟─a5e92195-d95e-4723-9c80-8d690517d1dd
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
