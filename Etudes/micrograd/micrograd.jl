@@ -54,9 +54,6 @@ mutable struct Value{T <: Real}
 		_backward = () -> nothing # default to Nothing
 		new{T}(data, Set(_children), _op, _backward, label, grad)
 	end
-
-	# Value{T}(data::S) where {T <: Real, S <: Integer} = 
-	# 	Value{T}(T(data))
 end
 
 # ╔═╡ 08edfe4c-c6d5-42ab-973c-34c34bf62f06
@@ -341,7 +338,7 @@ promote(vf64, i32)  # from Int -> Value{Float}
 ##
 ## Extending operator for DataType Value{T 
 ##
-for op ∈ (:+, :* )
+for op ∈ (:+, :*)
 	@eval begin
 		## Allowing:
 		#   - Value{T} :op T  =>  Value{T}
@@ -432,7 +429,10 @@ Note that a / b == a × 1/b == a × b⁻¹
 """
 
 # ╔═╡ f11f60dc-4b08-43d3-afb9-cf3f49c0eb07
-Base.:-(self::Value{T}, other::Value{T}) where {T <: Real} = Base.:+(self, other * -1.) 
+Base.:-(self::Value{T}, other::Value{T}) where {T <: Real} = Base.:+(self, other * -1.)
+
+# ╔═╡ e5158eed-6895-4752-8e65-2ce71629881b
+Base.:-(self::Value{T}, other::S)  where {T <: Real, S <: Real} = Base.:+(self, other * -1.)
 
 # ╔═╡ f63f9d2e-43f2-4fdd-8eee-ec922abd1a39
 function Base.:^(self::Value{T}, p::T) where {T <: Real} 
@@ -633,10 +633,7 @@ end
 try_grad()
 
 # ╔═╡ 9e5bb9f5-72a0-4008-a3ea-6b3b3ba1b4d6
-z₂ / YaValue(4.0)
-
-# ╔═╡ 568a95ba-97bc-40a3-a0af-3b511e94a70b
-z₂ - YaValue(5.0), YaValue(5.0) - 2
+z₂ / YaValue(4.0), z₂ - YaValue(5.0), YaValue(5.0) - 2
 
 # ╔═╡ 6d64e78e-4042-4d66-b60e-46c3afc3454e
 function one_neuron_alt()
@@ -1262,8 +1259,8 @@ version = "17.4.0+0"
 # ╠═42880e3f-7479-4921-bc32-adca1df48efd
 # ╠═f63f9d2e-43f2-4fdd-8eee-ec922abd1a39
 # ╠═f11f60dc-4b08-43d3-afb9-cf3f49c0eb07
+# ╠═e5158eed-6895-4752-8e65-2ce71629881b
 # ╠═9e5bb9f5-72a0-4008-a3ea-6b3b3ba1b4d6
-# ╠═568a95ba-97bc-40a3-a0af-3b511e94a70b
 # ╠═6d64e78e-4042-4d66-b60e-46c3afc3454e
 # ╠═adf5f57c-9fc2-49fd-9245-2e60edfc37a2
 # ╠═b3574970-a905-4d7e-8289-a91d3cd611d1
