@@ -23,10 +23,13 @@ using Random, Distributions
 md"""
 ## Micrograd
 
-A presentation by Andrej Karpathi on Aug 2022 in [The spelled-out intro to neural networks and backpropagation: building micrograd](https://www.youtube.com/watch?v=VMj-3S1tku0&list=PLAqhIrjkxbuWI23v9cThsA9GvCAUhRvKZ&index=2)
+A presentation by Andrej Karpathy on Aug 2022: [The spelled-out intro to neural networks and backpropagation: building micrograd](https://www.youtube.com/watch?v=VMj-3S1tku0&list=PLAqhIrjkxbuWI23v9cThsA9GvCAUhRvKZ&index=2) - implemented in `Python`.
+
+Re-implemented in `Julia`.
 
 Links:
  - [micrograd on github](https://github.com/karpathy/micrograd)
+ - [Julia](https://www.julialang.org/)
  - [Graphviz documentation](https://www.graphviz.org/documentation/)
  - [Julia graphviz](https://github.com/JuliaGraphs/GraphViz.jl)
 
@@ -447,6 +450,10 @@ function Base.:^(self::Value{T}, p::T) where {T <: Real}
 	y
 end
 
+# ╔═╡ 4f4bcc69-9e5d-440e-9162-860383d4c4e5
+# Allow for integer value for power
+Base.:^(self::Value{T}, n::S) where {T <: Real, S <: Integer} = Base.:^(self, T(n))
+
 # ╔═╡ 42880e3f-7479-4921-bc32-adca1df48efd
 Base.:/(self::Value{T}, other::Value{T}) where {T <: Real} = Base.:*(self, other^(-1.)) 
 
@@ -721,7 +728,6 @@ end
 Neuron_f64(n_inp::Integer) = Neuron{Float64}(n_inp)
 
 # ╔═╡ 82383a21-730c-4380-9448-274c5a6adca4
-#
 ## not working as rand will return float64
 #
 # function Neuron_f32(n_inp::Integer)
@@ -752,6 +758,9 @@ function forward(self::Neuron{T}, x::UVT{T}; act_fn=tanh) where {T <: AbstractFl
 	self.w .* x |> d -> sum(d; init=self.b) |> act_fn
 end
 
+# ╔═╡ c8dbc010-895f-48c4-9c19-0620b29728b2
+parameters(self::Neuron{T}) where {T <: AbstractFloat} = [self.w..., self.b]
+
 # ╔═╡ aa193df7-aafe-4529-a4a5-6b2effac23c1
 md"""
 #### Layer Datatype
@@ -773,6 +782,9 @@ function forward(self::Layer{T}, x::UVT{T}) where {T <: AbstractFloat}
 	y = [forward(n, x) for n ∈ self.neurons]
 	length(y) == 1 ? y[1] : y
 end
+
+# ╔═╡ 29ab6007-35b5-4638-abb6-9ac19f6a9f07
+parameters(self::Layer{T}) where {T <: AbstractFloat} = [np for n ∈ self.neurons for np ∈ parameters(n)]
 
 # ╔═╡ 5d4a5da6-6dae-46e1-b786-73a749bff1e8
 md"""
@@ -809,6 +821,9 @@ begin
 	forward(nl₁, xx₁)
 end
 
+# ╔═╡ 8422bef6-8486-45f6-bee1-082e647b1207
+parameters(self::MLP{T}) where {T <: AbstractFloat} = [np for layer ∈ self.layers for np ∈ parameters(layer)]
+
 # ╔═╡ ebb36172-1d50-41d5-b14c-a566ffe126b5
 begin
 	mlp_x = [2.0, 3.4, -1.0]          # inputs
@@ -819,8 +834,91 @@ end
 # ╔═╡ b0197278-4ed8-4df9-a31a-ac10d61c51c2
 draw_dot(oₓ)
 
+# ╔═╡ 9946d2e2-9d0e-49f4-a75a-ada85b41f504
+md"""
+### Loss
+
+Intro MSE [Means Squared Error]
+"""
+
+# ╔═╡ 1a7d3b71-c559-480f-a45e-ec4e5370bfbb
+begin
+	xs = [
+		[2.0, 3.0, -1.0],
+		[3.0, -1.0, 0.5],
+		[0.5, 1.0, 1.0],
+		[1.0, 1.0, -1.0]
+	]
+	ys = [1., -1., -1., 1.] # desired output (or ground truth)
+	ŷ = [forward(mlp, x) for x ∈ xs] # predictions from our MLP 
+end
+
+# ╔═╡ 19f0a438-3387-47ef-a7a2-f22999bc2e8e
+# loss
+loss = (ŷ .- ys).^2 |> sum
+
+# ╔═╡ 1d92b88e-12cd-40e0-95fc-ffce7a437d62
+# And now call the backward pass from the loss
+backward(loss)
+
+# ╔═╡ 81f586f5-8d0e-4783-8773-7ac8a6411d74
+mlp.layers[1].neurons[1].w[1], mlp.layers[1].neurons[1].w[1].grad
+
 # ╔═╡ b221641d-8e86-4300-a281-e41cbb68798d
-# TBD examples, loss, backprop
+draw_dot(loss)
+
+# ╔═╡ 487de70c-fb6c-45c4-8a1d-af5a5753df95
+parameters(mlp) |> length
+
+# ╔═╡ 4459201c-daf3-436c-910d-d82b13d4e521
+const α = 0.02  # step size
+
+# ╔═╡ 6a1941e4-72e0-4c32-9801-a6e178eab11d
+for p ∈ parameters(mlp)
+	p.data += -α * p.grad
+end
+
+# ╔═╡ 85c890bf-0ad1-4191-b11d-409704e5cbcd
+mlp.layers[1].neurons[1].w[1], mlp.layers[1].neurons[1].w[1].grad
+
+# ╔═╡ 29071ba8-368e-4b6f-b04f-b918a8a6d7b9
+begin
+	# new forward pass (after the gradient update above)
+	ŷ₁ = [forward(mlp, x) for x ∈ xs] # new predictions from our MLP 
+	loss₁ = (ŷ₁ .- ys).^2 |> sum      # we expect the loss to be a bit less... and indeed... 
+end
+
+# ╔═╡ 79cefe58-385a-41f6-8f4e-f5135be443be
+md"""
+### Learning
+
+Ok, now we need to iterate this process: forward -> loss -> backward -> gradient update... 
+"""
+
+# ╔═╡ 7d1c6e1e-dfba-4b11-a8de-4ce720a03a53
+for i ∈ 1:32
+	ŷ₂ = [forward(mlp, x) for x ∈ xs]
+	
+	# reset .grad to 0 (a common bug is to forget this rule!)
+	for p_ ∈ parameters(mlp)
+		p_.grad = 0.0
+	end
+	
+	loss₂ = (ŷ₂ .- ys).^2 |> sum
+	backward(loss₂)
+	
+	# update
+	for p_ ∈ parameters(mlp)
+		p_.data += -α * p_.grad
+	end
+	println("""iteration $(@sprintf "%2d" i) - loss: $(@sprintf "%1.5f" loss₂.data)""")
+end
+
+# ╔═╡ 31934487-0d62-4c40-8280-462e741031a5
+md"""
+And done! \
+_Thanks Andrej_
+"""
 
 # ╔═╡ a5e92195-d95e-4723-9c80-8d690517d1dd
 html"""
@@ -856,7 +954,7 @@ PLUTO_MANIFEST_TOML_CONTENTS = """
 
 julia_version = "1.8.0"
 manifest_format = "2.0"
-project_hash = "aa2433613f731ea1a1cc6879dbcb48cffa1474b0"
+project_hash = "4b6112d1f9d5a2afdb0aaf4b9f962addc87ee81d"
 
 [[deps.AbstractPlutoDingetjes]]
 deps = ["Pkg"]
@@ -1565,6 +1663,7 @@ version = "17.4.0+0"
 # ╟─6dc7a448-b2ea-4465-8962-19f36bd41ef2
 # ╠═42880e3f-7479-4921-bc32-adca1df48efd
 # ╠═f63f9d2e-43f2-4fdd-8eee-ec922abd1a39
+# ╠═4f4bcc69-9e5d-440e-9162-860383d4c4e5
 # ╠═f11f60dc-4b08-43d3-afb9-cf3f49c0eb07
 # ╠═e5158eed-6895-4752-8e65-2ce71629881b
 # ╠═9e5bb9f5-72a0-4008-a3ea-6b3b3ba1b4d6
@@ -1586,16 +1685,32 @@ version = "17.4.0+0"
 # ╠═fb2f2a82-4544-4a66-9171-dfb4e288260c
 # ╠═8c7322ee-d6db-49fc-90fa-1dc9caa9842d
 # ╠═d140e239-35e6-460b-af10-283f83dede85
+# ╠═c8dbc010-895f-48c4-9c19-0620b29728b2
 # ╟─aa193df7-aafe-4529-a4a5-6b2effac23c1
 # ╠═281046da-e4ef-4afb-a058-4d1aba0b9da9
 # ╠═7138d45e-ce2b-4aa6-a0ba-27a7f3ab29bc
+# ╠═29ab6007-35b5-4638-abb6-9ac19f6a9f07
 # ╠═c75b08a7-8250-4d85-bd83-19e04e09457f
 # ╟─5d4a5da6-6dae-46e1-b786-73a749bff1e8
 # ╠═b438fad8-2691-4475-b26b-65fc1ada66a9
 # ╠═0ac8efb9-4aaf-4a8d-ad79-eb7be8e4eb48
+# ╠═8422bef6-8486-45f6-bee1-082e647b1207
 # ╠═ebb36172-1d50-41d5-b14c-a566ffe126b5
 # ╠═b0197278-4ed8-4df9-a31a-ac10d61c51c2
+# ╟─9946d2e2-9d0e-49f4-a75a-ada85b41f504
+# ╠═1a7d3b71-c559-480f-a45e-ec4e5370bfbb
+# ╠═19f0a438-3387-47ef-a7a2-f22999bc2e8e
+# ╠═1d92b88e-12cd-40e0-95fc-ffce7a437d62
+# ╠═81f586f5-8d0e-4783-8773-7ac8a6411d74
 # ╠═b221641d-8e86-4300-a281-e41cbb68798d
+# ╠═487de70c-fb6c-45c4-8a1d-af5a5753df95
+# ╠═4459201c-daf3-436c-910d-d82b13d4e521
+# ╠═6a1941e4-72e0-4c32-9801-a6e178eab11d
+# ╠═85c890bf-0ad1-4191-b11d-409704e5cbcd
+# ╠═29071ba8-368e-4b6f-b04f-b918a8a6d7b9
+# ╟─79cefe58-385a-41f6-8f4e-f5135be443be
+# ╠═7d1c6e1e-dfba-4b11-a8de-4ce720a03a53
+# ╟─31934487-0d62-4c40-8280-462e741031a5
 # ╟─a5e92195-d95e-4723-9c80-8d690517d1dd
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
