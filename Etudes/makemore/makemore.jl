@@ -54,7 +54,7 @@ end
 
 # ╔═╡ d7a4287b-254e-4716-bc92-03635735dd64
 # top 10 most frequent for example
-sort(bigrams |> collect; by = t -> t[2], rev = true)[1:10]
+top10 = sort(bigrams |> collect; by = t -> t[2], rev = true)[1:10]
 
 # ╔═╡ beffae3b-b7d4-46ee-8ce9-a986760ac651
 md"""
@@ -98,32 +98,36 @@ itoc = Dict(
 )
 
 # ╔═╡ 93e40af3-cc6c-47c0-82aa-29ef655b5fed
-heatmap(vbigrams)
+# heatmap(vbigrams, colorrange = (0, top10[1][2]),  colormap=Reverse(:viridis))
+
+# ╔═╡ c930982e-7d51-4a9e-bca2-59f03531187f
+λ(x) = (x / maximum(vbigrams)) * 255 |> x -> floor(Int, x)
 
 # ╔═╡ 9171fc3d-dfd9-40ff-9fd7-4e8bad3e642a
-# begin
-# 	λ(x) = (x / maximum(vbigrams)) * 255 |> x -> floor(Int, x)
+begin
+	f = Figure(resolution = (900, 900), fontsize=8)
 	
-# 	f = Figure(resolution = (900, 900), fontsize=8)
-# 	Axis(f[1, 1], aspect = DataAspect(), backgroundcolor = :gray90)
+	Axis(f[1, 1], aspect = DataAspect(), backgroundcolor = :gray90)
 	
-# 	for i ∈ 1:N, j ∈ 1:N
-# 		scatter!((j, i), color = λ(vbigrams[j, i]))
-# 		text!(
-#     		(j, i),
-#     		text = string("$(itoc[i])$(itoc[j])", "\n$(vbigrams[i, j])"),
-#     		align = (:center, :baseline),
-# 			textsize=9,
-# 		)
-# 	end
-# 	f
-# end
+	heatmap!(vbigrams, colorrange = (0, top10[1][2]), colormap=["grey", "lightblue", "skyblue"],
+		# colormap=Colors.colormap("Blues", N*N),
+		overdraw=true, 
+		transparency=true)
 
-# ╔═╡ 4948a81c-dc5e-4b1b-9cb6-19f95cf101b7
-typeof(λ)
-
-# ╔═╡ 64d2915f-5183-4b85-bc14-c6668e81b088
-Colors.colormap("Blues", 784)
+	for i ∈ 1:N, j ∈ 1:N
+		# scatter!((j, i), color = Int64(λ(vbigrams[j, i])))
+		
+		text!(
+    		(i, j),
+    		text = string("$(itoc[i])$(itoc[j])", "\n$(vbigrams[i, j])"),
+    		align = (:center, :baseline),
+			textsize=9,
+			color="darkred"
+		)
+	end
+	
+	f
+end
 
 # ╔═╡ e385f907-375e-4609-90bf-1701c771020c
 
@@ -1332,9 +1336,8 @@ version = "3.5.0+0"
 # ╠═2050affe-0506-4429-ad9f-cebb25b49b94
 # ╠═93e40af3-cc6c-47c0-82aa-29ef655b5fed
 # ╠═6b054f70-9d24-4e9b-b9ce-46fe22e4fede
+# ╠═c930982e-7d51-4a9e-bca2-59f03531187f
 # ╠═9171fc3d-dfd9-40ff-9fd7-4e8bad3e642a
-# ╠═4948a81c-dc5e-4b1b-9cb6-19f95cf101b7
-# ╠═64d2915f-5183-4b85-bc14-c6668e81b088
 # ╠═e385f907-375e-4609-90bf-1701c771020c
 # ╠═ee5d40f7-9be7-4c8f-b0f4-6a36850b51c0
 # ╠═0d6ddf82-4dae-4939-9813-f326aa30f882
