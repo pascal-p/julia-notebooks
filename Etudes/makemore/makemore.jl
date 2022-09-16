@@ -10,6 +10,18 @@ using CairoMakie
 # ╔═╡ 6b054f70-9d24-4e9b-b9ce-46fe22e4fede
 using Colors
 
+# ╔═╡ 521ee462-36cd-412b-a437-6f6841ca19a3
+using StatsBase
+
+# ╔═╡ 9bf81043-cf7d-4047-bef4-6de3b16eb440
+begin
+	# Example
+	using Random
+	Random.seed!(42);
+	p = rand(3)
+	p /= sum(p)
+end
+
 # ╔═╡ 459620c4-2ffb-11ed-1fcd-bd2bd1de8b0c
 words = open("./names.txt" , "r") |> 
 	io -> read(io, String) |>
@@ -30,8 +42,8 @@ extrema(s -> length(s), words)  # min-len word, max-len word
 # ╔═╡ f9503868-c392-48a6-8810-151c79d91869
 begin
 	# computes all the bigrams of a given words
-	const BOS = '<'
-	const EOS = '>'
+	const BOS = '.'
+	const EOS = '.'
 	const W  = string(BOS, words[2], EOS)
 	
 	zip(W[1:end], W[2:end]) |> collect
@@ -73,17 +85,19 @@ begin
 	ctoi = Dict(
 		s => ix for (ix, s) ∈ enumerate(all_chars)
 	)
-	ctoi[BOS] = 27
-	ctoi[EOS] = 28
+	ctoi[BOS] = 27 # = EOS
 end
+
+# ╔═╡ b3838817-1b02-4a00-b824-af915ec3ad3c
+ctoi
 
 # ╔═╡ a4649b55-df4d-42fe-a1bd-c43d0d69c42f
 begin
 	# let's build our 2D-array
-	const N = 28
+	const N = 27
 	
-	# NOTE: alternatively do not use the dictionary at all
-	vbigrams = fill(Int32(0), (28, 28))
+	# NOTE: alternatively do not use the dictionary at all...
+	vbigrams = fill(Int32(0), (N, N))
 	for bigram ∈ keys(bigrams)
 		ix, jx = ctoi[bigram[1]], ctoi[bigram[2]] 
 		vbigrams[ix, jx] = bigrams[bigram]
@@ -115,27 +129,91 @@ begin
 		transparency=true)
 
 	for i ∈ 1:N, j ∈ 1:N
-		# scatter!((j, i), color = Int64(λ(vbigrams[j, i])))
-		
 		text!(
-    		(i, j),
+    		(j, i),
     		text = string("$(itoc[i])$(itoc[j])", "\n$(vbigrams[i, j])"),
     		align = (:center, :baseline),
 			textsize=9,
-			color="darkred"
+			color="maroon"
 		)
 	end
-	
 	f
 end
 
 # ╔═╡ e385f907-375e-4609-90bf-1701c771020c
-
+vbigrams[1, :]
 
 # ╔═╡ ee5d40f7-9be7-4c8f-b0f4-6a36850b51c0
+begin
+	vprobs = Float64.(vbigrams[1, :]) / sum(vbigrams[1, :])
+	@assert sum(vprobs) ≈ 1.0
+end
+
+# ╔═╡ a8219e04-f05c-47e1-b906-56864d715712
+length(vprobs)
+
+# ╔═╡ ad0c9e8c-d47b-476c-a4b2-cf2f827414ce
+# and now use the trick of adding 1 everywhere, to avoid the 0 prob - which may result in NaN values
+
+P = Float64.(vbigrams[1:N, 1:N] .+ 1.) ./ sum(vbigrams .+ 1, dims=2) # sum over rows
+
+# ╔═╡ d8923d84-8d36-4a43-82ef-e57d37009c68
+begin
+	using Printf
+	
+	log_likelihood₁ = 0.0
+	kx = 5
+	for bigram ∈ keys(bigrams)
+		ix, jx = ctoi[bigram[1]], ctoi[bigram[2]]
+		
+		p₁ = P[ix, jx]
+		log_p₁ = log(p₁)
+		global log_likelihood₁ += log_p₁
+		println("""$(bigram[1])$(bigram[2]): $(@sprintf "%.4f" p₁) $(@sprintf "%.4f" log_p₁)""")
+		global kx -= 1
+		kx == 0 && break
+	end
+
+	nll = -log_likelihood₁  # negative log-likelihood
+	println("log_likelihood: $(@sprintf "%2.4f" nll) | $(@sprintf "%2.4f" nll / N)")
+end
+
+# ╔═╡ aaea1c72-e0c8-4e54-9627-b7bd5333cdea
+for ix ∈ 1:N
+	@assert sum(P[ix, :]) ≈ 1  # all rows must sum to 1
+end
+
+# ╔═╡ 5ff51ebc-43d4-40a7-8918-3ef2b20ded06
+rng = MersenneTwister(42)
+
+# ╔═╡ dd70d243-62da-42cf-a59b-c4183f41023b
+for jx ∈ 1:32
+	ix = 1
+	chars_out = Char[]
+	while true
+		v_probs = P[ix, :] # v_probs = fill(1.0/N, N) # uniform
+		ix = StatsBase.sample(rng, 1:N, ProbabilityWeights(vprobs), 1; replace=true)[1]
+		ix == N && break
+		push!(chars_out, itoc[ix])
+	end
+	println("$(jx) ", join(chars_out))
+end
+
+# ╔═╡ 9397626a-c16b-4b20-a2f8-1eb33c498995
+md"""
+NOTE: the aim of our work is to minimize the negative log-likelihood (nll), which is also about minimizing the average of nll (which summarize the quality of the model).) 
+"""
+
+# ╔═╡ c094af08-b436-48e6-9da1-d9aefbde047e
 
 
-# ╔═╡ 0d6ddf82-4dae-4939-9813-f326aa30f882
+# ╔═╡ 830ed3d5-418c-4cb5-81d9-2d6c1d2d8234
+
+
+# ╔═╡ 0c1c5323-5c83-48b6-92d3-8fe2406d0687
+
+
+# ╔═╡ d631dc9b-f93d-4d1a-8e83-ad17f7c5e1ac
 
 
 # ╔═╡ 82be967f-a3e6-401d-8733-dbf4bf71365d
@@ -155,10 +233,14 @@ PLUTO_PROJECT_TOML_CONTENTS = """
 [deps]
 CairoMakie = "13f3f980-e62b-5c42-98c6-ff1f3baf88f0"
 Colors = "5ae59095-9a9b-59fe-a467-6f913c188581"
+Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
+Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
+StatsBase = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
 
 [compat]
 CairoMakie = "~0.8.13"
 Colors = "~0.12.8"
+StatsBase = "~0.33.21"
 """
 
 # ╔═╡ 00000000-0000-0000-0000-000000000002
@@ -167,7 +249,7 @@ PLUTO_MANIFEST_TOML_CONTENTS = """
 
 julia_version = "1.8.0"
 manifest_format = "2.0"
-project_hash = "e74ff0e2a4f73b0732808c21898f3ecf5e456147"
+project_hash = "76b01801533baf4b92a4ebd312baeed81a90b9a0"
 
 [[deps.AbstractFFTs]]
 deps = ["ChainRulesCore", "LinearAlgebra"]
@@ -339,9 +421,9 @@ uuid = "8ba89e20-285c-5b6f-9357-94700520ee1b"
 
 [[deps.Distributions]]
 deps = ["ChainRulesCore", "DensityInterface", "FillArrays", "LinearAlgebra", "PDMats", "Printf", "QuadGK", "Random", "SparseArrays", "SpecialFunctions", "Statistics", "StatsBase", "StatsFuns", "Test"]
-git-tree-sha1 = "8579b5cdae93e55c0cff50fbb0c2d1220efd5beb"
+git-tree-sha1 = "ee407ce31ab2f1bacadc3bd987e96de17e00aed3"
 uuid = "31c24e10-a181-5473-b8eb-7969acd0382f"
-version = "0.25.70"
+version = "0.25.71"
 
 [[deps.DocStringExtensions]]
 deps = ["LibGit2"]
@@ -1331,6 +1413,7 @@ version = "3.5.0+0"
 # ╟─beffae3b-b7d4-46ee-8ce9-a986760ac651
 # ╠═0544cbde-9e07-46b2-8f6e-9ceef46c1d44
 # ╠═129dd0fa-e4e0-415a-a5d7-a6fb28ed943c
+# ╠═b3838817-1b02-4a00-b824-af915ec3ad3c
 # ╠═a4649b55-df4d-42fe-a1bd-c43d0d69c42f
 # ╠═f86eb9e4-d920-4ba5-a628-0a47052d6ec6
 # ╠═2050affe-0506-4429-ad9f-cebb25b49b94
@@ -1340,7 +1423,19 @@ version = "3.5.0+0"
 # ╠═9171fc3d-dfd9-40ff-9fd7-4e8bad3e642a
 # ╠═e385f907-375e-4609-90bf-1701c771020c
 # ╠═ee5d40f7-9be7-4c8f-b0f4-6a36850b51c0
-# ╠═0d6ddf82-4dae-4939-9813-f326aa30f882
+# ╠═a8219e04-f05c-47e1-b906-56864d715712
+# ╠═9bf81043-cf7d-4047-bef4-6de3b16eb440
+# ╠═521ee462-36cd-412b-a437-6f6841ca19a3
+# ╠═ad0c9e8c-d47b-476c-a4b2-cf2f827414ce
+# ╠═aaea1c72-e0c8-4e54-9627-b7bd5333cdea
+# ╠═5ff51ebc-43d4-40a7-8918-3ef2b20ded06
+# ╠═dd70d243-62da-42cf-a59b-c4183f41023b
+# ╠═d8923d84-8d36-4a43-82ef-e57d37009c68
+# ╟─9397626a-c16b-4b20-a2f8-1eb33c498995
+# ╠═c094af08-b436-48e6-9da1-d9aefbde047e
+# ╠═830ed3d5-418c-4cb5-81d9-2d6c1d2d8234
+# ╠═0c1c5323-5c83-48b6-92d3-8fe2406d0687
+# ╠═d631dc9b-f93d-4d1a-8e83-ad17f7c5e1ac
 # ╟─82be967f-a3e6-401d-8733-dbf4bf71365d
 # ╟─929dd8b2-5255-4814-99c7-6ad196effb90
 # ╟─00000000-0000-0000-0000-000000000001
