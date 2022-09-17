@@ -1,10 +1,11 @@
-
 .ipynb_checkpoints/
 */.ipynb_checkpoints/
 
 *.org
 *.pdf
 *.jlso
+.git.BAK
+.github
 
 0*/
 [A-Z]*/
