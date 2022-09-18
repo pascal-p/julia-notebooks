@@ -699,33 +699,44 @@ md"""
 """
 
 # ╔═╡ afc983e6-bd8c-4725-a0bd-076d2bc201c4
-Random.seed!(42)
+begin
+	Random.seed!(42)
+	const RNG = MersenneTwister(42)
+end
 
 # ╔═╡ e6eb2850-600e-4008-a412-599fa5d14257
-# const uniform_d = Uniform(-1, 1) # = Distributions.Uniform{Float64}(a=-1.0, b=1.0)
+const uniform_d = Uniform(-1, 1) # = Distributions.Uniform{Float64}(a=-1.0, b=1.0)
+
+# ╔═╡ e03f249f-6aa9-4b6e-aaad-b544bc52964d
+begin
+	rng = MersenneTwister(678)
+	Value{Float64}.(rand(rng, uniform_d, 7)) # |> eltype # = Float64
+end
 
 # ╔═╡ 63b6b64e-9eab-4e64-a83c-c8a786898764
 # const uniform_df32 = Uniform{Float32}(-1, 1) # = Distributions.Uniform{Float32}(a=-1.0f0, b=1.0f0)
 
-# ╔═╡ e03f249f-6aa9-4b6e-aaad-b544bc52964d
-# const NT = rand(uniform_d, 1) |> eltype # = Float64
+# ╔═╡ 14b92e03-c8de-4384-843a-7296b18236b2
+const Ud_f32 = Uniform{Float32}(-1., 1.)
 
 # ╔═╡ 03e5fd6e-0168-4d3b-b5b4-5e44c3fe7322
 struct Neuron{T <: AbstractFloat}
 	w::Vector{Value{T}}
 	b::Value{T}
 
-	function Neuron{T}(n_inp::Integer; dist=Uniform{T}(-1., 1.)) where {T <: AbstractFloat}
+	function Neuron{T}(n_inp::Integer;
+				dist=Uniform(-1., 1.), rng=MersenneTwister(42)) where {T <: AbstractFloat}
 		@assert n_inp ≥ 1
-		w = Value{T}.(rand(dist, n_inp))
-		b = Value{T}(rand(dist, 1)[1])
+		w = Value{T}.(rand(rng, dist, n_inp))
+		b = Value{T}(rand(rng, dist, 1)[1])
 		new(w, b)
 	end
 
-	function Neuron{Float32}(n_inp::Integer; dist=Uniform{Float32}(-1., 1.))
+	function Neuron{Float32}(n_inp::Integer; 
+			dist=Ud_f32, rng=MersenneTwister(42))
 		@assert n_inp ≥ 1
-		w = [Value{Float32}(Float32(rand(dist, n_inp)[1])) for _ ∈ 1:n_inp]
-		b = Value{Float32}(Float32(rand(dist, 1)[1]))
+		w = [Value{Float32}(Float32(rand(rng, dist, n_inp)[1])) for _ ∈ 1:n_inp]
+		b = Value{Float32}(Float32(rand(rng, dist, 1)[1]))
 		new(w, b)
 	end
 end
@@ -1682,8 +1693,9 @@ version = "17.4.0+0"
 # ╠═a2e926f2-14c2-4fce-a695-f60d2315b929
 # ╠═afc983e6-bd8c-4725-a0bd-076d2bc201c4
 # ╠═e6eb2850-600e-4008-a412-599fa5d14257
-# ╠═63b6b64e-9eab-4e64-a83c-c8a786898764
 # ╠═e03f249f-6aa9-4b6e-aaad-b544bc52964d
+# ╠═63b6b64e-9eab-4e64-a83c-c8a786898764
+# ╠═14b92e03-c8de-4384-843a-7296b18236b2
 # ╠═03e5fd6e-0168-4d3b-b5b4-5e44c3fe7322
 # ╠═4d90574d-5b26-4391-b1cd-568e2db45158
 # ╠═82383a21-730c-4380-9448-274c5a6adca4

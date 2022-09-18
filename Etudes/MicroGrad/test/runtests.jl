@@ -1,5 +1,8 @@
 using MicroGrad
+using Random
 using Test
+
+const RNG = MersenneTwister(42)
 
 function forward_one_neuron()
   # 2 inputs
@@ -24,7 +27,7 @@ function topological_order(o::Value)
     if v ∉ visited
       push!(visited, v)
       for child ∈ v._prev
-	build_topological_order(child)
+        build_topological_order(child)
       end
       push!(topo, v)
     end
@@ -111,5 +114,37 @@ end
     @test (z₂ / YaValue(4.0)).data ≈ 0.5
     @test (z₂ - YaValue(5.0)).data ≈ -3.0
     @test (YaValue(5.0) - 2).data ≈ 3.0
+  end
+
+  @testset "Neuron f64" begin
+    N = 4
+    n = Neuron_f64(N)
+
+    exp_w = [0.06636603208772263,
+             -0.09194172882571516,
+             -0.9646263465700713,
+             -0.6541339421260974]
+    exp_b = 0.9178517526594696
+
+    for ix ∈ 1:N
+      @test n.w[ix].data ≈ exp_w[ix]
+    end
+    @test n.b.data ≈ exp_b
+  end
+
+  @testset "Neuron f32" begin
+    N = 4
+    n = Neuron{Float32}(4)
+
+    exp_w = [0.06636603,
+             0.91785175,
+             0.91383165,
+             -0.15408747]
+    exp_b = 0.18582314
+
+    for ix ∈ 1:N
+      @test n.w[ix].data ≈ exp_w[ix]
+    end
+    @test n.b.data ≈ exp_b
   end
 end

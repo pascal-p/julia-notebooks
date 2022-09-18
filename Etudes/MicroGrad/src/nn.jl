@@ -2,22 +2,26 @@ using Random, Distributions
 
 const UVT{T} = Union{Vector{T}, Vector{Value{T}}} where {T <: AbstractFloat}
 
+const Ud_f32 = Uniform{Float32}(-1., 1.)
+
 ## Neuron DT
 struct Neuron{T <: AbstractFloat}
   w::Vector{Value{T}}
   b::Value{T}
 
-  function Neuron{T}(n_inp::Integer; dist=Uniform{T}(-1., 1.)) where {T <: AbstractFloat}
+  function Neuron{T}(n_inp::Integer;
+                     dist=Uniform(-1., 1.), rng=MersenneTwister(42)) where {T <: AbstractFloat}
     @assert n_inp ≥ 1
-    w = Value{T}.(rand(dist, n_inp))
-    b = Value{T}(rand(dist, 1)[1])
+    w = Value{T}.(rand(rng, dist, n_inp))
+    b = Value{T}(rand(rng, dist, 1)[1])
     new(w, b)
   end
 
-  function Neuron{Float32}(n_inp::Integer; dist=Uniform{Float32}(-1., 1.))
+  function Neuron{Float32}(n_inp::Integer;
+                           dist=Ud_f32, rng=MersenneTwister(42))
     @assert n_inp ≥ 1
-    w = [Value{Float32}(Float32(rand(dist, n_inp)[1])) for _ ∈ 1:n_inp]
-    b = Value{Float32}(Float32(rand(dist, 1)[1]))
+    w = [Value{Float32}(Float32(rand(rng, dist, n_inp)[1])) for _ ∈ 1:n_inp]
+    b = Value{Float32}(Float32(rand(rng, dist, 1)[1]))
     new(w, b)
   end
 end
