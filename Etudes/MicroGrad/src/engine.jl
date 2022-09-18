@@ -139,6 +139,8 @@ for op ∈ (:+, :*)
   end
 end
 
+Base.:/(self::Value{T}, other::Value{T}) where {T <: Real} = Base.:*(self, other^(-1.))
+
 function Base.:^(self::Value{T}, p::T) where {T <: Real}
   y = YaValue(self.data^p; _children=(self, ), _op=:^, label="^p")
   function _backward_fn()

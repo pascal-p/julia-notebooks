@@ -104,4 +104,12 @@ end
     @test o.data ≈ 0.7071067811865476
   end
 
+  @testset "more operators" begin
+    z₂ = YaValue(2.0)
+
+    @test (2 * z₂).data ≈ 4.0
+    @test (z₂ / YaValue(4.0)).data ≈ 0.5
+    @test (z₂ - YaValue(5.0)).data ≈ -3.0
+    @test (YaValue(5.0) - 2).data ≈ 3.0
+  end
 end
