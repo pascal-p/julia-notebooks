@@ -276,7 +276,7 @@ md"""
 ### Re-implementing tanh using basic building blocks
 
 
-#### Julia Apparte - Conversion and Promotion rules
+#### Julia Aparté - Conversion and Promotion rules
 First we want to be able to write something like
 
 ```Julia
@@ -521,6 +521,12 @@ x₁.grad, w₁.grad = w₁.data * x₁w₁.grad, x₁.data * x₁w₁.grad
 # ╔═╡ a9697bad-9dd0-4b54-bed6-4a1f98245711
 # redraw graph with gradient updated
 draw_dot(o)
+
+# ╔═╡ 6b278f01-2000-440e-bb5c-1d76c7591b32
+o
+
+# ╔═╡ 7f00eef1-04e5-4fda-853c-0473581323de
+o
 
 # ╔═╡ 251976c2-7609-4e6b-b26d-042651c01a06
 begin
@@ -1630,10 +1636,12 @@ version = "17.4.0+0"
 # ╟─5230e9a9-c8c4-4507-bbb4-9e549a8d6b48
 # ╠═237f80c7-755e-450d-8b3b-8173914de65a
 # ╠═4c71c0fa-801d-4f24-b385-b9ec6f275841
+# ╠═6b278f01-2000-440e-bb5c-1d76c7591b32
 # ╟─51450b56-72c5-496d-9d9b-fcc640b9b15e
 # ╠═75a46369-3c75-4270-808e-70bb5de02f2e
 # ╠═e99517de-a342-4c93-8237-a3ed4ed36fa9
 # ╠═bf1e7d64-d5b8-4d09-a4a9-2fca20abc05d
+# ╠═7f00eef1-04e5-4fda-853c-0473581323de
 # ╠═0d9b8cf7-459e-4c99-9c26-a1030e12c821
 # ╟─98e308e4-5f5b-4f75-aec6-d29eb2be6e3f
 # ╠═251976c2-7609-4e6b-b26d-042651c01a06

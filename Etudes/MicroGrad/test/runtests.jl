@@ -1,23 +1,51 @@
 using MicroGrad
 using Test
 
-@testset "MicroGrad.jl" begin
+function forward_one_neuron()
+  # 2 inputs
+  x₁, x₂ = YaValue(2.0; label="x₁"), YaValue(0.0; label="x₂")
+  # 2 weights
+  w₁, w₂ = YaValue(-3.0; label="w₁"), YaValue(1.0; label="w₂")
+  # bias
+  b = YaValue(6.8813735870195432; label="b")
 
+  x₁w₁ = x₁ * w₁; x₁w₁.label = "x₁×w₁"
+  x₂w₂ = x₂ * w₂; x₂w₂.label = "x₂×w₂"
+  x₁w₁x₂w₂ = x₁w₁ + x₂w₂; x₁w₁x₂w₂.label = "x₁×w₁ + x₂×w₂"
+  n = x₁w₁x₂w₂ + b; n.label = "n"
+  o = tanh(n); o.label = "output"
+
+  (o, n, x₁w₁x₂w₂, x₁w₁, x₂w₂)
+end
+
+function topological_order(o::Value)
+  topo, visited = [], Set()
+  function build_topological_order(v::Value)
+    if v ∉ visited
+      push!(visited, v)
+      for child ∈ v._prev
+	build_topological_order(child)
+      end
+      push!(topo, v)
+    end
+  end
+  build_topological_order(o)
+end
+
+
+@testset "MicroGrad.jl" begin
   @testset "basic" begin
     a = YaValue(2.0; label="a")
     b = YaValue(-3.0; label="b")
     c = YaValue(10.0; label="c")
-
     d = a * b; d.label = "d"
     e = d + c; e.label = "e"
-
     f = YaValue(-2.0; label="f")
     L = e * f; L.label="Output"
 
     @test a.data ≈ 2.0
     @test d.data ≈ a.data * b.data
     @test e.data ≈ d.data + c.data
-
     @test L.data ≈ e.data * f.data
   end
 
@@ -47,6 +75,33 @@ using Test
     end
 
     @test try_grad() ≈ -2.0
+  end
+
+  @testset "backprop - one neuron, manually"  begin
+    # Prep
+    (o, n, x₁w₁x₂w₂, x₁w₁, x₂w₂) = forward_one_neuron()
+
+    # and now the backward pass
+    o.grad = 1.0
+    o._backward()
+    n._backward()
+    x₁w₁x₂w₂._backward()
+    x₁w₁._backward()
+    x₂w₂._backward()
+
+    @test o.data ≈ 0.7071067811865476
+  end
+
+  @testset "backpop - auto" begin
+    # Prep
+    (o,) = forward_one_neuron()
+    # and now the backward pass, using reverse order of the graph's topological order
+    o.grad = 1.0
+    for cnode ∈ topological_order(o) |> reverse
+      cnode._backward()
+    end
+
+    @test o.data ≈ 0.7071067811865476
   end
 
 end
