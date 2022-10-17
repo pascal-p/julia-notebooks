@@ -1,6 +1,6 @@
 ## Julia Investigation
 
-A collection of notebooks about learning (Julia Programming)[https://www.julialang.org/] programming language.<br />
+A collection of notebooks about learning [Julia Programming](https://www.julialang.org/) programming language.<br />
 A good resource to start with `Julia` is [Julia Academy](https://juliaacademy.com/) and the excellent [Julia Documentation](https://docs.julialang.org/en/v1/)
 
   - As of 2020, moved from `Jupyter` notebooks to `Pluto` notebooks
@@ -16,4 +16,4 @@ A good resource to start with `Julia` is [Julia Academy](https://juliaacademy.co
 
 
 <hr />
-<p><sub><em>2019-2021 Corto Inc</sub></em></p>
+<p><sub><em>2019-2022Corto Inc</sub></em></p>
