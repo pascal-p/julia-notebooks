@@ -221,9 +221,7 @@ Note that the type of args is a vector of `Any`. This is because we can have thi
 """
 
 # ╔═╡ 49db31f8-6df0-4c66-903d-aaab55767ffa
-with_terminal() do
-	dump(:(x + 1))
-end
+:(x + 1) |> dump
 
 # ╔═╡ 4668deaf-77f6-4a4a-a459-976ffc67700c
 md"""
@@ -301,7 +299,7 @@ PLUTO_MANIFEST_TOML_CONTENTS = """
 
 julia_version = "1.8.2"
 manifest_format = "2.0"
-project_hash = "502a5e5263da26fcd619b7b7033f402a42a81ffc"
+project_hash = "97be6e027681c6ecfa37671630e179d506eb1167"
 
 [[deps.AbstractPlutoDingetjes]]
 deps = ["Pkg"]
