@@ -130,7 +130,7 @@ Assume increasing order of original sequence (ex: 'abcd')
 """
 
 # ╔═╡ 922170c4-556e-49c3-b30e-1e188da7e354
-permute_wlog("abcd" |> collect)
+# permute_wlog("abcd" |> collect)
 
 # ╔═╡ 3a96f0c6-c66e-4ca8-80d2-818cda74689b
 permute([2, 4, 3])
@@ -192,6 +192,20 @@ permute_cons("abcd")
 
 # ╔═╡ ae5b2b3a-c5c4-4863-ab86-6296ea88e57c
 permute_cons([false, true, nothing])
+
+# ╔═╡ 458cde77-a1ba-4a66-a48b-021c1b1746fc
+md"""
+#### 8 queens problems
+
+\#TBD
+"""
+
+# ╔═╡ a131f9df-1fb6-4d72-854e-58a51a0f3f48
+md"""
+#### Hanoi Tower
+
+\#TBD
+"""
 
 # ╔═╡ 58224148-017b-45a6-983e-bcff84d5e618
 html"""
@@ -473,6 +487,8 @@ version = "17.4.0+0"
 # ╠═5d7987ec-6b65-48ea-9bc4-3a1ab6225de4
 # ╠═eb5970a9-0060-4bde-b561-ec3144db0a59
 # ╠═ae5b2b3a-c5c4-4863-ab86-6296ea88e57c
+# ╠═458cde77-a1ba-4a66-a48b-021c1b1746fc
+# ╠═a131f9df-1fb6-4d72-854e-58a51a0f3f48
 # ╟─58224148-017b-45a6-983e-bcff84d5e618
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
