@@ -7,9 +7,9 @@ include("../src/gradient_descent.jl")
 
 @testset "Gradient descent" begin
 
-  mutable struct Decay i end
+  mutable struct Decay d end
 
-  Base.:*(δη::Decay, X) = X / √(δη.i += 1)
+  Base.:*(δη::Decay, X) = X / √(δη.d += 1)
 
   # src. AI a modern approach
   loss_squared(X, y, 𝐰, φ) = (𝐰 ⋅ φ(X) - y)^2  # ⋅ == \cdot from Linear Algebra
@@ -19,14 +19,14 @@ include("../src/gradient_descent.jl")
   idₓ = x -> x
 
   𝒟train₀ = [([3., 0.7], 4.), ([-1., 0.3], 3.), ([-1., -3.], 0.)]
+  𝒟train₁ = [(3, 5), (-1, 2), (-1, 1), (2, -3)]
 
   """
   Single-dimensional training input data.
   """
   function test_∇_descent_basic()
-    𝒟train = [(3, 4), (-1, 3), (-1, 0)]
-    𝐰_opt = ∇_descent(𝒟train, idₓ, ∇loss_squared)
-    y_opt = μ_loss(𝐰_opt, 𝒟train, idₓ, loss_squared)
+    𝐰_opt = ∇_descent(𝒟train₁, idₓ, ∇loss_squared)
+    y_opt = μ_loss(𝐰_opt, 𝒟train₁, idₓ, loss_squared)
     (𝐰_opt, y_opt)
   end
 
@@ -34,9 +34,14 @@ include("../src/gradient_descent.jl")
   Multi-dimensional training data input.
   """
   function test_∇_descent_multi_basic()
-
     𝐰_opt = ∇_descent(𝒟train₀, idₓ, ∇loss_squared)
     y_opt = μ_loss(𝐰_opt, 𝒟train₀, idₓ, loss_squared)
+    (𝐰_opt, y_opt)
+  end
+
+  function test_∇_descent_with_decay(N)
+    𝐰_opt = ∇_descent(𝒟train₁, idₓ, ∇loss_squared; η=Decay(0.), N=N)
+    y_opt = μ_loss(𝐰_opt, 𝒟train₁, idₓ, loss_squared)
     (𝐰_opt, y_opt)
   end
 
@@ -73,30 +78,32 @@ include("../src/gradient_descent.jl")
 
 
   𝐰, y = test_∇_descent_basic()
-  @test 𝐰 ≈ [0.8181818181818182]
-  @test y ≈ 5.878787878787879
+  @test 𝐰 ≈ [0.39999999999999986]
+  @test y ≈ 9.15
 
 
   𝐰, y = test_∇_descent_multi_basic()
   @test 𝐰 ≈ [0.8314306533883896, -0.03036191401505953]
   @test y ≈ 5.876487733786738
 
+  𝐰, y = test_∇_descent_with_decay(100)
+  @test 𝐰 ≈ [0.39999999999999986]
+  @test y ≈ 9.15
 
   𝐰, y = test_stochastic_∇_descent_basic()
   @test 𝐰 ≈ [0.8286254042639639, -0.07376670863696766]
   @test y ≈ 5.8829223883616395
 
+
+
   ϵ = 1.e-6
   isapprox(a, b; rtol = ϵ, kwargs...) = Base.isapprox(a, b; rtol=rtol, kwargs...)
-
 
   𝐰, y = test_stochastic_∇_descent(N=10_000)
   @test 𝐰 ≈ [4.994195281768873, 2.9888364454480634, 0.9895028912070879, 1.998500451626844, 3.9940672737357628] # rtol = ϵ
   @test y ≈ 0.009403064501924843 # rtol = ϵ
 
-
   𝐰, y = test_minibatch_stochastic_∇_descent(N=10_000)
   @test 𝐰 ≈ [4.995754913210971, 2.9854258315124715, 0.9986456733903936, 1.987942491820608, 3.9987465936663265] rtol = ϵ
   @test y ≈0.009306890923146974 rtol = ϵ
-
 end
