@@ -49,3 +49,18 @@ function stochastic_∇_descent(𝒟train, φ, ∇loss; η=0.1, N=500)
   end
   𝐰
 end
+
+function minibatch_stochastic_∇_descent(𝒟train, φ, ∇loss; η=0.1, N=500, batch_size=16)
+  𝐰 = (φ(𝒟train[1][1]) |> length |> rand) # starting from any point in the parameter space
+  n_batches = size(𝒟train, 1) / batch_size |> x -> ceil(Int, x)
+
+  for _ ∈ 1:N
+    # make an update for a batch of datapoints
+
+    for ix ∈ 0:(n_batches-1)
+      batch = 𝒟train[(ix * batch_size + 1):min((ix + 1) * batch_size, end)]
+      𝐰 .-= η * mean(∇loss(X, y, 𝐰, φ) for (X, y) ∈ batch)
+    end
+  end
+  𝐰
+end

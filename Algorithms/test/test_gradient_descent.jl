@@ -51,13 +51,22 @@ include("../src/gradient_descent.jl")
 
   function test_stochastic_∇_descent(;η=0.01, N=1_000, seed=70)
     Random.seed!(seed)
-    # Create random dataset with 100 rows and 5 columns
-    X = randn(100, 5)
-    # Create corresponding target value by adding random noise in the dataset
-    y = (idₓ.(X) * [5, 3, 1, 2, 4]) .+ randn(100) .* 0.1
+    X = randn(100, 5)                                    # Create random dataset with 100 rows and 5 columns
+    y = (idₓ.(X) * [5, 3, 1, 2, 4]) .+ randn(100) .* 0.1 # Create corresponding target value by adding random noise
 
-    𝒟train = [(X[ix, :], y[ix]) for ix ∈ 1:size(X, 1)]  # iterator
+    𝒟train = [(X[ix, :], y[ix]) for ix ∈ 1:size(X, 1)]
     𝐰_opt = stochastic_∇_descent(𝒟train, idₓ, ∇loss_squared; η=η, N=N)
+    y_opt = μ_loss(𝐰_opt, 𝒟train, idₓ, loss_squared)
+    (𝐰_opt, y_opt)
+  end
+
+  function test_minibatch_stochastic_∇_descent(;η=0.01, N=1_000, seed=70)
+    Random.seed!(seed)
+    X = randn(100, 5)                                     # Create random dataset with 100 rows and 5 columns
+    y = (idₓ.(X) * [5, 3, 1, 2, 4]) .+ randn(100) .* 0.1  # Create corresponding target value by adding random noise in the dataset
+
+    𝒟train = [(X[ix, :], y[ix]) for ix ∈ 1:size(X, 1)]
+    𝐰_opt = minibatch_stochastic_∇_descent(𝒟train, idₓ, ∇loss_squared; η=η, N=N)
     y_opt = μ_loss(𝐰_opt, 𝒟train, idₓ, loss_squared)
     (𝐰_opt, y_opt)
   end
@@ -84,4 +93,10 @@ include("../src/gradient_descent.jl")
   𝐰, y = test_stochastic_∇_descent(N=10_000)
   @test 𝐰 ≈ [4.994195281768873, 2.9888364454480634, 0.9895028912070879, 1.998500451626844, 3.9940672737357628] # rtol = ϵ
   @test y ≈ 0.009403064501924843 # rtol = ϵ
+
+
+  𝐰, y = test_minibatch_stochastic_∇_descent(N=10_000)
+  @test 𝐰 ≈ [4.995754913210971, 2.9854258315124715, 0.9986456733903936, 1.987942491820608, 3.9987465936663265] rtol = ϵ
+  @test y ≈0.009306890923146974 rtol = ϵ
+
 end
