@@ -5,6 +5,11 @@ An exploration on algorithms, implemented in `Julia`.
 > _Note, these are developped to gain a better understanding and are not designed to be production-ready._
 
 
+References:
+- [Beautiful Algorithms](https://github.com/mossr/BeautifulAlgorithms.jl)
+- [The Algorithms](https://github.com/TheAlgorithms/Julia/tree/main/src)
+- [AIMA = Algorithms for AI a modern approach](https://github.com/aimacode/aima-julia)
+
 <hr />
 
   [The Julia Language](https://www.julialang.org/)
