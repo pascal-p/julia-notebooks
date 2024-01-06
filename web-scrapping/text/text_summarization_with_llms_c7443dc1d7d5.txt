@@ -1,0 +1,47 @@
+A quick approach to summarize text using GPT 3.5 turbo which is a highly advanced AI model in the field of natural language processing, with vast improvements in generating contextually accurate and relevant text.
+Large Language Models or LLMs are pre-trained Machine Learning models which are trained on huge text datasets to understand and generate human like responses. In current times a lot of LLMs are available like GPT-4, LaMDA, BLOOM and others; and they are capable of doing a lot of tasks for us. Here I will specifically speak about GPT-3.5 turbo and text classification.
+Before we begin there are couple of things which we should know and have some of it handy, which includes:
+To have access to OpenAI API’s we would need to be registered on
+OpenAI developer platform
+and create an API key if we don't have one.
+NOTE:
+Save the API key with yourself. OpenAI does not show you the API keys once generated. In case one loses/forgets it, a new API key has to be generated.
+To build this text summarizer I have used Python for my backend and Streamlit for building the web app. Streamlit is an open-source Python package designed for creating machine learning and data science web apps. It’s easy to use and intuitive, so it is recommended for many beginners.
+Now, lets start with installing the dependencies before we go on to the actual text summarizer.
+pip install openai
+pip install streamlit
+For this article, we have only two dependencies, i.e., The OpenAI and Streamlit.
+Let’s start building our text summarizer. This is just the Python code, the web app will follow at a later stage in the article.
+With the help of the above code we interact with OpenAI GPT-3.5 turbo model. Also, here I am using the ChatCompletion API, where we can create a conversation and will get the intended result after passing the prompt.
+That said, let’s take a closer look at the code block provided above and describe a couple of hyperparameters.
+After discussing about the hyperprameters, we observe that the
+messages
+hyperparameter has two dictionary objects. The first dictionary is for setting the model as a text summarizer. The second is where we would pass our text and get the summarization output.
+In the second dictionary, things to notice are variables
+person_type
+and
+prompt
+. The
+person_type
+is a variable I used to control the summarized style. While the
+prompt
+is where we would pass our text to be summarized.
+As, I had mentioned earlier in this article, I am using Streamlit to build the web app, now let’s take a closer look into this:
+Save all the code in a single python file. I am calling my file
+summarize.py
+.
+Once all the python code provided above has been saved in a single Python file. Try to run the following code on your command prompt to initiate the application.
+streamlit run summarize.py
+After you run the above command in your command prompt, you should be able to see the below application on your default web browser.
+Once the application is opened in your default web browser. You can start feeding some input text which you would want to summarize. After the input text has been provided, press the
+Summarize
+button provided at the bottom of the application to get the summary to the input text.
+It would also be interesting to play around with the hyperparameters and see how the output varies when the hyperparameters are set to default against when they are changed. Another interesting parameter to check is the
+who are you?
+. It has options such as “Second-Grader”, “Professional Data Scientist”, “Househelper”, “Retired”, and “University Student”. The response from GPT-3.5 would be different for all the types, as it would try to make you understand according to your level of understanding of any particular topic, For example, understanding how earth revolves around the sun would be different for a second-grader when compared to a university student.
+With the rise in Generative AI, we have lots of opportunities to solve industry problems in an easier fashion. In this article I have discussed how the OpenAI API’s work and how we can use it to create a simple text summarization application using Python and Streamlit packages.
+For a look at the completed code, please reference the
+github repo
+. I hope you enjoyed this article.
+Follow me on
+LinkedIn
