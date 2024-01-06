@@ -1,3 +1,10 @@
+Title: Text Summarization with LLMs
+Author and datePritam Paul
+·
+Follow
+6 min read
+·
+Apr 11, 2023
 A quick approach to summarize text using GPT 3.5 turbo which is a highly advanced AI model in the field of natural language processing, with vast improvements in generating contextually accurate and relevant text.
 Large Language Models or LLMs are pre-trained Machine Learning models which are trained on huge text datasets to understand and generate human like responses. In current times a lot of LLMs are available like GPT-4, LaMDA, BLOOM and others; and they are capable of doing a lot of tasks for us. Here I will specifically speak about GPT-3.5 turbo and text classification.
 Before we begin there are couple of things which we should know and have some of it handy, which includes:

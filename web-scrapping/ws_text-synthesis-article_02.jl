@@ -161,13 +161,18 @@ function save_text(text::String; outfile=string("text/", OUTFILE))
 end
 
 # ╔═╡ 8fe89775-2853-49e4-885a-f3bdb1e792db
-extract_llm_settings(rroot; selector="#3fcb", verbose=false)  # Ttile
+md_title = extract_llm_settings(rroot; selector=".pw-post-title", verbose=false)  # Title
+
+# ╔═╡ 72d4f892-2bd2-43af-b71e-5252a666ce0c
+md = extract_llm_settings(rroot; selector=".bm", verbose=false)  # other metadata
 
 # ╔═╡ 070e39dc-b1a8-49ea-af7e-701c8e534d06
 text = extract_llm_settings(rroot; selector="p.pw-post-body-paragraph", verbose=false) # Article content
 
 # ╔═╡ 0df8719c-a91d-4449-8dac-337a832eb065
-save_text(text)
+save_text(
+	string("Title: ",  md_title, "\nAuthor and date", md, "\n", text)
+)
 
 # ╔═╡ 0883ae28-a94f-4bed-abce-39841605d29b
 md"""
@@ -182,15 +187,6 @@ Your style is highly formal, logical, and precise. You value consistency and com
 
 # lossless in the meaning
 
-# ╔═╡ cfe490b7-736e-4be0-83f2-bb90ea0dbfd9
-# function timeit(fn, args...; kwargs...)
-#   tic = Dates.Time(Dates.now())
-#   res = fn(args...; kwargs...)
-#   elapsed_time = convert(Dates.Millisecond, Dates.Time(Dates.now()) - tic)
-#   println("""  Elapsed time for call to `$(fn)`: $(elapsed_time)""")
-#   res
-# end
-
 # ╔═╡ 50a68ec8-837b-4bf4-ab5e-56dc9d3e677a
 function make_timed_chat_request(instruct_prompt::String, data::String; kwargs...)
   timeit(
@@ -203,8 +199,9 @@ function make_timed_chat_request(instruct_prompt::String, data::String; kwargs..
 end
 
 # ╔═╡ 17800316-94ea-457d-bf2c-21cffcbb7b0a
-INSTRUCT_PROMPT = """Generate a precise and detailed synthesis of the following excerpt (delimited by triple backticks). Ensure that it is structured into coherent sections. 
-Please return a markdown formatted synthesis of the article"""
+INSTRUCT_PROMPT = """Generate a precise and detailed synthesis of the following excerpt (delimited by triple backticks). Ensure that it is structured into coherent sections and report the article title, date and author (when provided) 
+Also ensure all relevant links and or references (github repository, ...) cited in the article are corectly extracted and rendered. 
+Please return a markdown formatted synthesis of the article."""
 
 # ╔═╡ e2ffe835-65dc-4c85-aa9a-d98867da2ff5
  synthesis = make_timed_chat_request(
@@ -667,16 +664,16 @@ version = "17.4.0+2"
 # ╠═b1309566-ded6-4f9f-a7b5-76e892991e65
 # ╠═4850d717-806b-49d2-8a14-f4b935bc96b9
 # ╠═8fe89775-2853-49e4-885a-f3bdb1e792db
+# ╠═72d4f892-2bd2-43af-b71e-5252a666ce0c
 # ╠═070e39dc-b1a8-49ea-af7e-701c8e534d06
 # ╠═0df8719c-a91d-4449-8dac-337a832eb065
 # ╟─0883ae28-a94f-4bed-abce-39841605d29b
 # ╠═6085b66d-d7cd-44bd-a95b-56ae63f0e585
 # ╠═d2f5330d-78d3-40ce-b21f-6c38e4a351bd
-# ╠═cfe490b7-736e-4be0-83f2-bb90ea0dbfd9
 # ╠═50a68ec8-837b-4bf4-ab5e-56dc9d3e677a
 # ╠═17800316-94ea-457d-bf2c-21cffcbb7b0a
 # ╠═e2ffe835-65dc-4c85-aa9a-d98867da2ff5
-# ╠═c4f7a724-fe95-45cb-94af-656cc5fbebb5
+# ╟─c4f7a724-fe95-45cb-94af-656cc5fbebb5
 # ╠═e4d711be-c885-404b-a51a-fda50c9d43c7
 # ╟─322ecf98-5694-42a1-84f2-caf8a5fa58ad
 # ╟─00000000-0000-0000-0000-000000000001

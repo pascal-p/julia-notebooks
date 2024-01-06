@@ -1,23 +1,22 @@
-# Synthesis of Text Summarization Using GPT-3.5 Turbo and Streamlit
+# Synthesis of "A Quick Approach to Summarize Text Using GPT-3.5 Turbo"
 ## Introduction
-The article provides a comprehensive guide on creating a text summarizer using GPT-3.5 Turbo, a state-of-the-art language model, and Streamlit, a tool for building web applications. It emphasizes the capabilities of Large Language Models (LLMs) like GPT-3.5 Turbo in understanding and generating human-like text. The article is aimed at demonstrating the process of integrating OpenAI's API with a Python backend and Streamlit to build a functional text summarization application.
-## Preparatory Steps
-### Registration and API Key Generation
-- To utilize OpenAI's API, one must register on the OpenAI developer platform and generate an API key, which should be securely saved as OpenAI does not retain a copy of the key.
-### Installation of Dependencies
-- The project requires the installation of two primary dependencies: OpenAI and Streamlit, which can be installed using the Python package manager pip.
+The article discusses the utilization of GPT-3.5 Turbo, a state-of-the-art language model, for the purpose of text summarization. It highlights the capabilities of Large Language Models (LLMs) like GPT-4, LaMDA, and BLOOM, focusing specifically on GPT-3.5 Turbo in conjunction with text classification tasks. The author outlines the prerequisites for using OpenAI's API, the process of building a text summarizer using Python and Streamlit, and the exploration of hyperparameters to tailor the summarization output.
+## Prerequisites and Setup
+To interact with OpenAI's API, users must register on the OpenAI developer platform and generate an API key, which must be kept securely as it is not retrievable once shown. The author emphasizes the importance of saving the API key due to OpenAI's policy of not displaying it more than once.
+The dependencies required for the project are Python for backend operations and Streamlit for creating the web application. Streamlit is recommended for its simplicity and user-friendliness, particularly for beginners. The installation of these dependencies is accomplished via the following commands:
+- `pip install openai`
+- `pip install streamlit`
 ## Building the Text Summarizer
-### Code Overview
-- The author provides Python code snippets that interact with the OpenAI GPT-3.5 Turbo model using the ChatCompletion API. This API facilitates a conversational interface where prompts are passed, and the model returns the desired summarization output.
-### Hyperparameters Explanation
-- The `messages` hyperparameter is crucial, containing two dictionary objects. The first dictionary sets the model to act as a text summarizer, while the second dictionary is where the actual text to be summarized is passed.
-- Additional variables such as `person_type` and `prompt` are highlighted. `person_type` allows control over the style of the summary, and `prompt` is the variable for the input text.
-## Streamlit Web Application Development
-### Code Integration and Execution
-- All Python code is saved in a file named `summarize.py`. The application is initiated using the Streamlit command `streamlit run summarize.py` in the command prompt, which opens the application in a web browser.
-### Application Usage
-- Users can input text into the web application and click the `Summarize` button to obtain a summary. The application also allows users to experiment with hyperparameters and observe how changes affect the output.
-### Exploring the `who are you?` Parameter
-- The application includes a feature to tailor responses based on the user's background, such as "Second-Grader" or "University Student," demonstrating the model's ability to adjust explanations to the user's level of understanding.
+The author provides a Python code snippet (not included in the excerpt) that interfaces with the OpenAI GPT-3.5 Turbo model using the ChatCompletion API. This API facilitates a conversational interaction with the model to obtain summarization results based on the provided prompts.
+### Hyperparameters and Code Description
+The `messages` hyperparameter is crucial, containing two dictionary objects. The first dictionary configures the model to perform text summarization, while the second dictionary is where the actual text to be summarized is passed. The `person_type` variable within the second dictionary allows the user to control the style of the summary, and the `prompt` variable is where the text for summarization is inputted.
+## Streamlit Web Application
+The author instructs saving the Python code in a file named `summarize.py`. To launch the application, the user must execute `streamlit run summarize.py` in the command prompt, which opens the application in the default web browser. The application provides a user interface to input text and a 'Summarize' button to generate the summary.
+### Experimentation with Hyperparameters
+The article encourages experimenting with hyperparameters to observe how they affect the output. An interesting aspect to explore is the `who are you?` parameter, which adjusts the model's responses based on the user's persona, such as a second-grader or a professional data scientist, tailoring the explanation to the user's level of understanding.
 ## Conclusion and Resources
-The article concludes by highlighting the potential of Generative AI to solve industry problems and provides a practical example through the text summarization application. It underscores the ease of using OpenAI's APIs with Python and Streamlit to create such applications. For further reference and a complete view of the code, the author directs readers to the GitHub repository and encourages following their LinkedIn profile for more insights.
+The rise of Generative AI presents numerous opportunities to address industry challenges more efficiently. This article serves as a guide on leveraging OpenAI's APIs to create a simple text summarization application using Python and Streamlit. For the complete code, the author refers readers to the GitHub repository and also invites them to follow on LinkedIn.
+### References and Links
+- GitHub Repository: [github repo](https://github.com/)
+- LinkedIn Profile: [Follow me on LinkedIn](https://www.linkedin.com/)
+(Note: The exact URLs for the GitHub repository and LinkedIn profile are not provided in the excerpt and are represented as placeholders.)
