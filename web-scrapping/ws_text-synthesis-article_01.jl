@@ -6,8 +6,8 @@ using InteractiveUtils
 
 # ╔═╡ bf0e8d60-d704-4c66-ad3f-d372cb2963a2
 begin
-	using PlutoUI
-	PlutoUI.TableOfContents(indent=true, depth=4, aside=true)
+        using PlutoUI
+        PlutoUI.TableOfContents(indent=true, depth=4, aside=true)
 end
 
 # ╔═╡ c8b1224e-d1f3-4aaa-8d5b-26a7362af6f5
@@ -44,10 +44,10 @@ const URL = "https://medium.com/@kamelyoussef1996/long-text-summarization-using-
 
 # ╔═╡ 68c8922f-0cb2-41d9-9efe-3ed7a00dd76f
 const OUTFILE = split(URL, "/")[end:end] |>
-	v -> join(v, "-") |>
-	s -> replace(s, r"\W" => "_") |>
-	s -> string(s, ".txt") |>  # s -> string("04-", s, ".txt") |>
-	s -> replace(s, "-_" => "-")
+        v -> join(v, "-") |>
+        s -> replace(s, r"\W" => "_") |>
+        s -> string(s, ".txt") |>
+        s -> replace(s, "-_" => "-")
 
 # ╔═╡ 96f81b71-da5b-469b-80a6-a9b436491b61
 @time req = HTTP.get(URL)
@@ -77,10 +77,10 @@ _root = parsed_doc.root[2].children[1]
 for elem ∈ PreOrderDFS(_root.children[1])  # main
     try
         if tag(elem) == :p
-			# println(elem.children[1])
-        	println(AbstractTrees.children(elem)[1])
-			println("\t", AbstractTrees.children(elem)[2])
-		end		
+        	# println(elem.children[1])
+            println(AbstractTrees.children(elem)[1])
+            println("\t", AbstractTrees.children(elem)[2])
+    	end
     catch
         # Nothing needed here
     end
@@ -91,17 +91,17 @@ rroot = parsed_doc.root[2].children[1];
 
 # ╔═╡ ece5bc96-b302-4d8e-af5b-e093ab081ce3
 function structure_llm_settings(root, selector="p.pw-post-body-paragraph")
-	for (ix, element) ∈ enumerate(eachmatch(Selector(selector), rroot))
-		print("ix: $(ix)")
-		if hasproperty(element, :children)
-			println(" current element has $(length(element.children)) child(ren)")
-			
-			for child ∈ element.children
-				print("\t", propertynames(child))
-			end
-			println()
-		end
-	end
+    for (ix, element) ∈ enumerate(eachmatch(Selector(selector), rroot))
+        print("ix: $(ix)")
+        if hasproperty(element, :children)
+        	println(" current element has $(length(element.children)) child(ren)")
+
+  			for child ∈ element.children
+            	print("\t", propertynames(child))
+            end
+        	println()
+    	end
+    end
 end
 
 # ╔═╡ 8fdfb225-1475-483e-a81a-5a450b5b0dbd
@@ -114,60 +114,88 @@ md"""
 
 # ╔═╡ 54ec9961-d015-411d-a563-84d0e8f56249
 function dft(v_elt::Vector{<: Any})::String
-	"""
-	depth first traversal
-	"""
-	vtext = String[]
-	function _dft(v_elt::Vector{<: Any})
-		for elt ∈ v_elt
-			if hasproperty(elt, :children)
-				_dft(elt.children)
-			elseif hasproperty(elt, :text)
-				push!(vtext, strip(elt.text))	
-			end
-		end
-		vtext
-	end
-	_dft(v_elt) |> v -> join(v, "\n")
+    """
+    depth first traversal
+    """
+    vtext = String[]
+    function _dft(v_elt::Vector{<: Any})
+    	for elt ∈ v_elt
+        	if hasproperty(elt, :children)
+            	_dft(elt.children)
+            elseif hasproperty(elt, :text)
+            	push!(vtext, strip(elt.text))
+            end
+        end
+    	vtext
+    end
+    _dft(v_elt) |> v -> join(v, "\n")
 end
 
 # ╔═╡ b1309566-ded6-4f9f-a7b5-76e892991e65
 function extract_llm_settings(root; selector = "p.nx-mt-6", verbose=true)::String
-	fulltext = String[]
-	for (ix, element) ∈ enumerate(eachmatch(Selector(selector), rroot))
-		verbose && println("$(ix) - [$(propertynames(element))]")
-		
-		if hasproperty(element, :children)
-			verbose && println("  go deeper: $(propertynames(element))")
-			text = dft(element.children)
-			push!(fulltext, text)
-		end
-	end
+    fulltext = String[]
+    for (ix, element) ∈ enumerate(eachmatch(Selector(selector), rroot))
+        verbose && println("$(ix) - [$(propertynames(element))]")
 
-	join(
-		filter(
-			l -> length(strip(l)) > 0,
-			fulltext	
-		),
-		"\n"
-	) 
+        if hasproperty(element, :children)
+            verbose && println("  go deeper: $(propertynames(element))")
+            text = dft(element.children)
+            push!(fulltext, text)
+        end
+    end
+
+    join(
+    	filter(
+        	l -> length(strip(l)) > 0,
+            fulltext
+        ),
+        "\n"
+    )
+end
+
+# ╔═╡ a76cd62d-98dc-4043-8a44-6b2020625f8f
+function extract_links(root; selector = "a", verbose=true, restrict_to=["github", "LinkedIn"])::Vector{String}
+    links = String[]
+    for element ∈ eachmatch(Selector(selector), rroot)
+    	if hasproperty(element, :attributes)
+        	if match(join(restrict_to, "|") |> p -> Regex(p, "i"), element.attributes["href"]) !== nothing
+                push!(links, element.attributes["href"])
+            end
+    	end
+    end
+    links
 end
 
 # ╔═╡ 4850d717-806b-49d2-8a14-f4b935bc96b9
 function save_text(text::String; outfile=string("text/", OUTFILE))
-	open(outfile, "w") do fh
-		write(fh, text)
-	end
+    open(outfile, "w") do fh
+    	write(fh, text)
+    end
 end
 
 # ╔═╡ 8fe89775-2853-49e4-885a-f3bdb1e792db
-extract_llm_settings(rroot; selector="#3fcb", verbose=false)  # Ttile
+md_title = extract_llm_settings(rroot; selector=".pw-post-title", verbose=false)  # Title
+
+# ╔═╡ 72d4f892-2bd2-43af-b71e-5252a666ce0c
+md = extract_llm_settings(rroot; selector=".bm", verbose=false)  # other metadata
 
 # ╔═╡ 070e39dc-b1a8-49ea-af7e-701c8e534d06
 text = extract_llm_settings(rroot; selector="p.pw-post-body-paragraph", verbose=false) # Article content
 
+# ╔═╡ ed56ba67-5e5a-43e9-9a5f-8e63597725f7
+links = extract_links(rroot; selector="a", verbose=false)
+
+# ╔═╡ 0110956d-424d-4c7c-87ef-eda4a2cfc291
+full_text = string(
+    "- Title: ",  md_title,
+    "\n- Author and date: ", md,
+    "\n- Link: ", URL,
+    "\nMain:\n", text,
+    "\n Links:\n", map(s -> string(" - ", s), links) |> links -> join(links, "\n")
+)
+
 # ╔═╡ 0df8719c-a91d-4449-8dac-337a832eb065
-save_text(text)
+save_text(full_text)
 
 # ╔═╡ 0883ae28-a94f-4bed-abce-39841605d29b
 md"""
@@ -175,21 +203,12 @@ md"""
 """
 
 # ╔═╡ 6085b66d-d7cd-44bd-a95b-56ae63f0e585
-SYS_PROMPT = """You are a smart AI research assistant tasked with analyzing, summarizing and synthesizing articles. You are thorough and deliberate in your approach before drafting your answer. 
-When summarization, you strive to achieve the goal of lossless compression; that is, your summary should be shorter than the source article, but it must capture all the ideas, reasoning, and examples presented. 
-When syntheszing, you excel at organizing the article into coherent sections with introduction and conclusion highlighting the main contribution of the article. 
+SYS_PROMPT = """You are a smart AI research assistant tasked with analyzing, summarizing and synthesizing articles. You are thorough and deliberate in your approach before drafting your answer.
+When summarization, you strive to achieve the goal of lossless compression; that is, your summary should be shorter than the source article, but it must capture all the ideas, reasoning, and examples presented.
+When syntheszing, you excel at organizing the article into coherent sections with introduction and conclusion highlighting the main contribution of the article.
 Your style is highly formal, logical, and precise. You value consistency and completeness."""
 
 # lossless in the meaning
-
-# ╔═╡ cfe490b7-736e-4be0-83f2-bb90ea0dbfd9
-# function timeit(fn, args...; kwargs...)
-#   tic = Dates.Time(Dates.now())
-#   res = fn(args...; kwargs...)
-#   elapsed_time = convert(Dates.Millisecond, Dates.Time(Dates.now()) - tic)
-#   println("""  Elapsed time for call to `$(fn)`: $(elapsed_time)""")
-#   res
-# end
 
 # ╔═╡ 50a68ec8-837b-4bf4-ab5e-56dc9d3e677a
 function make_timed_chat_request(instruct_prompt::String, data::String; kwargs...)
@@ -203,17 +222,17 @@ function make_timed_chat_request(instruct_prompt::String, data::String; kwargs..
 end
 
 # ╔═╡ 17800316-94ea-457d-bf2c-21cffcbb7b0a
-INSTRUCT_PROMPT = """Generate a precise and detailed synthesis of the following excerpt (delimited by triple backticks). Ensure that it is structured into coherent sections. 
-Please return a markdown formatted synthesis of the article"""
+INSTRUCT_PROMPT = """Generate a precise and detailed synthesis of the following excerpt (delimited by triple backticks). Ensure that it is structured into coherent sections and report the article title, date, author and link (when provided) as a first section. Also ensure all relevant links and or references (github repository, ...) cited in the article are correctly extracted and rendered (if fully provided, otherwise states that the reference is not available to you).
+Please return a markdown formatted synthesis of the article."""
 
 # ╔═╡ e2ffe835-65dc-4c85-aa9a-d98867da2ff5
  synthesis = make_timed_chat_request(
-	 INSTRUCT_PROMPT,
-	 text;
-	 max_tokens=4096,
-	 model="gpt-4-1106-preview",
-	 temperature=0.1,
-	 seed=117, 
+         INSTRUCT_PROMPT,
+         full_text;
+         max_tokens=4096,
+         model="gpt-4-1106-preview",
+         temperature=0.1,
+         seed=117,
 )
 
 # ╔═╡ c4f7a724-fe95-45cb-94af-656cc5fbebb5
@@ -222,7 +241,10 @@ $(join(synthesis, "\n"))
 """
 
 # ╔═╡ e4d711be-c885-404b-a51a-fda50c9d43c7
-save_text(join(synthesis, "\n"); outfile=string("results/synthesis_", replace(OUTFILE, ".txt" => ".md")))
+save_text(
+        join(synthesis, "\n") |> s -> replace(s, "```markdown" => "", "```" => "");
+        outfile=string("results/synthesis_", replace(OUTFILE, ".txt" => ".md"))
+)
 
 # ╔═╡ 322ecf98-5694-42a1-84f2-caf8a5fa58ad
 html"""
@@ -665,18 +687,21 @@ version = "17.4.0+2"
 # ╟─f1dd1b92-b841-414b-8cca-d3bcdda675dd
 # ╠═54ec9961-d015-411d-a563-84d0e8f56249
 # ╠═b1309566-ded6-4f9f-a7b5-76e892991e65
+# ╠═a76cd62d-98dc-4043-8a44-6b2020625f8f
 # ╠═4850d717-806b-49d2-8a14-f4b935bc96b9
 # ╠═8fe89775-2853-49e4-885a-f3bdb1e792db
+# ╠═72d4f892-2bd2-43af-b71e-5252a666ce0c
 # ╠═070e39dc-b1a8-49ea-af7e-701c8e534d06
+# ╠═ed56ba67-5e5a-43e9-9a5f-8e63597725f7
+# ╠═0110956d-424d-4c7c-87ef-eda4a2cfc291
 # ╠═0df8719c-a91d-4449-8dac-337a832eb065
 # ╟─0883ae28-a94f-4bed-abce-39841605d29b
 # ╠═6085b66d-d7cd-44bd-a95b-56ae63f0e585
 # ╠═d2f5330d-78d3-40ce-b21f-6c38e4a351bd
-# ╠═cfe490b7-736e-4be0-83f2-bb90ea0dbfd9
 # ╠═50a68ec8-837b-4bf4-ab5e-56dc9d3e677a
 # ╠═17800316-94ea-457d-bf2c-21cffcbb7b0a
 # ╠═e2ffe835-65dc-4c85-aa9a-d98867da2ff5
-# ╠═c4f7a724-fe95-45cb-94af-656cc5fbebb5
+# ╟─c4f7a724-fe95-45cb-94af-656cc5fbebb5
 # ╠═e4d711be-c885-404b-a51a-fda50c9d43c7
 # ╟─322ecf98-5694-42a1-84f2-caf8a5fa58ad
 # ╟─00000000-0000-0000-0000-000000000001

@@ -1,3 +1,12 @@
+- Title: Long Text Summarization Using LLMs and Clustering with K-means
+- Author and date: Kamelyoussef
+·
+Follow
+7 min read
+·
+Nov 9, 2023
+- Link: https://medium.com/@kamelyoussef1996/long-text-summarization-using-llms-and-clustering-with-k-means-d659835c146c
+Main:
 I’m regrouping here information I collected while working on this project, I will mention all the references, articles, videos … I used at the end of this article. You can also find this project on my
 Github
 , or
@@ -69,3 +78,7 @@ youtube.com/watch?v=dXxQ0LR-3Hg
 Extract Text from PDF Resumes Using PyMuPDF and Python — Trinh Nguyen:
 neurond.com/blog/extract-text-from-pdf-pymupdf-and-python
 If you enjoyed this article, please click on the heart button and share it.
+ Links:
+ - https://github.com/KamelYoussef/LongTextSummarizer
+ - https://github.com/KamelYoussef/OllamaSummarizer
+ - https://instructor-embedding.github.io/
