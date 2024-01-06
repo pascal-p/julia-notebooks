@@ -222,7 +222,7 @@ $(join(synthesis, "\n"))
 """
 
 # ╔═╡ e4d711be-c885-404b-a51a-fda50c9d43c7
-save_text(join(synthesis, "\n"); outfile=string("text/synthesis_", replace(OUTFILE, ".txt" => ".md")))
+save_text(join(synthesis, "\n"); outfile=string("results/synthesis_", replace(OUTFILE, ".txt" => ".md")))
 
 # ╔═╡ 322ecf98-5694-42a1-84f2-caf8a5fa58ad
 html"""
