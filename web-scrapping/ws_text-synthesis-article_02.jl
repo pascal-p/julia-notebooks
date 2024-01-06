@@ -153,6 +153,19 @@ function extract_llm_settings(root; selector = "p.nx-mt-6", verbose=true)::Strin
 	) 
 end
 
+# ╔═╡ a76cd62d-98dc-4043-8a44-6b2020625f8f
+function extract_links(root; selector = "a", verbose=true, restrict_to=["github", "LinkedIn"])::Vector{String}
+	links = String[]
+	for element ∈ eachmatch(Selector(selector), rroot)
+		if hasproperty(element, :attributes)
+			if match(join(restrict_to, "|") |> p -> Regex(p, "i"), element.attributes["href"]) !== nothing
+				push!(links, element.attributes["href"])
+			end
+		end
+	end
+	links
+end
+
 # ╔═╡ 4850d717-806b-49d2-8a14-f4b935bc96b9
 function save_text(text::String; outfile=string("text/", OUTFILE))
 	open(outfile, "w") do fh
@@ -169,10 +182,20 @@ md = extract_llm_settings(rroot; selector=".bm", verbose=false)  # other metadat
 # ╔═╡ 070e39dc-b1a8-49ea-af7e-701c8e534d06
 text = extract_llm_settings(rroot; selector="p.pw-post-body-paragraph", verbose=false) # Article content
 
-# ╔═╡ 0df8719c-a91d-4449-8dac-337a832eb065
-save_text(
-	string("Title: ",  md_title, "\nAuthor and date", md, "\n", text)
+# ╔═╡ ed56ba67-5e5a-43e9-9a5f-8e63597725f7
+links = extract_links(rroot; selector="a", verbose=false)
+
+# ╔═╡ 0110956d-424d-4c7c-87ef-eda4a2cfc291
+full_text = string(
+	"- Title: ",  md_title, 
+	"\n- Author and date: ", md, 
+	"\n- Link: ", URL,
+	"\nMain:\n", text, 
+	"\n Links:\n", map(s -> string(" - ", s), links) |> links -> join(links, "\n")
 )
+
+# ╔═╡ 0df8719c-a91d-4449-8dac-337a832eb065
+save_text(full_text)
 
 # ╔═╡ 0883ae28-a94f-4bed-abce-39841605d29b
 md"""
@@ -199,14 +222,13 @@ function make_timed_chat_request(instruct_prompt::String, data::String; kwargs..
 end
 
 # ╔═╡ 17800316-94ea-457d-bf2c-21cffcbb7b0a
-INSTRUCT_PROMPT = """Generate a precise and detailed synthesis of the following excerpt (delimited by triple backticks). Ensure that it is structured into coherent sections and report the article title, date and author (when provided) 
-Also ensure all relevant links and or references (github repository, ...) cited in the article are corectly extracted and rendered. 
+INSTRUCT_PROMPT = """Generate a precise and detailed synthesis of the following excerpt (delimited by triple backticks). Ensure that it is structured into coherent sections and report the article title, date, author and link (when provided) as a first section. Also ensure all relevant links and or references (github repository, ...) cited in the article are correctly extracted and rendered (if fully provided, otherwise states that the reference is not available to you). 
 Please return a markdown formatted synthesis of the article."""
 
 # ╔═╡ e2ffe835-65dc-4c85-aa9a-d98867da2ff5
  synthesis = make_timed_chat_request(
 	 INSTRUCT_PROMPT,
-	 text;
+	 full_text;
 	 max_tokens=4096,
 	 model="gpt-4-1106-preview",
 	 temperature=0.1,
@@ -219,7 +241,10 @@ $(join(synthesis, "\n"))
 """
 
 # ╔═╡ e4d711be-c885-404b-a51a-fda50c9d43c7
-save_text(join(synthesis, "\n"); outfile=string("results/synthesis_", replace(OUTFILE, ".txt" => ".md")))
+save_text(
+	join(synthesis, "\n") |> s -> replace(s, "```markdown" => "", "```" => ""); 
+	outfile=string("results/synthesis_", replace(OUTFILE, ".txt" => ".md"))
+)
 
 # ╔═╡ 322ecf98-5694-42a1-84f2-caf8a5fa58ad
 html"""
@@ -662,10 +687,13 @@ version = "17.4.0+2"
 # ╟─f1dd1b92-b841-414b-8cca-d3bcdda675dd
 # ╠═54ec9961-d015-411d-a563-84d0e8f56249
 # ╠═b1309566-ded6-4f9f-a7b5-76e892991e65
+# ╠═a76cd62d-98dc-4043-8a44-6b2020625f8f
 # ╠═4850d717-806b-49d2-8a14-f4b935bc96b9
 # ╠═8fe89775-2853-49e4-885a-f3bdb1e792db
 # ╠═72d4f892-2bd2-43af-b71e-5252a666ce0c
 # ╠═070e39dc-b1a8-49ea-af7e-701c8e534d06
+# ╠═ed56ba67-5e5a-43e9-9a5f-8e63597725f7
+# ╠═0110956d-424d-4c7c-87ef-eda4a2cfc291
 # ╠═0df8719c-a91d-4449-8dac-337a832eb065
 # ╟─0883ae28-a94f-4bed-abce-39841605d29b
 # ╠═6085b66d-d7cd-44bd-a95b-56ae63f0e585
