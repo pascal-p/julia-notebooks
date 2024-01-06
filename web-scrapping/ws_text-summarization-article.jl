@@ -22,9 +22,18 @@ using AbstractTrees
 # ╔═╡ 9732f467-bd58-4420-81d9-0011fc3d2a4e
 using Cascadia
 
+# ╔═╡ 7dba565b-24af-4eaa-ae0e-07e4d33876eb
+using OpenAI
+
+# ╔═╡ eb167d46-4631-40b3-8537-bc138cd6bf7e
+using Dates
+
+# ╔═╡ d2f5330d-78d3-40ce-b21f-6c38e4a351bd
+include("../../../NLP_LLM/Summarize_Papers_with_GPT/support/api_module.jl")
+
 # ╔═╡ c94c972e-a75f-11ee-153c-771e07689f95
 md"""
-### Web Scraping article and summarizing it
+## Web Scraping article and summarizing it
 
 1. Web extraction
 1. Summarization and Synthesis
@@ -54,7 +63,9 @@ parsed_doc = parsehtml(String(req.body));
 
 # ╔═╡ dc32f9b1-b270-40a5-9067-4dad5bed40fa
 md"""
-### In search of a inner element called `article`
+### Extraction
+
+#### In search of the root element
 
 First we need to locate the node of interest...
 """
@@ -98,7 +109,7 @@ structure_llm_settings(rroot)
 
 # ╔═╡ f1dd1b92-b841-414b-8cca-d3bcdda675dd
 md"""
-### Extracting the text
+#### Get the text
 """
 
 # ╔═╡ 54ec9961-d015-411d-a563-84d0e8f56249
@@ -121,13 +132,13 @@ function dft(v_elt::Vector{<: Any})::String
 end
 
 # ╔═╡ b1309566-ded6-4f9f-a7b5-76e892991e65
-function extract_llm_settings(root; selector = "p.nx-mt-6")::String
+function extract_llm_settings(root; selector = "p.nx-mt-6", verbose=true)::String
 	fulltext = String[]
 	for (ix, element) ∈ enumerate(eachmatch(Selector(selector), rroot))
-		println("$(ix) - [$(propertynames(element))]")
+		verbose && println("$(ix) - [$(propertynames(element))]")
 		
 		if hasproperty(element, :children)
-			println("  go deeper: $(propertynames(element))")
+			verbose && println("  go deeper: $(propertynames(element))")
 			text = dft(element.children)
 			push!(fulltext, text)
 		end
@@ -150,13 +161,68 @@ function save_text(text::String; outfile=string("text/", OUTFILE))
 end
 
 # ╔═╡ 8fe89775-2853-49e4-885a-f3bdb1e792db
-extract_llm_settings(rroot; selector="#3fcb")  # Ttile
+extract_llm_settings(rroot; selector="#3fcb", verbose=false)  # Ttile
 
 # ╔═╡ 070e39dc-b1a8-49ea-af7e-701c8e534d06
-text = extract_llm_settings(rroot; selector="p.pw-post-body-paragraph") # Article content
+text = extract_llm_settings(rroot; selector="p.pw-post-body-paragraph", verbose=false) # Article content
 
 # ╔═╡ 0df8719c-a91d-4449-8dac-337a832eb065
 save_text(text)
+
+# ╔═╡ 0883ae28-a94f-4bed-abce-39841605d29b
+md"""
+### Summarization and synthesis
+"""
+
+# ╔═╡ 6085b66d-d7cd-44bd-a95b-56ae63f0e585
+SYS_PROMPT = """You are a smart AI research assistant tasked with analyzing, summarizing and synthesizing articles. You are thorough and deliberate in your approach before drafting your answer. 
+When summarization, you strive to achieve the goal of lossless compression; that is, your summary should be shorter than the source article, but it must capture all the ideas, reasoning, and examples presented. 
+When syntheszing, you excel at organizing the article into coherent sections with introduction and conclusion highlighting the main contribution of the article. 
+Your style is highly formal, logical, and precise. You value consistency and completeness."""
+
+# lossless in the meaning
+
+# ╔═╡ cfe490b7-736e-4be0-83f2-bb90ea0dbfd9
+# function timeit(fn, args...; kwargs...)
+#   tic = Dates.Time(Dates.now())
+#   res = fn(args...; kwargs...)
+#   elapsed_time = convert(Dates.Millisecond, Dates.Time(Dates.now()) - tic)
+#   println("""  Elapsed time for call to `$(fn)`: $(elapsed_time)""")
+#   res
+# end
+
+# ╔═╡ 50a68ec8-837b-4bf4-ab5e-56dc9d3e677a
+function make_timed_chat_request(instruct_prompt::String, data::String; kwargs...)
+  timeit(
+    make_openai_request_chat,
+    SYS_PROMPT,
+    instruct_prompt,
+    data;
+    kwargs...
+  )
+end
+
+# ╔═╡ 17800316-94ea-457d-bf2c-21cffcbb7b0a
+INSTRUCT_PROMPT = """Generate a precise and detailed synthesis of the following excerpt (delimited by triple backticks). Ensure that it is structured into coherent sections. 
+Please return a markdown formatted synthesis of the article"""
+
+# ╔═╡ e2ffe835-65dc-4c85-aa9a-d98867da2ff5
+ synthesis = make_timed_chat_request(
+	 INSTRUCT_PROMPT,
+	 text;
+	 max_tokens=4096,
+	 model="gpt-4-1106-preview",
+	 temperature=0.1,
+	 seed=117, 
+)
+
+# ╔═╡ c4f7a724-fe95-45cb-94af-656cc5fbebb5
+md"""
+$(join(synthesis, "\n"))
+"""
+
+# ╔═╡ e4d711be-c885-404b-a51a-fda50c9d43c7
+save_text(join(synthesis, "\n"); outfile=string("text/synthesis_", replace(OUTFILE, ".txt" => ".md")))
 
 # ╔═╡ 322ecf98-5694-42a1-84f2-caf8a5fa58ad
 html"""
@@ -172,8 +238,10 @@ PLUTO_PROJECT_TOML_CONTENTS = """
 [deps]
 AbstractTrees = "1520ce14-60c1-5f80-bbc7-55ef81b5835c"
 Cascadia = "54eefc05-d75b-58de-a785-1a3403f0919f"
+Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
 Gumbo = "708ec375-b3d6-5a57-a7ce-8257bf98657a"
 HTTP = "cd3eb016-35fb-5094-929b-558a96fad6f3"
+OpenAI = "e9f21f70-7185-4079-aca2-91159181367c"
 PlutoUI = "7f904dfe-b85e-4ff6-b463-dae2292396a8"
 
 [compat]
@@ -181,6 +249,7 @@ AbstractTrees = "~0.4.4"
 Cascadia = "~1.0.2"
 Gumbo = "~0.8.2"
 HTTP = "~1.10.1"
+OpenAI = "~0.9.0"
 PlutoUI = "~0.7.54"
 """
 
@@ -190,7 +259,7 @@ PLUTO_MANIFEST_TOML_CONTENTS = """
 
 julia_version = "1.10.0"
 manifest_format = "2.0"
-project_hash = "517586b0048e7f18edbfb412afc19295d39bb50e"
+project_hash = "0a481d0eecee663aff8ea9fc7e22e4eb9f375300"
 
 [[deps.AbstractPlutoDingetjes]]
 deps = ["Pkg"]
@@ -323,6 +392,18 @@ git-tree-sha1 = "31e996f0a15c7b280ba9f76636b3ff9e2ae58c9a"
 uuid = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
 version = "0.21.4"
 
+[[deps.JSON3]]
+deps = ["Dates", "Mmap", "Parsers", "PrecompileTools", "StructTypes", "UUIDs"]
+git-tree-sha1 = "eb3edce0ed4fa32f75a0a11217433c31d56bd48b"
+uuid = "0f8b85d8-7281-11e9-16c2-39a750bddbf1"
+version = "1.14.0"
+
+    [deps.JSON3.extensions]
+    JSON3ArrowExt = ["ArrowTypes"]
+
+    [deps.JSON3.weakdeps]
+    ArrowTypes = "31f734f8-188a-4ce0-8406-c8a06bd891cd"
+
 [[deps.LibCURL]]
 deps = ["LibCURL_jll", "MozillaCACerts_jll"]
 uuid = "b27032c2-a3e7-50c8-80cd-2d36dbcbfd21"
@@ -393,6 +474,12 @@ version = "2023.1.10"
 [[deps.NetworkOptions]]
 uuid = "ca575930-c2e3-43a9-ace4-1e988b2c1908"
 version = "1.2.0"
+
+[[deps.OpenAI]]
+deps = ["Dates", "HTTP", "JSON3"]
+git-tree-sha1 = "c66f597044ac6cd41cbf4b191d59abbaf2003d9f"
+uuid = "e9f21f70-7185-4079-aca2-91159181367c"
+version = "0.9.0"
 
 [[deps.OpenBLAS_jll]]
 deps = ["Artifacts", "CompilerSupportLibraries_jll", "Libdl"]
@@ -482,6 +569,12 @@ deps = ["LinearAlgebra", "SparseArrays"]
 uuid = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 version = "1.10.0"
 
+[[deps.StructTypes]]
+deps = ["Dates", "UUIDs"]
+git-tree-sha1 = "ca4bccb03acf9faaf4137a9abc1881ed1841aa70"
+uuid = "856f2bd8-1eba-4b0a-8007-ebc267875bd4"
+version = "1.10.0"
+
 [[deps.SuiteSparse_jll]]
 deps = ["Artifacts", "Libdl", "libblastrampoline_jll"]
 uuid = "bea87d4a-7f5b-5778-9afe-8cc45184846c"
@@ -555,6 +648,8 @@ version = "17.4.0+2"
 # ╠═f3b4e922-34fd-432e-b45a-66ec7a4bea87
 # ╠═a9544425-661d-472a-a9b4-67626a88e2ea
 # ╠═9732f467-bd58-4420-81d9-0011fc3d2a4e
+# ╠═7dba565b-24af-4eaa-ae0e-07e4d33876eb
+# ╠═eb167d46-4631-40b3-8537-bc138cd6bf7e
 # ╠═f4c27df9-bbc1-4498-b7a0-42da0d049199
 # ╠═68c8922f-0cb2-41d9-9efe-3ed7a00dd76f
 # ╠═96f81b71-da5b-469b-80a6-a9b436491b61
@@ -574,6 +669,15 @@ version = "17.4.0+2"
 # ╠═8fe89775-2853-49e4-885a-f3bdb1e792db
 # ╠═070e39dc-b1a8-49ea-af7e-701c8e534d06
 # ╠═0df8719c-a91d-4449-8dac-337a832eb065
+# ╟─0883ae28-a94f-4bed-abce-39841605d29b
+# ╠═6085b66d-d7cd-44bd-a95b-56ae63f0e585
+# ╠═d2f5330d-78d3-40ce-b21f-6c38e4a351bd
+# ╠═cfe490b7-736e-4be0-83f2-bb90ea0dbfd9
+# ╠═50a68ec8-837b-4bf4-ab5e-56dc9d3e677a
+# ╠═17800316-94ea-457d-bf2c-21cffcbb7b0a
+# ╠═e2ffe835-65dc-4c85-aa9a-d98867da2ff5
+# ╠═c4f7a724-fe95-45cb-94af-656cc5fbebb5
+# ╠═e4d711be-c885-404b-a51a-fda50c9d43c7
 # ╟─322ecf98-5694-42a1-84f2-caf8a5fa58ad
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
