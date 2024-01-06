@@ -1,0 +1,71 @@
+I’m regrouping here information I collected while working on this project, I will mention all the references, articles, videos … I used at the end of this article. You can also find this project on my
+Github
+, or
+here
+for Ollama implementation.
+In today’s information age, we are constantly bombarded with an overwhelming volume of textual information. From research papers and news articles to legal documents and lengthy reports, the sheer length and complexity of these texts can often deter us from delving into the valuable insights they contain. As a result, summarizing long texts has become a crucial skill in managing information overload and making knowledge accessible to a wider audience.
+Traditionally, the task of summarization has been undertaken by human editors, who sift through extensive documents to extract the most important points, often resulting in subjective and labor-intensive processes. However, the advent of Large Language Models (LLMs) has transformed the landscape of text summarization.
+These advanced AI models, such as GPT-3, have gained remarkable proficiency in understanding and generating human-like text
+. They can digest lengthy documents and produce concise and coherent summaries that capture the essence of the original text with impressive accuracy.
+In this article, we will explore the evolution of text summarization and delve into the remarkable capabilities of LLMs. We will discuss the underlying techniques and methodologies that power these models, as well as the key advantages they bring to the table. Furthermore, we’ll examine how we can optimize the use of LLMs and their performances
+using clustering techniques Kmeans
+in this example.
+We’ll assume that you already have a Python environment (with Python >=3.7). you can install PyMuPDF using the pip command.
+You can use the library by importing the installed module :
+With the next lines of code, you can see the text extracted from the PDF as output:
+The output is quite pretty since the PyMuPDF knows how to read the text in a natural order even if you have columns in your pages especially articles. We can either use the output directly for the next step, or add some cleaning.
+PyMuPDF offers the possibility to deal with particular blocks in the PDF and analyse more the paragraphs and also use multiple properties to even classify parts (for example Introduction, paragraphs, titles, very small titles , conclusion …). And with the paragraphs being the most present type in the PDFs we can choose to delete all the rest based on the police and the size, or focuse even more on the introduction and the conclusion to maybe gasp the meaning of the whole PDF.
+You can find in this article a detailed
+example with python code
+on how to use some functions of PyMuPDF:
+In the cleaning part also we can add numbers of functions to help us have a nice clean text:
+Before diving into this part, let me introduce to you Langchain:
+LangChain is an open source framework that lets software developers working with AI and its machine learning subset combine large language models with other external components to develop LLM-powered applications. Also you have access to multiple tooling frameworks using a single interface. Honestly, I recommend using it in your projects.
+With the help of LangChain, we can define chunks with just one line of code.
+We can see embedding as a vector representation of out text and those numbers contain information about the meaning of our text.
+We can see that similar chunk has similar meaning to another chunk just by comparing their embeddings and that’s exactly what we are going to do later.
+I will now introduce you two ways than enable you to do this part :
+OpenAI Embedding API and Huggingface; Before we move to how to use those APIs we need to get an API Key, you just need to
+generate an API key
+for OpenAI and an
+API key for Hugging Face
+.
+You can store it in a file called .env in your project :
+We will need also to load those keys into our app using dotenv :
+For OpenAI Embedding API, keep in mind that this solution is not free, but I assure you that it is so cheap. You can check the pricing of the OpenAI API
+here
+.
+We can use the free solution based on HuggingFaceInstructEmbeddings,
+https://instructor-embedding.github.io/
+and adding some dependencies: InstructorEmbedding and sentence-transformers. This solution take so much time so it’s better to run in on a GPU.
+The main idea is explained in details in this
+Youtube video
+from
+Greg Kamradt
+.
+Now that we have all our chunks embedded, we can give it all to even
+GPT 32K
+and it wouldn’t be able to handle that in one go. At
+0.03 per 1K prompt tokens
+, this would cost us around $5 for a 300 pages book just for the prompt alone.
+The idea is to select a group of chunks that collectively provide a comprehensive yet varied perspective on the book. Alternatively, is it possible to identify the 5 or 10 most representative passages that encapsulate the essence of the PDF ?
+Note: There will be surely a bit of information loss, but there is no summary of a whole book that doesn’t have information loss.
+Now let’s cluster our embeddings. There are a lot of clustering algorithms you can chose from. I’m just going to go with the most popular here K means with 10 clusters.
+It’s interesting to see which chunks pop up at most descriptive, maybe you have more selected chunks from the middle or distributed across the whole book (PDF).
+Prompt engineering in GPT refers to the process of carefully designing or modifying the input prompt to influence the behavior or output of the language model. It involves constructing specific instructions, adding context, or providing example inputs to guide the model’s response. Prompt engineering is used to improve the relevance, accuracy, or style of generated text by steering the model towards desired outputs.
+Let’s create our custom prompts :
+In this part we summarize our chunks using gpt-3.5-turbo one by one and store them in a list. We can also use other open source LLMs from HuggingFace that you can find
+here
+. But i think gpt-3.5-turbo is more efficient.
+With all the summaries we had in our list, we are going to create a prompt that will help us combine them and try to get a descent summary of our book.
+In this part we will regroup all the summaries of our chunks and with the help of gpt-4 we will retrieve our final summary.
+We are going to use gpt4 (which has a bigger token limit) for the combine step, so we are asking for long summaries in the map step to reduce the information loss.
+In my project I added a frontend layer using Streamlit.
+Once the app is created, it can be deployed in three simple steps:
+5 Levels Of LLM Summarizing: Novice to Expert — Kamradt (Data Indy) :
+https://www.youtube.com/watch?v=qaPMdcCqtWk
+Chat with Multiple PDFs —Alejandro AO :
+youtube.com/watch?v=dXxQ0LR-3Hg
+Extract Text from PDF Resumes Using PyMuPDF and Python — Trinh Nguyen:
+neurond.com/blog/extract-text-from-pdf-pymupdf-and-python
+If you enjoyed this article, please click on the heart button and share it.
