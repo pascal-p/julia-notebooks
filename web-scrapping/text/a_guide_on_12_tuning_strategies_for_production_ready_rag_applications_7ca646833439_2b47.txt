@@ -1,0 +1,45 @@
+- Title: 
+- Author and date: 
+- Link: https://towardsdatascience.com/a-guide-on-12-tuning-strategies-for-production-ready-rag-applications-7ca646833439#2b47
+Main:
+
+ Links:
+ - https://medium.com/m/signin?operation=register&redirect=https%3A%2F%2Ftowardsdatascience.com%2Fa-guide-on-12-tuning-strategies-for-production-ready-rag-applications-7ca646833439%25232b47&source=post_page---two_column_layout_nav-----------------------global_nav-----------
+ - https://medium.com/m/signin?operation=login&redirect=https%3A%2F%2Ftowardsdatascience.com%2Fa-guide-on-12-tuning-strategies-for-production-ready-rag-applications-7ca646833439%25232b47&source=post_page---two_column_layout_nav-----------------------global_nav-----------
+ - https://medium.com/?source=---two_column_layout_nav----------------------------------
+ - https://medium.com/m/signin?operation=register&redirect=https%3A%2F%2Fmedium.com%2Fnew-story&source=---two_column_layout_nav-----------------------new_post_topnav-----------
+ - https://medium.com/search?source=---two_column_layout_nav----------------------------------
+ - https://medium.com/m/signin?operation=register&redirect=https%3A%2F%2Ftowardsdatascience.com%2Fa-guide-on-12-tuning-strategies-for-production-ready-rag-applications-7ca646833439%25232b47&source=post_page---two_column_layout_nav-----------------------global_nav-----------
+ - https://medium.com/m/signin?operation=login&redirect=https%3A%2F%2Ftowardsdatascience.com%2Fa-guide-on-12-tuning-strategies-for-production-ready-rag-applications-7ca646833439%25232b47&source=post_page---two_column_layout_nav-----------------------global_nav-----------
+ - https://medium.com/p/6422dc740a93
+ - https://medium.com/p/6422dc740a93
+ - https://medium.com/@4fishgreenberg
+ - https://medium.com/@4fishgreenberg
+ - https://medium.com/p/6422dc740a93
+ - https://medium.com/p/6422dc740a93
+ - https://medium.com/@4fishgreenberg
+ - https://medium.com/@4fishgreenberg
+ - https://medium.com/p/596d1a826429
+ - https://medium.com/p/596d1a826429
+ - https://medium.com/@MerzaOmar
+ - https://medium.com/@MerzaOmar
+ - https://medium.com/p/596d1a826429
+ - https://medium.com/p/596d1a826429
+ - https://medium.com/@MerzaOmar
+ - https://medium.com/@MerzaOmar
+ - https://medium.com/p/3f942a018492
+ - https://medium.com/p/3f942a018492
+ - https://medium.com/@anthonyted
+ - https://medium.com/@anthonyted
+ - https://medium.com/p/3f942a018492
+ - https://medium.com/p/3f942a018492
+ - https://medium.com/@anthonyted
+ - https://medium.com/@anthonyted
+ - https://medium.com/p/9c5e3049cb13
+ - https://medium.com/p/9c5e3049cb13
+ - https://medium.com/@jamievaron
+ - https://medium.com/@jamievaron
+ - https://medium.com/p/9c5e3049cb13
+ - https://medium.com/p/9c5e3049cb13
+ - https://medium.com/@jamievaron
+ - https://medium.com/@jamievaron
