@@ -33,7 +33,7 @@ include("../../../NLP_LLM/Summarize_Papers_with_GPT/support/api_module.jl")
 
 # ╔═╡ c94c972e-a75f-11ee-153c-771e07689f95
 md"""
-## Web Scraping article and summarizing it
+## Web Scraping article + Synthesis
 
 1. Web extraction
 1. Summarization and Synthesis
@@ -222,8 +222,11 @@ function make_timed_chat_request(instruct_prompt::String, data::String; kwargs..
 end
 
 # ╔═╡ 17800316-94ea-457d-bf2c-21cffcbb7b0a
-INSTRUCT_PROMPT = """Generate a precise and detailed synthesis of the following excerpt (delimited by triple backticks). Ensure that it is structured into coherent sections and report the article title, date, author and link (when provided) as a first section. Also ensure all relevant links and or references (github repository, ...) cited in the article are correctly extracted and rendered (if fully provided, otherwise states that the reference is not available to you). 
-Please return a markdown formatted synthesis of the article."""
+# INSTRUCT_PROMPT = """Generate a precise and detailed synthesis of the following excerpt (delimited by triple backticks). Ensure that it is structured into coherent sections and report the article title, date, author and link (when provided) as a first section. Also ensure all relevant links and or references (github repository, ...) cited in the article are correctly extracted and rendered (if fully provided, otherwise states that the reference is not available to you). 
+# Please return a markdown formatted synthesis of the article."""
+INSTRUCT_PROMPT = """Generate a comprehensive and detailed synthesis of the following excerpt (delimited by triple backticks). Please proceed methodically, step by step, to ensure that the synthesis is accurately structured into coherent sections, capturing every fact, example, and subtlety. Begin with a section detailing the article's title, date, author, and link (when such information is provided). Moreover, meticulously extract and render all pertinent external links and references (including but not limited to GitHub repositories, etc.) cited within the article. In cases where the full details of these links or references are not available, explicitly indicate their absence. Aim for a synthesis that is exhaustive, without overlooking any significant information.
+Please format the synthesis in markdown to maintain clear and organized presentation.
+"""
 
 # ╔═╡ e2ffe835-65dc-4c85-aa9a-d98867da2ff5
  synthesis = make_timed_chat_request(
