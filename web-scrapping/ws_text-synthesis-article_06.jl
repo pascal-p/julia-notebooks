@@ -207,6 +207,7 @@ links = extract_links(
 	restrict_to=["github", "LinkedIn", "huggingface", "arxiv", "towardsdatascience", "llamaindex", "langchain"]
 )
 # "towardsdatascience", "medium",
+# https://docs.llamaindex.ai/en/stable/examples/retrievers/recursive_retriever_nodes.html
 
 # ╔═╡ 0110956d-424d-4c7c-87ef-eda4a2cfc291
 full_text = string(
@@ -249,7 +250,7 @@ end
 # Please return a markdown formatted synthesis of the article."""
 
 INSTRUCT_PROMPT = """Generate a comprehensive and detailed synthesis of the following excerpt (delimited by triple backticks). Please proceed methodically, step by step, to ensure that the synthesis is accurately structured into coherent sections, capturing every fact, example, and subtlety. Begin with a section detailing the article's title, date, author, and link (when such information is provided). Moreover, meticulously extract and render all pertinent external links and references (including but not limited to GitHub repositories, etc.) cited within the article. In cases where the full details of these links or references are not available, explicitly indicate their absence. Aim for a synthesis that is exhaustive, without overlooking any significant information.
-Please note that python snipets should be completely rendered verbatim (if present) and correctly delimited as python code blocks.
+Please note that the python snipets should be rendered verbatim in full (if present) and correctly delimited as python code blocks.
 Finally, format the synthesis in markdown to maintain clear and organized presentation.
 """
 
