@@ -1,0 +1,68 @@
+- Title: How to improve RAG peformance — Advanced RAG Patterns — Part2
+- Author and date: Ozgur Guler
+·
+Follow
+12 min read
+·
+Oct 18, 2023
+- Link: https://cloudatlas.me/how-to-improve-rag-peformance-advanced-rag-patterns-part2-0c84e2df66e6
+Main:
+In the realm of experimental Large Language Models (LLMs), creating a captivating LLM Minimum Viable Product (MVP) is relatively straightforward, but achieving production-level performance can be a formidable task, especially when it comes to building a high-performing Retrieval-Augmented Generation (RAG) pipeline for in-context learning. This post, part of the “Advanced RAG Patterns” series, delves into strategies and provides in-depth insights to enhance the performance of your RAG application. Subsequent posts will focus on implementing these strategies.
+Understanding the Challenges
+Before we explore the strategies, let’s dissect the critical challenges that contribute to suboptimal RAG system performance, classifying them into three distinct categories:
+(For common issues with retrieval, augmentation and generation that will result in suboptimal RAG performance please refer to my earlier post
+Why do RAG pipelines fail? Advanced RAG Patterns — Part1
+).)
+1. Retrieval Problems:
+2. Augmentation Problems:
+3. Generation Problems:
+For a high-performing RAG system, the data needs to be clean, consistent, and context-rich. Text should be standardized to remove special characters and irrelevant information, thereby enhancing retriever efficiency. Entities and terms should be disambiguated for consistency, while duplicate or redundant information should be eliminated to streamline retriever focus. Factuality is key; each piece of data should be validated for accuracy when possible. Implementing domain-specific annotations can add another layer of context, and incorporating a user feedback loop for continuous updates ensures the system adapts to real-world interactions. Time-sensitive topics require a mechanism to refresh outdated documents. Overall, the emphasis should be on clarity, context, and correctness to make the system efficient and reliable. Here is a list of best practices…
+OpenAI’s embeddings are fixed-size and non-fine-tunable. With fixed OpenAI embeddings, the emphasis would indeed be on optimising other parts of your RAG pipeline — like the retrieval mechanism or the quality of your data corpus — to ensure that you’re making the most out of the embeddings you have.
+If your embeddings model is fine-tunable you may take advantage of fine-tuning the embedding model, dynamic embeddings or
+Fine-tuning embeddings within RAG has a direct bearing on its efficacy. By adapting embeddings to domain specifics, the retrieval step becomes sharper, ensuring the content fetched is highly relevant to the query. This fine-tuned retrieval acts as a more accurate foundation for the subsequent generation step. Especially in specialized domains, or when dealing with evolving or rare terms, these tailored embeddings are pivotal. In essence, for RAG, fine-tuning embeddings is akin to tuning the ears before letting the voice speak, ensuring what’s heard (retrieved) optimally influences what’s said (generated).
+At the moment you cannot fine-tune ada-embedding-02. bge embedding models like bge-large-en; developed by the Beijing Academy of Artificial Intelligence (BAAI) are fine-tunable and high performant embedding models. You can use LLaMa Index to fine-tune bge embedding models [
+*
+]. To create the training data to fine-tune bge models, you first create questions for your document chunks using an LLM like gpt-35-turbo. The question and the document chunk (the answer) become fine-tuning pairs for your fine-tuning.
+Dynamic embeddings adjust according to the context in which a word appears, unlike static embeddings that represent each word with a single vector. For instance, in transformer models like BERT, the same word can have different embeddings depending on the surrounding words.
+There is also empirical evidence that OpenAI’s embeddings model text-embedding-ada-002 model gives unexpectedly high cosine similarity results when length of the text is shot e.g. <5 tokens. Ideally we should ensure the embeddings text will have as much context around it as possible so that embedding gives “healthy” results.
+OpenAI’s
+embeddings-ada-02
+model is based on the principles of large language models like GPT. It is more advanced than static embedding models and can capture some level of context. This means the embeddings it generates are influenced by the surrounding text to a certain degree. However, it’s important to note that while it captures context better than static models, it might not be as context-sensitive as the latest full-scale language models like GPT-4.
+The embeddings should also be periodically refreshed to capture evolving semantics in your corpus. The goal is to make them efficient for both retrieval and matching, ensuring a speedy and accurate RAG implementation.
+To enhance retrieval efficiency in your RAG system, adopt a holistic strategy. Start by refining your chunking process, exploring various sizes to strike the right balance. Embed metadata for improved filtering capabilities and context enrichment. Embrace query routing across multiple indexes, catering to diverse query types. Consider Langchain’s multi-vector retrieval method, which employs smaller chunks, summary embeddings, and hypothetical questions to bolster retrieval accuracy. Address vector similarity issues with re-ranking, and experiment with hybrid search and recursive retrieval techniques for performance gains. Strategies like HyDE and iterative approaches such as “Read Retrieve Read” offer promising results. Lastly, fine-tune your vector search algorithm, optimizing the trade-off between accuracy and latency. This comprehensive approach ensures your RAG system excels in retrieving relevant and contextually rich information.
+Our aim is to collect as much relevant context and as little noise as possible. Chunk with small, medium & large size and use an evaluation framework like “LlamaIndex Response Evaluation” to decide on the optimal chunk size which uses GPT4 to evaluate faithfulness and relevancy to rate and compare seperate chunk sizes.
+When building a RAG system, always remember that chunk_size is a pivotal parameter. Invest the time to meticulously evaluate and adjust your chunk size for unmatched results.
+LLaMA index has an automated evaluation capability for different chunking methods…(Evaluating the Ideal Chunk Size for a RAG System using LlamaIndex [
+link
+]).
+Langchain’s
+multi-vector retrieval
+is one such method. The methods to create multiple vectors per document include:
+Complementing this strategy is a robust query engine. A well-designed query engine is essential for interpreting user queries effectively, especially when they involve nuanced or complex language. It enables your RAG system to iteratively evaluate the question for missing information, formulating a more comprehensive response once all relevant details are available.
+The combination of recursive retrieval and a smart query engine can significantly enhance the performance of your RAG system, ensuring that it retrieves not just relevant but contextually complete information for more accurate and informative answers.
+Stay updated on the latest advancements in vector search algorithms and libraries, as new options frequently emerge. Additionally, consider implementing query batching to enhance search efficiency. By optimizing vector search, you ensure that your RAG system responds both accurately and swiftly to user queries, a critical factor for an efficient and responsive pipeline.
+‘Synthesis,’ explores advanced techniques to refine your RAG system. We delve into query transformations, the art of decomposing complex queries into manageable sub-queries, a proven strategy for enhancing Large Language Models’ (LLMs) effectiveness. Additionally, we address the critical aspect of engineering the base prompt, where prompt templating and conditioning play a pivotal role in tailoring your RAG system’s behavior to specific use-cases and contexts. Together, these strategies elevate the precision and efficiency of your RAG pipeline.
+Engineering the base prompt in a RAG system is crucial for guiding the model’s behavior. A two-fold approach: prompt templating and prompt conditioning.
+Here’s a simplified Python example for creating such a prompt, assuming you’ve got your query and retrieved documents:
+As additional improvements consider fine-tuning the base model and use function calling…
+Fine-tuning just the generator in a RAG setup (e.g. fine-tuning the base gpt model the context and the prompt is being sent to) aims to improve the language generation component without touching the retrieval part. Doing this can have several benefits:
+The function calling feature can significantly enhance Retrieval-Augmented Generation (RAG) pipelines by introducing structured, actionable output during the generation step. This allows for real-time API integrations for up-to-date answers, optimized query execution to reduce errors, and modular retrieval methods for improved relevance. It can also facilitate a feedback loop for dynamic document fetching and offer structured JSON output for multi-step reasoning or data aggregation. Overall, it makes the RAG system more dynamic, accurate, and responsive.
+In the world of RAG systems, optimizing performance is an ongoing journey. By carefully managing data, fine-tuning embeddings, enhancing retrieval strategies, and utilizing advanced synthesis techniques, you can push the boundaries of what your RAG application can achieve. Stay curious, innovative, and adaptive in this ever-evolving landscape.
+Next we will cover implementations with AzureOpenAI on AzureML PromptFlow…
+Follow me on medium
+if you find the post helpful…
+Subscribe to A
+zureOpenAI Builders Newsletter
+where we cover the lates on building with #AzureOpenAI on LinkedIn
+here
+.
+References:
+ Links:
+ - https://gpt-index.readthedocs.io/en/stable/examples/finetuning/embeddings/finetune_embedding.html#
+ - http://Evaluating the Ideal Chunk Size for a RAG System using LlamaIndex
+ - https://www.linkedin.com/build-relation/newsletter-follow?entityUrn=7057325620778680320
+ - https://towardsdatascience.com/10-ways-to-improve-the-performance-of-retrieval-augmented-generation-systems-5fa2cee7cd5c
+ - https://gpt-index.readthedocs.io/en/latest/end_to_end_tutorials/dev_practices/production_rag.html?utm_source=bensbites&utm_medium=newsletter&utm_campaign=open-ai-fights-back-in-court
+ - https://gpt-index.readthedocs.io/en/stable/examples/finetuning/embeddings/finetune_embedding.html#
+ - https://blog.llamaindex.ai/evaluating-the-ideal-chunk-size-for-a-rag-system-using-llamaindex-6207e5d3fec5
+ - https://arxiv.org/abs/2212.10496
