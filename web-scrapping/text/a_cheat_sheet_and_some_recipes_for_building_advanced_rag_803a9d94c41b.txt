@@ -269,7 +269,39 @@ base_query_engine, query_response_evaluator
 # Use your advanced rag
 retry_response = retry_query_engine.query("A user query")
  Links:
+ - https://medium.com/m/signin?operation=register&redirect=https%3A%2F%2Fblog.llamaindex.ai%2Fa-cheat-sheet-and-some-recipes-for-building-advanced-rag-803a9d94c41b&source=post_page---two_column_layout_nav-----------------------global_nav-----------
+ - https://medium.com/m/signin?operation=login&redirect=https%3A%2F%2Fblog.llamaindex.ai%2Fa-cheat-sheet-and-some-recipes-for-building-advanced-rag-803a9d94c41b&source=post_page---two_column_layout_nav-----------------------global_nav-----------
+ - https://medium.com/m/signin?operation=register&redirect=https%3A%2F%2Fblog.llamaindex.ai%2Fa-cheat-sheet-and-some-recipes-for-building-advanced-rag-803a9d94c41b&source=post_page---two_column_layout_nav-----------------------global_nav-----------
+ - https://medium.com/m/signin?operation=login&redirect=https%3A%2F%2Fblog.llamaindex.ai%2Fa-cheat-sheet-and-some-recipes-for-building-advanced-rag-803a9d94c41b&source=post_page---two_column_layout_nav-----------------------global_nav-----------
+ - https://blog.llamaindex.ai/?source=post_page-----803a9d94c41b--------------------------------
+ - https://medium.com/m/signin?actionUrl=https%3A%2F%2Fmedium.com%2F_%2Fsubscribe%2Fuser%2Fb5ce03d3ab4&operation=register&redirect=https%3A%2F%2Fblog.llamaindex.ai%2Fa-cheat-sheet-and-some-recipes-for-building-advanced-rag-803a9d94c41b&user=Andrei&userId=b5ce03d3ab4&source=post_page-b5ce03d3ab4----803a9d94c41b---------------------post_header-----------
+ - https://blog.llamaindex.ai/?source=post_page-----803a9d94c41b--------------------------------
+ - https://medium.com/m/signin?actionUrl=https%3A%2F%2Fmedium.com%2F_%2Fvote%2Fllamaindex-blog%2F803a9d94c41b&operation=register&redirect=https%3A%2F%2Fblog.llamaindex.ai%2Fa-cheat-sheet-and-some-recipes-for-building-advanced-rag-803a9d94c41b&user=Andrei&userId=b5ce03d3ab4&source=-----803a9d94c41b---------------------clap_footer-----------
+ - https://medium.com/m/signin?actionUrl=https%3A%2F%2Fmedium.com%2F_%2Fbookmark%2Fp%2F803a9d94c41b&operation=register&redirect=https%3A%2F%2Fblog.llamaindex.ai%2Fa-cheat-sheet-and-some-recipes-for-building-advanced-rag-803a9d94c41b&source=-----803a9d94c41b---------------------bookmark_footer-----------
+ - https://d3ddy8balm3goa.cloudfront.net/llamaindex/rag-cheat-sheet-final.svg
  - https://arxiv.org/pdf/2312.10997.pdf
  - https://github.com/run-llama/llama_index/blob/main/docs/examples/param_optimizer/param_optimizer.ipynb
+ - https://docs.llamaindex.ai/en/stable/examples/retrievers/recursive_retriever_nodes.html
+ - https://docs.llamaindex.ai/en/stable/examples/query_engine/knowledge_graph_rag_query_engine.html
+ - https://docs.llamaindex.ai/en/stable/examples/vector_stores/elasticsearch_auto_retriever.html
+ - https://docs.llamaindex.ai/en/stable/examples/retrievers/simple_fusion.html
+ - https://docs.llamaindex.ai/en/stable/examples/finetuning/embeddings/finetune_embedding.html
+ - https://docs.llamaindex.ai/en/stable/examples/query_transformations/HyDEQueryTransformDemo.html
+ - https://docs.llamaindex.ai/en/stable/examples/node_postprocessor/LongLLMLingua.html
+ - https://docs.llamaindex.ai/en/stable/examples/node_postprocessor/CohereRerank.html
+ - https://docs.llamaindex.ai/en/stable/examples/query_engine/flare_query_engine.html
+ - https://docs.llamaindex.ai/en/stable/examples/evaluation/RetryQuery.html#retry-query-engine
+ - https://docs.llamaindex.ai/en/latest/examples/evaluation/answer_and_context_relevancy.html
+ - https://www.notion.so/LlamaIndex-Platform-0754edd9af1c4159bde12649c184c8ef?pvs=21
  - https://github.com/run-llama/llama_index/blob/main/docs/examples/evaluation/retrieval/retriever_eval.ipynb
+ - https://docs.llamaindex.ai/en/stable/examples/evaluation/batch_eval.html
+ - https://medium.com/m/signin?actionUrl=https%3A%2F%2Fmedium.com%2F_%2Fvote%2Fllamaindex-blog%2F803a9d94c41b&operation=register&redirect=https%3A%2F%2Fblog.llamaindex.ai%2Fa-cheat-sheet-and-some-recipes-for-building-advanced-rag-803a9d94c41b&user=Andrei&userId=b5ce03d3ab4&source=-----803a9d94c41b---------------------clap_footer-----------
+ - https://medium.com/m/signin?actionUrl=https%3A%2F%2Fmedium.com%2F_%2Fvote%2Fllamaindex-blog%2F803a9d94c41b&operation=register&redirect=https%3A%2F%2Fblog.llamaindex.ai%2Fa-cheat-sheet-and-some-recipes-for-building-advanced-rag-803a9d94c41b&user=Andrei&userId=b5ce03d3ab4&source=-----803a9d94c41b---------------------clap_footer-----------
+ - https://medium.com/m/signin?actionUrl=https%3A%2F%2Fmedium.com%2F_%2Fbookmark%2Fp%2F803a9d94c41b&operation=register&redirect=https%3A%2F%2Fblog.llamaindex.ai%2Fa-cheat-sheet-and-some-recipes-for-building-advanced-rag-803a9d94c41b&source=--------------------------bookmark_footer-----------
+ - https://blog.llamaindex.ai/?source=post_page-----803a9d94c41b--------------------------------
+ - https://medium.com/m/signin?actionUrl=https%3A%2F%2Fmedium.com%2F_%2Fsubscribe%2Fuser%2Fb5ce03d3ab4&operation=register&redirect=https%3A%2F%2Fblog.llamaindex.ai%2Fa-cheat-sheet-and-some-recipes-for-building-advanced-rag-803a9d94c41b&user=Andrei&userId=b5ce03d3ab4&source=post_page-b5ce03d3ab4----803a9d94c41b---------------------follow_profile-----------
+ - https://medium.com/m/signin?actionUrl=%2F_%2Fapi%2Fsubscriptions%2Fnewsletters%2F5d3bcdf76f95&operation=register&redirect=https%3A%2F%2Fblog.llamaindex.ai%2Fa-cheat-sheet-and-some-recipes-for-building-advanced-rag-803a9d94c41b&newsletterV3=b5ce03d3ab4&newsletterV3Id=5d3bcdf76f95&user=Andrei&userId=b5ce03d3ab4&source=-----803a9d94c41b---------------------subscribe_user-----------
+ - https://blog.llamaindex.ai/?source=post_page-----803a9d94c41b--------------------------------
  - https://ca.linkedin.com/in/nerdai
+ - https://medium.com/m/signin?actionUrl=https%3A%2F%2Fmedium.com%2F_%2Fsubscribe%2Fuser%2Fb5ce03d3ab4&operation=register&redirect=https%3A%2F%2Fblog.llamaindex.ai%2Fa-cheat-sheet-and-some-recipes-for-building-advanced-rag-803a9d94c41b&user=Andrei&userId=b5ce03d3ab4&source=post_page-b5ce03d3ab4----803a9d94c41b---------------------follow_profile-----------
+ - https://medium.com/m/signin?actionUrl=%2F_%2Fapi%2Fsubscriptions%2Fnewsletters%2F5d3bcdf76f95&operation=register&redirect=https%3A%2F%2Fblog.llamaindex.ai%2Fa-cheat-sheet-and-some-recipes-for-building-advanced-rag-803a9d94c41b&newsletterV3=b5ce03d3ab4&newsletterV3Id=5d3bcdf76f95&user=Andrei&userId=b5ce03d3ab4&source=-----803a9d94c41b---------------------subscribe_user-----------
