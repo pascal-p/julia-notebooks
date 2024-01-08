@@ -223,10 +223,30 @@ Matt Ambrogi
 (accessed Nov. 27, 2023)
 If not otherwise stated, all images are created by the author.
  Links:
+ - https://medium.com/m/signin?operation=register&redirect=https%3A%2F%2Ftowardsdatascience.com%2Fa-guide-on-12-tuning-strategies-for-production-ready-rag-applications-7ca646833439&source=post_page---two_column_layout_nav-----------------------global_nav-----------
+ - https://medium.com/m/signin?operation=login&redirect=https%3A%2F%2Ftowardsdatascience.com%2Fa-guide-on-12-tuning-strategies-for-production-ready-rag-applications-7ca646833439&source=post_page---two_column_layout_nav-----------------------global_nav-----------
+ - https://medium.com/m/signin?operation=register&redirect=https%3A%2F%2Ftowardsdatascience.com%2Fa-guide-on-12-tuning-strategies-for-production-ready-rag-applications-7ca646833439&source=post_page---two_column_layout_nav-----------------------global_nav-----------
+ - https://medium.com/m/signin?operation=login&redirect=https%3A%2F%2Ftowardsdatascience.com%2Fa-guide-on-12-tuning-strategies-for-production-ready-rag-applications-7ca646833439&source=post_page---two_column_layout_nav-----------------------global_nav-----------
+ - https://towardsdatascience.com/?source=post_page-----7ca646833439--------------------------------
+ - https://medium.com/m/signin?actionUrl=https%3A%2F%2Fmedium.com%2F_%2Fsubscribe%2Fuser%2F3a38da70d8dc&operation=register&redirect=https%3A%2F%2Ftowardsdatascience.com%2Fa-guide-on-12-tuning-strategies-for-production-ready-rag-applications-7ca646833439&user=Leonie+Monigatti&userId=3a38da70d8dc&source=post_page-3a38da70d8dc----7ca646833439---------------------post_header-----------
+ - https://towardsdatascience.com/?source=post_page-----7ca646833439--------------------------------
+ - https://medium.com/towards-data-science/retrieval-augmented-generation-rag-from-theory-to-langchain-implementation-4e9bd5f6a4f2
+ - /retrieval-augmented-generation-rag-from-theory-to-langchain-implementation-4e9bd5f6a4f2?source=post_page-----7ca646833439--------------------------------
+ - https://python.langchain.com/docs/modules/data_connection/document_transformers/
+ - https://huggingface.co/spaces/mteb/leaderboard
+ - https://huggingface.co/spaces/mteb/leaderboard?source=post_page-----7ca646833439--------------------------------
  - https://github.com/run-llama/finetune-embedding/blob/main/evaluate.ipynb
  - https://github.com/facebookresearch/faiss
  - https://github.com/spotify/annoy
  - https://github.com/google-research/google-research/tree/master/scann
  - https://github.com/nmslib/hnswlib
+ - https://huggingface.co/sentence-transformers/multi-qa-MiniLM-L6-cos-v1#technical-details
  - https://www.linkedin.com/in/804250ab/
+ - https://blog.voyageai.com/2023/10/29/a-case-study-of-chat-langchain/
+ - https://towardsdatascience.com/?source=post_page-----7ca646833439--------------------------------
+ - https://medium.com/m/signin?actionUrl=https%3A%2F%2Fmedium.com%2F_%2Fsubscribe%2Fuser%2F3a38da70d8dc&operation=register&redirect=https%3A%2F%2Ftowardsdatascience.com%2Fa-guide-on-12-tuning-strategies-for-production-ready-rag-applications-7ca646833439&user=Leonie+Monigatti&userId=3a38da70d8dc&source=post_page-3a38da70d8dc----7ca646833439---------------------follow_profile-----------
+ - https://medium.com/m/signin?actionUrl=%2F_%2Fapi%2Fsubscriptions%2Fnewsletters%2F6e670afa182c&operation=register&redirect=https%3A%2F%2Ftowardsdatascience.com%2Fa-guide-on-12-tuning-strategies-for-production-ready-rag-applications-7ca646833439&newsletterV3=3a38da70d8dc&newsletterV3Id=6e670afa182c&user=Leonie+Monigatti&userId=3a38da70d8dc&source=-----7ca646833439---------------------subscribe_user-----------
+ - https://towardsdatascience.com/?source=post_page-----7ca646833439--------------------------------
  - http://linkedin.com/in/804250ab
+ - https://medium.com/m/signin?actionUrl=https%3A%2F%2Fmedium.com%2F_%2Fsubscribe%2Fuser%2F3a38da70d8dc&operation=register&redirect=https%3A%2F%2Ftowardsdatascience.com%2Fa-guide-on-12-tuning-strategies-for-production-ready-rag-applications-7ca646833439&user=Leonie+Monigatti&userId=3a38da70d8dc&source=post_page-3a38da70d8dc----7ca646833439---------------------follow_profile-----------
+ - https://medium.com/m/signin?actionUrl=%2F_%2Fapi%2Fsubscriptions%2Fnewsletters%2F6e670afa182c&operation=register&redirect=https%3A%2F%2Ftowardsdatascience.com%2Fa-guide-on-12-tuning-strategies-for-production-ready-rag-applications-7ca646833439&newsletterV3=3a38da70d8dc&newsletterV3Id=6e670afa182c&user=Leonie+Monigatti&userId=3a38da70d8dc&source=-----7ca646833439---------------------subscribe_user-----------

@@ -193,7 +193,7 @@ links = extract_links(
 	rroot; 
 	selector="a", 
 	verbose=false, 
-	restrict_to=["github", "LinkedIn", "cloudatlas", "arxiv"]
+	restrict_to=["github", "LinkedIn", "huggingface", "arxiv", "towardsdatascience", "langchain"]
 )
 # "towardsdatascience", "medium",
 
