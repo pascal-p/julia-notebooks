@@ -29,7 +29,8 @@ using OpenAI
 using Dates
 
 # ╔═╡ d2f5330d-78d3-40ce-b21f-6c38e4a351bd
-include("../Summarize_Papers_with_GPT/support/api_module.jl")
+# include("../Summarize_Papers_with_GPT/support/api_module.jl")
+include("../../../NLP_LLM/Summarize_Papers_with_GPT/support/api_module.jl")
 
 # ╔═╡ c94c972e-a75f-11ee-153c-771e07689f95
 md"""
