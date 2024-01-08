@@ -43,7 +43,7 @@ ref. "A Guide on 12 Tuning Strategies for Production-Ready RAG Applications"
 """
 
 # ╔═╡ f4c27df9-bbc1-4498-b7a0-42da0d049199
-const URL = "https://towardsdatascience.com/a-guide-on-12-tuning-strategies-for-production-ready-rag-applications-7ca646833439#2b47"
+const URL = "https://towardsdatascience.com/a-guide-on-12-tuning-strategies-for-production-ready-rag-applications-7ca646833439"
 
 # ╔═╡ 68c8922f-0cb2-41d9-9efe-3ed7a00dd76f
 const OUTFILE = split(URL, "/")[end:end] |>
@@ -74,7 +74,10 @@ First we need to locate the node of interest...
 """
 
 # ╔═╡ 791fd5f9-513c-45a6-83b7-0afc2593ef97
-_root = parsed_doc.root[2].children[1]
+begin
+  _root = parsed_doc.root[2].children[1].children[1]
+  # println(parsed_doc.root[2].children[1].children)
+end
 
 # ╔═╡ e951a4d5-47ea-44b6-b3bc-1f4c9d7829b1
 for elem ∈ PreOrderDFS(_root.children[1])  # main
@@ -90,7 +93,7 @@ for elem ∈ PreOrderDFS(_root.children[1])  # main
 end
 
 # ╔═╡ 78389e7c-e6a5-4bd2-9274-d1a2c68a4920
-rroot = parsed_doc.root[2].children[1];
+rroot = parsed_doc.root[2].children[1].children[1];
 
 # ╔═╡ ece5bc96-b302-4d8e-af5b-e093ab081ce3
 function structure_llm_settings(root, selector="p.pw-post-body-paragraph")
@@ -190,8 +193,9 @@ links = extract_links(
 	rroot; 
 	selector="a", 
 	verbose=false, 
-	restrict_to=["github", "LinkedIn", "cloudatlas", "towardsdatascience", "medium", "arxiv"]
+	restrict_to=["github", "LinkedIn", "cloudatlas", "arxiv"]
 )
+# "towardsdatascience", "medium",
 
 # ╔═╡ 0110956d-424d-4c7c-87ef-eda4a2cfc291
 full_text = string(

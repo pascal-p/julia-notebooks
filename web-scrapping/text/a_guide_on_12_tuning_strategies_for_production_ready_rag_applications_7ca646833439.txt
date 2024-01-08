@@ -1,0 +1,232 @@
+- Title: A Guide on 12 Tuning Strategies for Production-Ready RAG Applications
+- Author and date: Leonie Monigatti
+·
+Follow
+Published in
+Towards Data Science
+·
+10 min read
+·
+Dec 6, 2023
+- Link: https://towardsdatascience.com/a-guide-on-12-tuning-strategies-for-production-ready-rag-applications-7ca646833439
+Main:
+D
+ata Science is an experimental science. It starts with the “No Free Lunch Theorem,” which states that there is no one-size-fits-all algorithm that works best for every problem. And it results in data scientists using
+experiment tracking systems
+to help them
+tune the hyperparameters of their Machine Learning (ML) projects to achieve the best performance
+.
+This article looks at a
+Retrieval-Augmented Generation (RAG) pipeline
+through the eyes of a data scientist. It discusses potential “hyperparameters” you can experiment with to improve your RAG pipeline’s performance. Similar to experimentation in Deep Learning, where, e.g., data augmentation techniques are not a hyperparameter but a knob you can tune and experiment with, this article will also cover different strategies you can apply, which are not per se hyperparameters.
+This article covers the following “hyperparameters” sorted by their relevant stage. In the
+ingestion stage
+of a RAG pipeline, you can achieve performance improvements by:
+And in the
+inferencing stage (retrieval and generation)
+, you can tune:
+Note that this article covers text-use cases of RAG. For multimodal RAG applications, different considerations may apply.
+The ingestion stage is a preparation step for building a RAG pipeline, similar to the data cleaning and preprocessing steps in an ML pipeline. Usually, the ingestion stage consists of the following steps:
+This section discusses impactful techniques and hyperparameters that you can apply and tune to improve the relevance of the retrieved contexts in the inferencing stage.
+Like any Data Science pipeline, the quality of your data heavily impacts the outcome in your RAG pipeline [8, 9]. Before moving on to any of the following steps, ensure that your data meets the following criteria:
+Chunking your documents is an essential preparation step for your external knowledge source in a RAG pipeline that can impact the performance [1, 8, 9]. It is a technique to generate logically coherent snippets of information, usually by breaking up long documents into smaller sections (but it can also combine smaller snippets into coherent paragraphs).
+One consideration you need to make is the
+choice of the chunking technique
+. For example, in
+LangChain, different text splitters
+split up documents by different logics, such as by characters, tokens, etc. This depends on the type of data you have. For example, you will need to use different chunking techniques if your input data is code vs. if it is a Markdown file.
+The ideal
+length of your chunk (
+chunk_size
+)
+depends on your use case: If your use case is question answering, you may need shorter specific chunks, but if your use case is summarization, you may need longer chunks. Additionally, if a chunk is too short, it might not contain enough context. On the other hand, if a chunk is too long, it might contain too much irrelevant information.
+Additionally, you will need to think about a
+“rolling window” between chunks (
+overlap
+)
+to introduce some additional context.
+Embedding models are at the core of your retrieval. The
+quality of your embeddings
+heavily impacts your retrieval results [1, 4]. Usually, the higher the dimensionality of the generated embeddings, the higher the precision of your embeddings.
+For an idea of what alternative embedding models are available, you can look at the
+Massive Text Embedding Benchmark (MTEB) Leaderboard
+, which covers 164 text embedding models (at the time of this writing).
+While you can use general-purpose embedding models out-of-the-box, it may make sense to
+fine-tune your embedding model
+to your specific use case in some cases to avoid out-of-domain issues later on [9]. According to experiments conducted by LlamaIndex, fine-tuning your embedding model can lead to a
+5–10% performance increase in retrieval evaluation metrics
+[2].
+Note that you cannot fine-tune all embedding models (e.g.,
+OpenAI's
+text-ebmedding-ada-002
+can’t be fine-tuned at the moment
+).
+When you store vector embeddings in a
+vector database
+, some vector databases let you store them together with metadata (or data that is not vectorized).
+Annotating vector embeddings with metadata
+can be helpful for additional post-processing of the search results, such as
+metadata filtering
+[1, 3, 8, 9]. For example, you could add metadata, such as the date, chapter, or subchapter reference.
+If the metadata is not sufficient enough to provide additional information to separate different types of context logically, you may want to
+experiment with multiple indexes
+[1, 9]. For example, you can use different indexes for different types of documents. Note that you will have to incorporate some index routing at retrieval time [1, 9]. If you are interested in a deeper dive into metadata and separate collections, you might want to learn more about the concept of
+native multi-tenancy
+.
+To enable lightning-fast similarity search at scale, vector databases and vector indexing libraries use an Approximate Nearest Neighbor (ANN) search instead of a k-nearest neighbor (kNN) search. As the name suggests, ANN algorithms approximate the nearest neighbors and thus can be less precise than a kNN algorithm.
+There are
+different ANN algorithms
+you could experiment with, such as
+Facebook Faiss
+(clustering),
+Spotify Annoy
+(trees),
+Google ScaNN
+(vector compression), and
+HNSWLIB
+(proximity graphs). Also, many of these ANN algorithms have some parameters you could tune, such as
+ef
+,
+efConstruction
+, and
+maxConnections
+for HNSW [1].
+Additionally, you can enable vector compression for these indexing algorithms. Analogous to ANN algorithms, you will lose some precision with vector compression. However, depending on the choice of the vector compression algorithm and its tuning, you can optimize this as well.
+However, in practice, these parameters are already tuned by research teams of vector databases and vector indexing libraries during benchmarking experiments and not by developers of RAG systems. However, if you want to experiment with these parameters to squeeze out the last bits of performance, I recommend this article as a starting point:
+The main components of the RAG pipeline are the retrieval and the generative components. This section mainly discusses strategies to improve the retrieval (
+Query transformations
+,
+retrieval parameters
+,
+advanced retrieval strategies
+, and
+re-ranking models
+) as this is the more impactful component of the two. But it also briefly touches on some strategies to improve the generation (
+LLM
+and
+prompt engineering
+).
+Since the search query to retrieve additional context in a RAG pipeline is also embedded into the vector space, its phrasing can also impact the search results. Thus, if your search query doesn’t result in satisfactory search results, you can experiment with various
+query transformation techniques
+[5, 8, 9], such as:
+The retrieval is an essential component of the RAG pipeline. The first consideration is whether semantic search will be sufficient for your use case or if you want to experiment with hybrid search.
+In the latter case, you need to experiment with weighting the aggregation of sparse and dense retrieval methods in hybrid search [1, 4, 9]. Thus, tuning the parameter
+alpha
+, which controls the weighting between semantic (
+alpha = 1
+) and keyword-based search (
+alpha = 0
+)
+, will become necessary.
+Also, the
+number of search results to retrieve
+will play an essential role. The number of retrieved contexts will impact the length of the used context window (see
+Prompt Engineering
+). Also, if you are using a re-ranking model, you need to consider how many contexts to input to the model (see
+Re-ranking models
+).
+Note, while the used similarity measure for semantic search is a parameter you can change, you should not experiment with it but instead set it according to the used embedding model (e.g.,
+text-embedding-ada-002
+supports cosine similarity or
+multi-qa-MiniLM-l6-cos-v1
+supports cosine similarity, dot product, and Euclidean distance).
+This section could technically be its own article. For this overview, we will keep this as concise as possible. For an in-depth explanation of the following techniques, I recommend this DeepLearning.AI course:
+The underlying idea of this section is that the chunks for retrieval shouldn’t necessarily be the same chunks used for the generation. Ideally, you would embed smaller chunks for retrieval (see
+Chunking
+) but retrieve bigger contexts. [7]
+While semantic search retrieves context based on its semantic similarity to the search query, “most similar” doesn’t necessarily mean “most relevant”.
+Re-ranking models
+, such as
+Cohere’s Rerank
+model, can help eliminate irrelevant search results by computing a score for the relevance of the query for each retrieved context [1, 9].
+If you are using a re-ranker model, you may need to re-tune the
+number of search results
+for the input of the re-ranker and how many of the reranked results you want to feed into the LLM.
+As with the
+embedding models
+, you may want to experiment with
+fine-tuning the re-ranker
+to your specific use case.
+The
+LLM is the core component
+for generating the response. Similarly to the embedding models, there is a wide range of LLMs you can choose from depending on your requirements, such as open vs. proprietary models, inferencing costs, context length, etc. [1]
+As with the
+embedding models
+or
+re-ranking models
+, you may want to experiment with
+fine-tuning the LLM
+to your specific use case to incorporate specific wording or tone of voice.
+How you phrase or
+engineer your prompt
+will significantly impact the LLM’s completion [1, 8, 9].
+Additionally, using
+few-shot examples
+in your prompt can improve the quality of the completions.
+As mentioned in
+Retrieval parameters
+, the
+number of contexts
+fed into the prompt is a parameter you should experiment with [1]. While the performance of your RAG pipeline can improve with increasing relevant context, you can also run into a “Lost in the Middle” [6] effect where relevant context is not recognized as such by the LLM if it is placed in the middle of many contexts.
+As more and more developers gain experience with prototyping RAG pipelines, it becomes more important to discuss strategies to bring RAG pipelines to production-ready performances. This article discussed different “hyperparameters” and other knobs you can tune in a RAG pipeline according to the relevant stages:
+This article covered the following strategies in the
+ingestion stage
+:
+And the following strategies in the
+inferencing stage (retrieval and generation)
+:
+Subscribe for free
+to get notified when I publish a new story.
+Find me on
+LinkedIn
+,
+Twitter
+, and
+Kaggle
+!
+[1]
+Connor Shorten
+and
+Erika Cardenas
+(2023). Weaviate Blog.
+An Overview on RAG Evaluation
+(accessed Nov. 27, 2023)
+[2]
+Jerry Liu
+(2023). LlamaIndex Blog.
+Fine-Tuning Embeddings for RAG with Synthetic Data
+(accessed Nov. 28, 2023)
+[3] LlamaIndex Documentation (2023).
+Building Performant RAG Applications for Production
+(accessed Nov. 28, 2023)
+[4] Voyage AI (2023).
+Embeddings Drive the Quality of RAG: A Case Study of Chat.LangChain
+(accessed Dec. 5, 2023)
+[5] LlamaIndex Documentation (2023).
+Query Transformations
+(accessed Nov. 28, 2023)
+[6] Liu, N. F., Lin, K., Hewitt, J., Paranjape, A., Bevilacqua, M., Petroni, F., & Liang, P. (2023). Lost in the middle: How language models use long contexts.
+arXiv preprint arXiv:2307.03172
+.
+[7] DeepLearning.AI (2023).
+Building and Evaluating Advanced RAG Applications
+(accessed Dec 4, 2023)
+[8]
+Ahmed Besbes
+(2023). Towards Data Science.
+Why Your RAG Is Not Reliable in a Production Environment
+(accessed Nov. 27, 2023)
+[9]
+Matt Ambrogi
+(2023). Towards Data Science.
+10 Ways to Improve the Performance of Retrieval Augmented Generation Systems
+(accessed Nov. 27, 2023)
+If not otherwise stated, all images are created by the author.
+ Links:
+ - https://github.com/run-llama/finetune-embedding/blob/main/evaluate.ipynb
+ - https://github.com/facebookresearch/faiss
+ - https://github.com/spotify/annoy
+ - https://github.com/google-research/google-research/tree/master/scann
+ - https://github.com/nmslib/hnswlib
+ - https://www.linkedin.com/in/804250ab/
+ - http://linkedin.com/in/804250ab
