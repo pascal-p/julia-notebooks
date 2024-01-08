@@ -1,57 +1,106 @@
 # Synthesis of "A Cheat Sheet and Some Recipes For Building Advanced RAG"
-## Article Metadata
-- **Title:** A Cheat Sheet and Some Recipes For Building Advanced RAG
-- **Author:** Andrei
-- **Publication Date:** Published 2 days ago from the knowledge cutoff date
-- **Reading Time:** 7 min read
-- **Publication Outlet:** LlamaIndex Blog
-- **Article Link:** [A Cheat Sheet and Some Recipes For Building Advanced RAG](https://blog.llamaindex.ai/a-cheat-sheet-and-some-recipes-for-building-advanced-rag-803a9d94c41b)
+## Article Overview
+- **Title**: A Cheat Sheet and Some Recipes For Building Advanced RAG
+- **Author**: Andrei
+- **Publication Date**: 2 days ago from the knowledge cutoff date
+- **Published In**: LlamaIndex Blog
+- **Reading Time**: 7 min read
+- **Article Link**: [A Cheat Sheet and Some Recipes For Building Advanced RAG](https://blog.llamaindex.ai/a-cheat-sheet-and-some-recipes-for-building-advanced-rag-803a9d94c41b)
 ## Introduction
-The article begins by addressing the audience's potential interest in entering the Retrieval-Augmented Generation (RAG) field, either as newcomers or as developers looking to advance their existing basic RAG systems. The author aims to provide guidance and a mental model for building sophisticated RAG systems, drawing inspiration from a recent survey paper by Gao, Yunfan, et al., titled "Retrieval-Augmented Generation for Large Language Models: A Survey" published in 2023.
-## Main Concepts
-### Definition of RAG
-RAG is defined as a system that involves three main components:
-1. **Retrieval Component:** Fetches documents from an external knowledge database.
-2. **External Knowledge Database:** The source of information for the retrieval process.
-3. **Generation Component:** A Large Language Model (LLM) that generates responses based on the user's query and the retrieved documents.
-### Success Requirements for RAG Systems
-The article outlines two high-level requirements for a RAG system to be considered successful:
-1. The system must provide useful answers.
-2. The system must provide relevant answers to user questions.
-Building advanced RAG systems involves applying sophisticated techniques to the Retrieval or Generation components to meet these requirements.
+The article serves as a guide for individuals interested in developing Retrieval-Augmented Generation (RAG) systems, providing a framework for understanding and applying advanced techniques to build sophisticated RAG systems. It references a RAG survey paper by Gao, Yunfan, et al. (2023) titled "Retrieval-Augmented Generation for Large Language Models: A Survey" which can be found at [arXiv:2312.10997](https://arxiv.org/pdf/2312.10997.pdf).
+## RAG System Fundamentals
+RAG systems are defined by their ability to retrieve documents from an external knowledge database and use them alongside a user's query to generate responses through a Large Language Model (LLM). The article outlines two high-level success requirements for RAG systems:
+1. Accurate and relevant retrieval of documents.
+2. Generation of useful and relevant answers to user questions.
+Advanced RAG systems employ sophisticated techniques to meet these requirements, either by addressing them independently or simultaneously.
 ## Advanced Techniques for RAG Systems
-### Techniques for the First Success Requirement
+### Retrieval Component Enhancement
 #### LlamaIndex Chunk Size Optimization Recipe
-- **Notebook Guide:** A guide is mentioned but not linked directly in the excerpt.
-#### Structured External Knowledge
-- The necessity for structured external knowledge is highlighted for complex scenarios, allowing for recursive retrievals or routed retrieval.
+- **Notebook Guide**: A guide is mentioned but not linked.
+- **Description**: This technique involves optimizing the chunk size of documents for retrieval, which can be crucial for the system's performance.
 #### LlamaIndex Recursive Retrieval Recipe
-- **Notebook Guide:** A guide is mentioned but not linked directly in the excerpt.
-### Techniques for the Second Success Requirement
+- **Notebook Guide**: A guide is mentioned but not linked.
+- **Description**: This method allows for recursive retrievals or routed retrieval in complex scenarios, where the external knowledge requires more structure.
+### Generation Component Enhancement
 #### LlamaIndex Information Compression Recipe
-- **Notebook Guide:** A guide is mentioned but not linked directly in the excerpt.
-#### Result Re-Rank
-- The article discusses the "Lost in the Middle" phenomenon affecting LLMs and suggests re-ranking retrieved documents before they are passed to the Generation component.
+- **Notebook Guide**: A guide is mentioned but not linked.
+- **Description**: This technique focuses on compressing the information from retrieved documents to align them better with the LLM for generation.
 #### LlamaIndex Re-Ranking For Better Generation Recipe
-- **Notebook Guide:** A guide is mentioned but not linked directly in the excerpt.
-### Techniques Addressing Both Requirements
+- **Notebook Guide**: A guide is mentioned but not linked.
+- **Description**: Re-ranking retrieved documents is beneficial to counteract the "Lost in the Middle" phenomenon in LLMs, where they focus on the extreme ends of prompts.
+### Synergistic Techniques for Retrieval and Generation
 #### LlamaIndex Generator-Enhanced Retrieval Recipe
-- **Notebook Guide:** A guide is mentioned but not linked directly in the excerpt.
-#### Iterative Retrieval-Generator RAG
-- Multi-step reasoning is presented as a method for complex cases requiring sophisticated responses.
+- **Notebook Guide**: A guide is mentioned but not linked.
+- **Description**: This method enhances retrieval by using the generator's capabilities to improve the relevance of retrieved documents.
 #### LlamaIndex Iterative Retrieval-Generator Recipe
-- **Notebook Guide:** A guide is mentioned but not linked directly in the excerpt.
+- **Notebook Guide**: A guide is mentioned but not linked.
+- **Description**: For complex queries requiring multi-step reasoning, this technique uses an iterative approach to retrieval and generation.
 ## Evaluation of RAG Systems
-The importance of evaluating RAG systems is underscored, referencing the seven measurement aspects indicated by Gao, Yunfan, et al. in their survey paper. The llama-index library offers several evaluation abstractions and integrations to RAGAs for builders to assess their RAG systems.
-### Evaluation Notebook Guides
-- A few evaluation notebook guides are mentioned but not linked directly in the excerpt.
+The article emphasizes the importance of evaluating RAG systems and references the seven measurement aspects indicated by Gao, Yunfan, et al. in their survey paper. The llama-index library provides several evaluation abstractions and integrations to RAGAs for this purpose. A few evaluation notebook guides are mentioned but not linked.
+## Practical Implementation Examples
+The article includes Python code snippets demonstrating how to implement various components of a RAG system using the llama_index library. These examples cover the loading of data, building of indexes, tuning of parameters, and the construction of query engines with advanced features such as recursive retrieval and post-processing.
+### Example Snippets
+#### Basic RAG System Setup
+```python
+from llama_index import SimpleDirectoryReader, VectorStoreIndex
+# load data
+documents = SimpleDirectoryReader(input_dir="...").load_data()
+# build VectorStoreIndex for document chunking and encoding
+index = VectorStoreIndex.from_documents(documents=documents)
+# The QueryEngine class facilitates retrieval and generation
+query_engine = index.as_query_engine()
+# Use your Default RAG
+response = query_engine.query("A user's query")
+```
+#### Hyperparameter Tuning for RAG
+```python
+from llama_index import ServiceContext
+from llama_index.param_tuner.base import ParamTuner, RunResult
+from llama_index.evaluation import SemanticSimilarityEvaluator, BatchEvalRunner
+# Recipe for hyperparameter tuning via grid-search
+# Define objective function, build ParamTuner, and execute tuning
+# Objective function example
+def objective_function(params_dict):
+    # ... (code for building RAG pipeline and evaluating responses)
+    return RunResult(score=mean_score, params=params_dict)
+# Build ParamTuner object with search parameters
+param_tuner = ParamTuner(
+    # ... (code for setting up ParamTuner)
+)
+# Execute hyperparameter search
+results = param_tuner.tune()
+best_result = results.best_run_result
+```
+#### Recursive Retrieval
+```python
+from llama_index import SimpleDirectoryReader, VectorStoreIndex
+from llama_index.node_parser import SentenceSplitter
+from llama_index.schema import IndexNode
+# Recipe for building a recursive retriever
+# Load data, build parent chunks, define smaller child chunks
+# Define VectorStoreIndex with all nodes and build RecursiveRetriever
+# Perform inference with advanced RAG
+# ... (code for setting up and using a recursive retriever)
+```
+#### Information Compression and Re-Ranking
+```python
+# Recipes for defining postprocessors and building QueryEngines
+# that use these postprocessors on retrieved documents
+# ... (code for setting up and using postprocessors like LongLLMLinguaPostprocessor and CohereRerank)
+```
+#### Generator-Enhanced Retrieval and Iterative Retrieval-Generator
+```python
+from llama_index.llms import OpenAI
+from llama_index.query_engine import FLAREInstructQueryEngine
+# Recipe for building a FLAREInstructQueryEngine
+# and a RetryQueryEngine for iterative retrieval-generation cycles
+# ... (code for setting up and using these advanced query engines)
+```
 ## Conclusion
-The blog post concludes with the hope that readers will feel more equipped and confident in applying sophisticated techniques to build advanced RAG systems.
+The article aims to equip readers with the knowledge and confidence to apply advanced techniques for building sophisticated RAG systems. It provides a conceptual framework, practical examples, and references to further guides and resources.
 ## External Links and References
-- **Survey Paper:** [Retrieval-Augmented Generation for Large Language Models: A Survey](https://arxiv.org/pdf/2312.10997.pdf) by Gao, Yunfan, et al. 2023.
-- **GitHub Repository:** [llama_index](https://github.com/run-llama/llama_index)
-  - **Parameter Optimizer Notebook Guide:** [param_optimizer.ipynb](https://github.com/run-llama/llama_index/blob/main/docs/examples/param_optimizer/param_optimizer.ipynb)
-  - **Retriever Evaluation Notebook Guide:** [retriever_eval.ipynb](https://github.com/run-llama/llama_index/blob/main/docs/examples/evaluation/retrieval/retriever_eval.ipynb)
-- **Author's LinkedIn Profile:** [Andrei's LinkedIn](https://ca.linkedin.com/in/nerdai)
-## Additional Notes
-The synthesis has captured all the information provided in the excerpt. However, it should be noted that some notebook guides mentioned in the article are referenced without direct links. The synthesis assumes these guides are accessible through the provided GitHub repository or other means not specified in the excerpt.
+- **Survey Paper**: [Retrieval-Augmented Generation for Large Language Models: A Survey](https://arxiv.org/pdf/2312.10997.pdf)
+- **GitHub Repository**: [llama_index](https://github.com/run-llama/llama_index)
+  - **Notebook Guides**: Specific guides are mentioned but not linked; however, the repository may contain relevant examples.
+- **Author's LinkedIn Profile**: [Andrei's LinkedIn](https://ca.linkedin.com/in/nerdai)
+**Note**: Some notebook guides and links are mentioned in the article but are not provided with explicit URLs. These resources may be found within the GitHub repository or through further inquiry.
