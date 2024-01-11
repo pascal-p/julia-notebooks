@@ -204,7 +204,7 @@ links = extract_links(
 	rroot; 
 	selector="a", 
 	verbose=false, 
-	restrict_to=["github", "LinkedIn", "huggingface", "arxiv", "towardsdatascience", "llamaindex", "langchain"]
+	restrict_to=["github", "LinkedIn", "huggingface", "arxiv", "medium", "edu", "llamaindex", "langchain"]
 )
 # "towardsdatascience", "medium",
 # https://docs.llamaindex.ai/en/stable/examples/retrievers/recursive_retriever_nodes.html

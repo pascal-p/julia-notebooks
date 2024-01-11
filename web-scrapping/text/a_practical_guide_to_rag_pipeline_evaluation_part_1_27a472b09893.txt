@@ -124,9 +124,27 @@ Stay tuned for upcoming articles on:
 ]
 }
  Links:
+ - https://rsci.app.link/?%24canonical_url=https%3A%2F%2Fmedium.com%2Fp%2F27a472b09893&%7Efeature=LoOpenInAppButton&%7Echannel=ShowPostUnderCollection&source=---two_column_layout_nav----------------------------------
+ - /m/signin?operation=login&redirect=https%3A%2F%2Fmedium.com%2Frelari%2Fa-practical-guide-to-rag-pipeline-evaluation-part-1-27a472b09893&source=post_page---two_column_layout_nav-----------------------global_nav-----------
+ - /m/signin?operation=register&redirect=https%3A%2F%2Fmedium.com%2Fnew-story&source=---two_column_layout_nav-----------------------new_post_topnav-----------
+ - /m/signin?operation=login&redirect=https%3A%2F%2Fmedium.com%2Frelari%2Fa-practical-guide-to-rag-pipeline-evaluation-part-1-27a472b09893&source=post_page---two_column_layout_nav-----------------------global_nav-----------
+ - https://medium.com/relari?source=post_page-----27a472b09893--------------------------------
+ - /m/signin?actionUrl=https%3A%2F%2Fmedium.com%2F_%2Fsubscribe%2Fuser%2Fd33a357859da&operation=register&redirect=https%3A%2F%2Fmedium.com%2Frelari%2Fa-practical-guide-to-rag-pipeline-evaluation-part-1-27a472b09893&user=Yi+Zhang&userId=d33a357859da&source=post_page-d33a357859da----27a472b09893---------------------post_header-----------
+ - https://medium.com/relari?source=post_page-----27a472b09893--------------------------------
  - https://arxiv.org/pdf/2005.11401.pdf
  - https://github.com/explodinggradients/ragas
  - https://hotpotqa.github.io/
  - https://github.com/relari-ai/continuous-eval/blob/main/continuous_eval/metrics/retrieval_LLM_based_metrics.py
  - https://www-cs.stanford.edu/~nfliu/papers/lost-in-the-middle.arxiv2023.pdf
  - https://github.com/relari-ai/continuous-eval
+ - https://medium.com/relari?source=post_page-----27a472b09893--------------------------------
+ - /m/signin?actionUrl=%2F_%2Fapi%2Fsubscriptions%2Fnewsletters%2F4da90b6a636f&operation=register&redirect=https%3A%2F%2Fmedium.com%2Frelari%2Fa-practical-guide-to-rag-pipeline-evaluation-part-1-27a472b09893&newsletterV3=d33a357859da&newsletterV3Id=4da90b6a636f&user=Yi+Zhang&userId=d33a357859da&source=-----27a472b09893---------------------subscribe_user-----------
+ - https://medium.com/relari?source=post_page-----27a472b09893--------------------------------
+ - /m/signin?actionUrl=%2F_%2Fapi%2Fsubscriptions%2Fnewsletters%2F4da90b6a636f&operation=register&redirect=https%3A%2F%2Fmedium.com%2Frelari%2Fa-practical-guide-to-rag-pipeline-evaluation-part-1-27a472b09893&newsletterV3=d33a357859da&newsletterV3Id=4da90b6a636f&user=Yi+Zhang&userId=d33a357859da&source=-----27a472b09893---------------------subscribe_user-----------
+ - https://help.medium.com/hc/en-us?source=post_page-----27a472b09893--------------------------------
+ - https://medium.statuspage.io/?source=post_page-----27a472b09893--------------------------------
+ - /jobs-at-medium/work-at-medium-959d1a85284e?source=post_page-----27a472b09893--------------------------------
+ - https://blog.medium.com/?source=post_page-----27a472b09893--------------------------------
+ - https://policy.medium.com/medium-privacy-policy-f03bf92035c9?source=post_page-----27a472b09893--------------------------------
+ - https://policy.medium.com/medium-terms-of-service-9db0094a1e0f?source=post_page-----27a472b09893--------------------------------
+ - https://speechify.com/medium?source=post_page-----27a472b09893--------------------------------
