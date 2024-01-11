@@ -1,0 +1,132 @@
+- Title: A Practical Guide to RAG Pipeline Evaluation (Part 1: Retrieval)
+- Author and date: Yi Zhang
+·
+Follow
+Published in
+Relari Blog
+·
+11 min read
+·
+Dec 11, 2023
+- Link: https://medium.com/relari/a-practical-guide-to-rag-pipeline-evaluation-part-1-27a472b09893
+Main:
+Series of blog posts to share our perspectives on how to evaluate and improve your LLM and RAG Pipelines
+(written by Yi Zhang and Pasquale Antonante at Relari.ai)
+Retrieval-Augmented Generation, or RAG, has come a long way since the
+FAIR paper
+first introduced the concept in 2020.
+Over the past year, RAG went from being perceived as a hack to now becoming the predominant approach to provide LLMs with relevant and up-to-date information. We have since seen a proliferation of RAG-based LLM applications built by startups, enterprises, big tech, consultants, vector DB providers, model builders and the list goes on.
+While it is extremely easy to spin up a vanilla RAG demo, it is no small feat to build a pipeline that actually works in production.
+OpenAI shared on the Dev Day its iterative journey to improve its RAG performance from 45% to 98% for a financial service client. Although many rushed to conclude that OpenAI had solved the problem for all, its built-in retriever (available through Assistant API) quickly disappointed the community. It proved once again that it’s hard to build an out-of-box pipeline that works for every use case.
+If you follow the AI circle on X, you’d be amazed how many new RAG approaches appear every week.
+LLM App builders find them wondering questions like the below all the time:
+Unfortunately, the right answer to these questions is the usual “It depends”.
+What works for an eCommerce customer support chatbot likely won’t work for an Accounting Copilot. What may be good enough for a SaaS company may not pass the bar for a hospital system. Not only is underlying data drastically different across use cases, so are requirements.
+Instead of blindly testing techniques and tweaking parameters based on intuition,
+we believe it is crucial to set up a robust evaluation pipeline to drive development.
+Without a good way to measure and track performance, how can you know where to spend your precious time and resources?
+In this series of blog posts, we will dive deep into evaluation techniques of different components of RAG system.
+Our goal is to:
+Retrieval is a critical and complex subsystem of the RAG pipelines. After all, the LLM output is only as good as the information you provide it, unless your App relies solely on the training data of the LLM. Garbage in garbage out is very accurate here.
+Though using retrieval to augment LLM might be relatively new, information retrieval is a subject as old as computer systems. The core is measuring retrieval is assessing whether each of the retrieved results is relevant for a given query. There are two types of metrics commonly used to compare retrieval results with relevance labels: Rank-agnostic metrics and Rank-aware metrics.
+Rank-agnostic metrics
+Rank-aware metrics
+that account for the ordering of the results (more details later in the article)
+(
+This blog post
+provides a great visual illustration for all above metrics)
+Ground truth data must be used to calculate these metrics deterministically.
+An increasingly common alternative is to use LLMs to calculate proxy metrics.
+Open source evaluation packages such as
+ragas
+provide frameworks for LLMs to reason over retrieval quality. Proxy metrics that do not use ground truth have some limitations, which will be explored in the next section.
+To answer this question, we ran an experiment on a mock retrieval system generated using the popular
+HotpotQA
+dataset.
+In the below datapoint, the mock system retrieved 3 chunks, of which 1 is relevant (precision = 1/3), but missed another ground truth context (recall = 1/2) required to answer the question.
+All LLM metrics are implemented with few-shot learning prompts with evaluation reasoning to maximize performance (
+link to prompt templates
+).
+LLM-based Context Relevance
+(single chunk)
+GPT-4 can correctly classify binary relevancy 79% of the time.
+All models show a tendency to be overly conservative at categorizing a piece of context as relevant, based on high precision vs. low recall. The low recall is primarily caused by queries where multiple contexts were required to correctly provide an answer (a type of queries common in HotPotQA, and real-world RAG situations). Below is an example of these False Negative classifications.
+LLM-based Context Precision & Average Precision
+Percentage of correct classification is much lower for precision / average precision
+, because these metrics aggregate the relevancy verdict over the entire context, usually containing 3 to 4 total chunks in our experiment.
+In this case,
+precision evaluation using LLM is too low to be considered useful.
+One potential accuracy improvement approach is to prompt LLM to reason over multiple chunks at once, but in that case you would trade off granularity.
+LLM-based Context Coverage
+We can see in the example LLM output that
+Context Coverage is measuring a related but different dimension of completeness from Context Recall
+.
+By converting the output into binary labels
+(1: all statements attributed for CC | all context retrieved for CR, otherwise 0),
+we can see Context Coverage has a >80% accuracy, precision, and recall at predicting Context Recall using GPT-4.
+Because this evaluation task uses complex reasoning all over, the gaps between different models are much wider.
+Despite its binary predictive power, Context Coverage scores should not be used as a proxy for Context Recall scores.
+Because the LLM evaluator has no information beyond the retrieved context, it is not meant to reason over what relevant contexts were missed. As we can see below, in cases where only a portion of relevant context is retrieved (0 < Recall < 1), Context Coverage has a very weak match to Context Recall. As a result,
+if you want to measure the granular level at which your system can retrieve relevant chunks, Context Recall based on ground truth labels remains the only viable path.
+So, should you use LLM proxy metrics for retrieval?
+Our quick answer is
+yes, for directional insight
+, but probably not for reliable and granular assessment of your retrieval pipeline. Below is a summary comparison table.
+A key prerequisite for deterministic metrics is to have the ground truth retrieval dataset, but
+it is not an easy task
+to have a good retrieval dataset as what good means is very nuanced
+. However, having a human-verified context dataset is the still best approach. Thoughtful generation with help from LLM is the next best alternative (this is an active research area). The benefit of curating the golden dataset is that you don’t have to repeatedly verify the reliability like you do for LLM-based metrics without ground truth.
+Stay tuned for a separate article
+where we will detail techniques and tools to help you create a high quality evaluation dataset for retrieval.
+Now you know what metrics to calculate, ideally reliable ones with ground truth, let’s take a look at how to convert these high-level metrics into actionable insights on how to improve your retrieval pipeline.
+Action 1: Using precision and recall to benchmark pipelines
+Let’s consider the following scenario, where you start with 3 different setup of the retrieval system.
+At first glance, A and B are strictly better than pipeline C. Now to compare A and C and any pending improvement, we argue that
+Recall is the more important metric to focus on first
+. Without providing the right information has retrieved the majority of the information, having high precision alone will not bring the quality to production level.
+Depending on the use case, you should set a recall threshold requirement for your application. As you pipeline performance gets to a point where your recall crosses your threshold, you can start to focus on precision more.
+Precision is only an issue if your LLM is not able to separate the signal from the noise.
+Whether that’s the case requires further testing of this LLM’s capability, which can be uncovered in Generation metrics. Separately, improving precision can help you bring down cost and potentially latency by sending shorter prompts to the LLM.
+Action 2: Use [metric]@K to select how many chunks to retrieve
+What you might wonder is why the blue lines in the Improvement Trajectory chart tend to be downward sloping. That’s because there is a usually a tradeoff between recall and precision. In the extreme case where you retrieve everything in the corpus, you are guaranteed to have recall of 100% and a very low precision.
+By looking at [precision, recall] at the top K retrieved chunks, we can get a more granular perspective on how many chunks to retrieve.
+For example, in the below illustrative distribution, what you see is that as K gets larger, recall asymptotes to 85% after K@5, while precision continues to drop.
+This indicates that your system should set the K to be at least 5 if you want to aim for a recall > 80%.
+Note that the definition of chunk is very fluid since you can do way more than naively chunk your documents by a fixed token count. The optimal chunking strategy depends on your data type and what you choose to embed is a crucial design choice which we will study in a separate post.
+Action 3: Use rank-aware metrics to post-process your retrieval
+If you find that the Recall threshold is only crossed when K is set to an impractically large number, you can consider a second-layer reranker or filter.
+For example, you use simple cosine similarity to first retrieve 100 chunks from the corpus, and then use a reranker to narrow down to 5 chunks to feed to the LLM.
+Now rerankers come in many different forms, ranging from a filter based on the dates of documents to model-based approaches that calculates a relevancy score for every chunk and reorder again (e.g.
+Cohere Reranker
+). The rank-aware metrics come in handy to help with your decision here:
+Additionally, the order in which you present the chunks to LLM can matter.
+This famous
+lost-in-the-middle paper
+suggests LLM pays attention to different sections of a long prompt differently. Different models utilize information differently and the model you pick might perform better when you feed the same chunks in a different order.
+Lastly, here’s the link to the Github repo:
+continuous-eval
+if you want to run deterministic or LLM-based metrics mentioned in the article on your data.
+That’s it! Here’s the link to other parts of the Guide:
+Stay tuned for upcoming articles on:
+{
+"question": "What roles did Gregory Nava and Marco Bellocchio both perform?",
+"retrieved_contexts": [
+"Marco Bellocchio (] ; born 9 November 1939) is an Italian film director, screenwriter, and actor.",
+"El Norte is a 1983 British-American low-budget independent drama film, directed by Gregory Nava. The screenplay was written by Gregory Nava and Anna Thomas, based on Nava's story. The movie was first presented at the Telluride Film Festival in 1983, and its wide release was in January 1984.",
+"The Confessions of Amans is a 1977 American 16mm drama film directed by Gregory Nava and written by Nava and his then newly wed wife Anna Thomas."
+],
+"ground_truth_contexts": [
+"Marco Bellocchio (] ; born 9 November 1939) is an Italian film director, screenwriter, and actor.",
+"Gregory James Nava (born April 10, 1949) is an American film director, producer and screenwriter."
+],
+"ground_truth_answer": [
+"film director, screenwriter"
+]
+}
+ Links:
+ - https://arxiv.org/pdf/2005.11401.pdf
+ - https://github.com/explodinggradients/ragas
+ - https://hotpotqa.github.io/
+ - https://github.com/relari-ai/continuous-eval/blob/main/continuous_eval/metrics/retrieval_LLM_based_metrics.py
+ - https://www-cs.stanford.edu/~nfliu/papers/lost-in-the-middle.arxiv2023.pdf
+ - https://github.com/relari-ai/continuous-eval
