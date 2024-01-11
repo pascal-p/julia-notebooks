@@ -1,0 +1,162 @@
+- Title: A Practical Guide to RAG Pipeline Evaluation (Part 2: Generation)
+- Author and date: Yi Zhang
+·
+Follow
+Published in
+Relari Blog
+·
+9 min read
+·
+Dec 20, 2023
+- Link: https://medium.com/relari/a-practical-guide-to-rag-evaluation-part-2-generation-c79b1bde0f5d
+Main:
+Series of blog posts to share our perspectives on how to evaluate and improve your LLM and RAG Pipelines
+(written by Yi Zhang and Pasquale Antonante at Relari.ai)
+In
+Part 1 of this Guide
+, we discussed the
+motivation to set up proper evaluation for RAG pipelines
+and
+how to use quantitative metrics to drive your development
+.
+We took a close look at Retrieval evaluation
+and concluded that Ground-truth-based deterministic metrics (precision, recall and rank-aware metrics) can provide accurate and informative assessment of your retrieval system, while LLM-based metrics without ground truth labels can offer directional insights.
+In this article (Part 2), we tackle the second part of RAG evaluation: Generation. Outline of this article:
+Generation evaluation is all about assessing LLM generated answers. This is different from Retrieval evaluation where the task is to assess the quality of Information Retrieval (which may or may not involve LLMs). Evaluating Generation can help you answer the following questions:
+It is, however, more challenging to evaluate Generation than to evaluate Retrieval, because
+what good means is often subjective and context-dependent
+(contrary to retrieval, where there usually is a right answer to which chunks should be fetched). Nevertheless, there are two common approaches in RAG evaluation, and these can be categorized based on whether they use the ground truth answers or not.
+We are going to use the following notation:
+Q:
+Question |
+C:
+Retrieved Context(s) |
+C*:
+Ground Truth Context(s) |
+A:
+Generated Answer |
+A*
+: Ground Truth Answer(s) |
+X ~ Y
+: Evaluate X w.r.t. Y
+The first is to holistically
+judge the Generated Answer (A)
+with respect to the
+ground truth answers (A*)
+:
+The second is to judge specific aspects of the Generated Answer (A)
+with respect to the
+Question (Q)
+and
+Retrieved Contexts (C),
+WITHOUT ground truth answers (A*)
+:
+Now that we know how to evaluate Generation holistically or in specific aspects, let’s take a look in the next section, the specific metrics available to measure them.
+We can find a multitude of metrics that measure the various aspect of a generated answer (e.g., correctness, faithfulness, etc). We identified three categories:
+Deterministic
+,
+Semantic
+and
+LLM-based
+metrics
+.
+Deterministic metrics
+like ROUGE, Token Overlap, BLEU simply compares the tokens between the Answer and Reference (C, Q, or A*) and calculates the overlap. The benefit for these metrics is that they can compute almost instantly, but the downside is that they don’t account for semantic meaning.
+Semantic metrics
+leverages small language models purpose-built to perform particular tasks. We find a particular version of DeBERTa model (
+DeBERTa-v3 NLI
+) particular useful one in comparing sentence pairs (S1, S2) because it outputs three qualities of the answers (Contradiction: does S1 contradict S2; Entailment: does S1 imply S2; Neutral: if S1 and S2 has no logical relationship). We can use Entailment to assess for if the generated answer (A) implies ground truth answer (A*), and Contradict to see if they have conflicting statements.
+LLM-based metrics
+are the most versatile and can technically evaluate any aspect of the answer. The key is to provide the right prompt and use a capable enough model that is different from the original model used to generate the answer.
+As we did in
+Part 1 of this Guide
+studying retrieval metrics, we want to understand how practical the generation metrics are, or how aligned they are with human assessment.
+Intuitively, we should expect LLM-based metrics to align the best with human assessment because they can capture the reasoning and logic behind the words. But,
+in the following analysis, we show that deterministic and semantic metrics are not that far off from LLM-based metrics and can also offer effective assessment of answer quality.
+To this end, we use the dataset released by the authors of the paper
+Evaluating Correctness and Faithfulness of Instruction-Following Models for Question Answering
+. The data includes
+human-labeled ground truths for Faithfulness (600 examples) and Correctness (1200 examples) evaluation.
+Our first step is to understand how the metrics correlate to human labels. We use three standard correlation measures
+Here’s the result for
+Correctness (A~A*)
+:
+We can see that
+LLM-based metrics correlate with human labels the best at assessing correctness
+, with GPT-4 achieving the highest correlation with human evaluation.
+Notably, the best Deterministic and Semantic metrics achieve comparable performance to LLM-based Metrics other than GPT 4 Correctness
+.
+Here’s the result for
+Faithfulness (A~C)
+:
+Similarly, in
+Faithfulness evaluation (A~C)
+we can see that
+simple deterministic metrics are not that far off from LLM-based metrics, which only work well with complex
+by_statement_prompt
+.
+(
+by_statement_prompt
+breaks generated answer (A) into statements and assess if each is attributable to the retrieved contexts (C).
+binary_prompt
+just asks for a binary classification of whether the answer (A) is grounded on the context (C). This prompt significantly underperforms when using a less capable model.)
+Overall, the results are aligned with our expectations that LLM-based metrics outperforms traditional deterministic and semantic metrics
+because LLMs excel at understanding nuances in answers and can assess reasoning quality.
+But not by that much!
+This insight is important because it shows
+simpler metrics can be effective too!
+In the next section, we show you how you can combine the best qualities of simple metrics (fast & cheap) and LLM-based metrics (better aligned with humans) to predict human labels.
+We concluded from the correlation analysis above that
+LLM-based generation metrics
+align the best
+with human judgement. But in practice, they are
+can be costly
+and
+slow to run
+if you want to routinely experiment with different configurations of the RAG pipeline.
+In this section, we show the steps to create Ensemble Metrics to run cost-effective evaluation. In particular, we developed a hybrid evaluation pipeline that can reduce the cost of evaluation by 15x compared to pure LLM-based evaluation, without quality downgrade.
+The aim of ensembling different metrics to predict the human label is to combine the strengths and balance out the weaknesses of individual metrics, ultimately leading to more accurate, robust, and reliable predictions. Each metric might capture different aspects of the data or be sensitive to different patterns, so when we combine them, we often get a more comprehensive view.
+Based on this intuition,
+we first tested three ensemble models, each combining a subset of metrics: Deterministic Ensemble, Semantic Ensemble and Det_Sem Ensemble
+From the Precision/Recall graph below, we see a notable improvement with the Deterministic Semantic Ensemble
+(Det_Sem Ensemble)
+, balancing precision and recall.
+Remarkably, Det_Sem
+Ensemble beats all individual metrics on Precision of correctness classification.
+Next, we take it one step further by integrating the powerful GPT-4.
+This Hybrid Pipeline matches the GPT-4 evaluator’s performance by only running GPT-4 on 7% of datapoints, improving cost by 15x!
+Here’s how we construct the hybrid pipeline:
+Conformal Prediction is a statistical technique that quantifies the confidence level of a prediction.
+In this case, we are trying to predict whether the answer is correct (or faithful). With conformal prediction, instead of just saying “yes” (or “no”), the model tells us “the answer is correct with probability at least 90%”.
+In essence, conformal prediction doesn’t just give you an answer; it tells you how confident you can be in that answer.
+If the model is uncertain, conformal prediction will tell you it’s “undecided”. For the undecided datapoints, we ask the more powerful GPT-4 to judge its correctness.
+Conformal prediction is easy to use (requires only a small number of data points for calibration) and is model agnostic while providing useful coverage guarantees. Note that conformal prediction and also be used on LLM outputs (if they provide log-probabilities). This recent paper
+Uncertainty Quantification for Black-Box LLMs
+details some approaches.
+Lastly, here’s the link to the Github repo:
+continuous-eval
+if you want to run the metrics mentioned in the article on your data.
+That’s it! Stay tuned for upcoming articles on:
+ Links:
+ - https://rsci.app.link/?%24canonical_url=https%3A%2F%2Fmedium.com%2Fp%2Fc79b1bde0f5d&%7Efeature=LoOpenInAppButton&%7Echannel=ShowPostUnderCollection&source=---two_column_layout_nav----------------------------------
+ - /m/signin?operation=login&redirect=https%3A%2F%2Fmedium.com%2Frelari%2Fa-practical-guide-to-rag-evaluation-part-2-generation-c79b1bde0f5d&source=post_page---two_column_layout_nav-----------------------global_nav-----------
+ - /m/signin?operation=register&redirect=https%3A%2F%2Fmedium.com%2Fnew-story&source=---two_column_layout_nav-----------------------new_post_topnav-----------
+ - /m/signin?operation=login&redirect=https%3A%2F%2Fmedium.com%2Frelari%2Fa-practical-guide-to-rag-evaluation-part-2-generation-c79b1bde0f5d&source=post_page---two_column_layout_nav-----------------------global_nav-----------
+ - https://medium.com/relari?source=post_page-----c79b1bde0f5d--------------------------------
+ - /m/signin?actionUrl=https%3A%2F%2Fmedium.com%2F_%2Fsubscribe%2Fuser%2Fd33a357859da&operation=register&redirect=https%3A%2F%2Fmedium.com%2Frelari%2Fa-practical-guide-to-rag-evaluation-part-2-generation-c79b1bde0f5d&user=Yi+Zhang&userId=d33a357859da&source=post_page-d33a357859da----c79b1bde0f5d---------------------post_header-----------
+ - https://medium.com/relari?source=post_page-----c79b1bde0f5d--------------------------------
+ - https://huggingface.co/cross-encoder/nli-deberta-v3-large
+ - https://arxiv.org/pdf/2307.16877.pdf
+ - https://arxiv.org/pdf/2305.19187.pdf
+ - https://github.com/relari-ai/continuous-eval
+ - https://medium.com/relari?source=post_page-----c79b1bde0f5d--------------------------------
+ - /m/signin?actionUrl=%2F_%2Fapi%2Fsubscriptions%2Fnewsletters%2F4da90b6a636f&operation=register&redirect=https%3A%2F%2Fmedium.com%2Frelari%2Fa-practical-guide-to-rag-evaluation-part-2-generation-c79b1bde0f5d&newsletterV3=d33a357859da&newsletterV3Id=4da90b6a636f&user=Yi+Zhang&userId=d33a357859da&source=-----c79b1bde0f5d---------------------subscribe_user-----------
+ - https://medium.com/relari?source=post_page-----c79b1bde0f5d--------------------------------
+ - /m/signin?actionUrl=%2F_%2Fapi%2Fsubscriptions%2Fnewsletters%2F4da90b6a636f&operation=register&redirect=https%3A%2F%2Fmedium.com%2Frelari%2Fa-practical-guide-to-rag-evaluation-part-2-generation-c79b1bde0f5d&newsletterV3=d33a357859da&newsletterV3Id=4da90b6a636f&user=Yi+Zhang&userId=d33a357859da&source=-----c79b1bde0f5d---------------------subscribe_user-----------
+ - https://help.medium.com/hc/en-us?source=post_page-----c79b1bde0f5d--------------------------------
+ - https://medium.statuspage.io/?source=post_page-----c79b1bde0f5d--------------------------------
+ - /jobs-at-medium/work-at-medium-959d1a85284e?source=post_page-----c79b1bde0f5d--------------------------------
+ - https://blog.medium.com/?source=post_page-----c79b1bde0f5d--------------------------------
+ - https://policy.medium.com/medium-privacy-policy-f03bf92035c9?source=post_page-----c79b1bde0f5d--------------------------------
+ - https://policy.medium.com/medium-terms-of-service-9db0094a1e0f?source=post_page-----c79b1bde0f5d--------------------------------
+ - https://speechify.com/medium?source=post_page-----c79b1bde0f5d--------------------------------
