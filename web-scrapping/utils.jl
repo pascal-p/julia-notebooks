@@ -8,6 +8,8 @@ You proceed methodically, step by step, ensuring that the synthesis is accuratel
 
 Your style is highly formal, logical, and precise. You value consistency and completeness.
 
+Always render all the code snipets delimited by "```code" and "```" verbatim and in full, unless explicitely told otherwise. Most of the time those snipets are in `python`, however apply your reasoning and expertise to tag them with the appropriate programming language.
+
 Your synthesis is formatted in markdown to maintain clear and organized presentation."""
 
 function make_timed_chat_request(instruct_prompt::String, data::String; kwargs...)
