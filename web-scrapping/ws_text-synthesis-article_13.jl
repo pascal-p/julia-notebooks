@@ -40,7 +40,7 @@ md"""
 ## Web Scraping article + synthesis
 
 1. Web extraction
-1. Summarization and Synthesis
+1. Synthesis
 
 ref. "Advanced RAG: Enhancing Retrieval Efficiency through Rerankers using LlamaIndex"
 """
@@ -58,7 +58,7 @@ Please provide all the details about the experiment conducted in this article:
 - from ingestion to chunking then embedding and storinng,
 - retrieval and reranking, taking note of the rerankers used and their performances.
 
-Also note that all the python snipets should be rendered verbatim in full (if present) and correctly delimited as python code blocks. Each code block would normally start with the module imports with keywords such as `import` or `from`.""";
+As always, extract all the code snipets.""";
 
 # ╔═╡ ba4e4c0f-2835-4a76-a9d4-7d7ba02becb2
 println(INSTRUCT_PROMPT)
@@ -149,29 +149,33 @@ md"""
 """
 
 # ╔═╡ b1309566-ded6-4f9f-a7b5-76e892991e65
-function extract_llm_settings(root; selectors = ["p.nx-mt-6"], verbose=true)::String
+function extract_llm_settings(root; selectors = ["p.nx-mt-6"], detect_code=false, verbose=true)::String
 	fulltext = String[]
 	sel_vec = vcat(
 		(eachmatch(Selector(selector), rroot) for selector ∈ selectors)...
 	)
-	println(sel_vec)
+	iscode = false
 	for (ix, element) ∈ enumerate(sel_vec)
-		verbose && println("$(ix) - [$(propertynames(element))]")
-		
+		verbose &&  println("$(ix) - [$(element)] /// [$(element.attributes["class"])]")
+
+		iscode = detect_code && hasproperty(element, :attributes) && !occursin("pw-post-body-paragraph", element.attributes["class"])
+
 		if hasproperty(element, :children)
-			verbose && println("  go deeper: $(propertynames(element))")
 			text = dft(element.children)
+			text = iscode ? string("```code\n", text, "\n```") : text
 			push!(fulltext, text)
 		end
+
+		iscode = false
 	end
 
 	join(
 		filter(
 			l -> length(strip(l)) > 0,
-			fulltext	
+			fulltext
 		),
 		"\n"
-	) 
+	)
 end
 
 # ╔═╡ a76cd62d-98dc-4043-8a44-6b2020625f8f
@@ -200,6 +204,7 @@ md = extract_llm_settings(rroot; selectors=[".bm"], verbose=false)  # other meta
 text = extract_llm_settings(
 	rroot; 
 	selectors=["p.pw-post-body-paragraph", "pre.ba.bj"],  #  "pre.ba.bj": for code snipet or "pre"
+	detect_code=true,
 	verbose=false
 )
 # html body div#root div.a.b.c div.l.c div.l div.fr.fs.ft.fu.fv.l article div.l div.l section div div.gk.gl.gm.gn.go div.ab.ca div.ch.bg.fw.fx.fy.fz pre.pr.ps.pt.pu.pv.pw.px.py.bo.pz.ba.bj span#4a9d.qa.op.gr.px.b.bf.qb.qc.l.qd.qe

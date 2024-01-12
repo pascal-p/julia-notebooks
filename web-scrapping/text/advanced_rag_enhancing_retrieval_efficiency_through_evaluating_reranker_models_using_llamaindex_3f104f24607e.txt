@@ -127,11 +127,16 @@ Maximizing retriever performance depends on discovering the optimal blend of emb
 Refer to the complete code on Github:
 To refer to other advanced RAG methods, refer to this repo:
 Thank you for reading this article, I hope it added some pieces to your knowledge stack! Before you go, if you enjoyed reading this article:
+```code
 PDFReader = download_loader("PDFReader")
 loader = PDFReader()
 docs = loader.load_data(file=Path("QLoRa.pdf"))
+```
+```code
 node_parser = SimpleNodeParser.from_defaults(chunk_size=512)
 nodes = node_parser.get_nodes_from_documents(docs)
+```
+```code
 from google.colab import userdata
 # huggingface and cohere api token
 hf_token = userdata.get('hf_token')
@@ -173,6 +178,8 @@ device_map="auto",
 embed_model = HuggingFaceInstructEmbeddings(
 model_name="hkunlp/instructor-large", model_kwargs={"device": DEVICE}
 )
+```
+```code
 # ServiceContext
 service_context = ServiceContext.from_defaults(llm=llm,
 embed_model=embed_model
@@ -186,6 +193,8 @@ retriever = VectorIndexRetriever(
 index=vector_index,
 similarity_top_k=10,
 service_context=service_context)
+```
+```code
 # Define all embeddings and rerankers
 RERANKERS = {
 "WithoutReranker": "None",
@@ -193,6 +202,8 @@ RERANKERS = {
 "bge-reranker-base": SentenceTransformerRerank(model="BAAI/bge-reranker-base", top_n=5),
 "bge-reranker-large": SentenceTransformerRerank(model="BAAI/bge-reranker-large", top_n=5)
 }
+```
+```code
 # helper functions
 def get_retrieved_nodes(
 query_str, reranker
@@ -216,6 +227,8 @@ node_text = node_text.replace("\n", " ")
 result_dict = {"Score": node.score, "Text": node_text}
 result_dicts.append(result_dict)
 pretty_print(pd.DataFrame(result_dicts))
+```
+```code
 query_str = "What are the top features of QLoRA?"
 # Loop over rerankers
 for rerank_name, reranker in RERANKERS.items():
@@ -228,6 +241,8 @@ else:
 retrieved_nodes
 print(f"Visualize Retrieved Nodes for Reranker: {rerank_name}")
 visualize_retrieved_nodes(retrieved_nodes)
+```
+```code
 # Prompt to generate questions
 qa_generate_prompt_tmpl = """\
 Context information is below.
@@ -246,6 +261,8 @@ Restrict the questions to the context information provided.\
 qa_dataset = generate_question_context_pairs(
 nodes, llm=llm, num_questions_per_chunk=2, qa_generate_prompt_tmpl=qa_generate_prompt_tmpl
 )
+```
+```code
 # helper function for displaying results
 def display_results(reranker_name, eval_results):
 """Display results from evaluate."""
@@ -258,6 +275,8 @@ hit_rate = full_df["hit_rate"].mean()
 mrr = full_df["mrr"].mean()
 metric_df = pd.DataFrame({"Reranker": [reranker_name], "hit_rate": [hit_rate], "mrr": [mrr]})
 return metric_df
+```
+```code
 query_str = "What are the top features of QLoRA?"
 results_df = pd.DataFrame()
 # Loop over rerankers
@@ -275,6 +294,7 @@ retriever_evaluator = RetrieverEvaluator.from_metric_names(
 eval_results = await retriever_evaluator.aevaluate_dataset(qa_dataset)
 current_df = display_results(rerank_name, eval_results)
 results_df = pd.concat([results_df, current_df], ignore_index=True)
+```
  Links:
  - https://rsci.app.link/?%24canonical_url=https%3A%2F%2Fmedium.com%2Fp%2F3f104f24607e&%7Efeature=LoOpenInAppButton&%7Echannel=ShowPostUnderUser&source=---two_column_layout_nav----------------------------------
  - https://medium.com/m/signin?operation=login&redirect=https%3A%2F%2Fakash-mathur.medium.com%2Fadvanced-rag-enhancing-retrieval-efficiency-through-evaluating-reranker-models-using-llamaindex-3f104f24607e&source=post_page---two_column_layout_nav-----------------------global_nav-----------
