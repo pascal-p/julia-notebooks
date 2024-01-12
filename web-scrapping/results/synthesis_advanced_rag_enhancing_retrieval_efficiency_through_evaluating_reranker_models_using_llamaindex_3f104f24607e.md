@@ -1,69 +1,59 @@
 ### Article Analysis: Advanced RAG with LlamaIndex and Re-ranking
 #### Article Details
-- **Title**: Advanced RAG: Enhancing Retrieval Efficiency through Rerankers using LlamaIndex🦙
-- **Author**: Akash Mathur
-- **Date of Publication**: December 28, 2023
-- **Link**: [Medium Article](https://akash-mathur.medium.com/advanced-rag-enhancing-retrieval-efficiency-through-evaluating-reranker-models-using-llamaindex-3f104f24607e)
+- **Title:** Advanced RAG: Enhancing Retrieval Efficiency through Rerankers using LlamaIndex🦙
+- **Author:** Akash Mathur
+- **Publication Date:** December 28, 2023
+- **Link:** [Advanced RAG: Enhancing Retrieval Efficiency through Rerankers using LlamaIndex](https://akash-mathur.medium.com/advanced-rag-enhancing-retrieval-efficiency-through-evaluating-reranker-models-using-llamaindex-3f104f24607e)
 #### Introduction
-The article is the second installment in the Advanced RAG learning series, focusing on the optimization of the retrieval process in recommendation systems. It introduces the concept of dynamic retrieval, which is a two-stage process that initially employs embedding-based retrieval followed by a re-ranking step powered by Large Language Models (LLMs). The author, Akash Mathur, emphasizes the importance of re-ranking in enhancing the precision of search results while maintaining a large top-k for recall.
-#### Embedding-based Retrieval and Its Limitations
-Embedding-based retrieval is praised for its speed, scalability, and ability to handle large datasets. However, it can sometimes return irrelevant results, which affects the quality of the Retrieval-Augmented Generation (RAG) system. To address this, a two-stage retrieval process is proposed, where the first stage focuses on recall, and the second stage uses an LLM to re-rank the results, improving precision.
-#### Implementation of Re-ranking with LlamaIndex
-The author outlines the implementation of re-ranking using the open-source LLM `zephyr-7b-alpha` and the embedding model `hkunlp/instructor-large`. The process involves creating nodes from text chunks, configuring the index and retriever, and initializing re-rankers.
-#### Re-ranker Models and Evaluation
-Three re-ranker models are compared:
-1. CohereRerank
-2. bge-reranker-base
-3. bge-reranker-large
-The evaluation of these re-rankers is conducted using the `RetrieverEvaluator` class, which assesses the quality of retrieved results against ground-truth context. Metrics such as hit-rate and Mean Reciprocal Rank (MRR) are used. The author also mentions the possibility of generating synthetic datasets for evaluation using LlamaIndex's `generate_question_context_pairs` function.
+The article is the second installment in the Advanced RAG learning series, focusing on optimizing the retrieval process in recommendation systems using LlamaIndex. It introduces the concept of dynamic retrieval, which is crucial for pruning irrelevant context and enhancing precision while maintaining a large top-k value. The author, Akash Mathur, emphasizes the importance of re-ranking in the retrieval process, which refines the initially retrieved results to improve relevance and accuracy.
+#### Retrieval and Re-ranking Process
+The retrieval process begins with embedding-based retrieval, which is quick but may lack precision. To address this, a two-stage process is employed:
+1. The first stage involves embedding-based retrieval with a high top-k value, prioritizing recall.
+2. The second stage uses a more computationally intensive process to rerank the initially retrieved candidates, focusing on precision.
+The re-ranking process is powered by a Large Language Model (LLM), which assesses the relevance of documents to a query. The LLM used in this experiment is `zephyr-7b-alpha`, and the embedding model is `hkunlp/instructor-large`. The embedding model ranks at #14 on the MTEB leaderboard and is capable of generating text embeddings tailored to any task without finetuning.
+#### Experiment Setup
+The experiment involves the following steps:
+1. **Chunking:** Text is split into chunks of 512 to create nodes, which are the atomic units of data in LlamaIndex.
+2. **LLM and Embedding:** The `zephyr-7b-alpha` LLM and `hkunlp/instructor-large` embedding are used. The LLM is quantified for memory and computation to run on a T4 GPU in the free tier on Colab.
+3. **Configure Index and Retriever:** A `ServiceContext` object is set up to construct an index and query. A `VectorStoreIndex` is used for embedding documents and retrieving the top-k most similar nodes.
+4. **Initialize Re-rankers:** Three rerankers are compared for performance: `CohereRerank`, `bge-reranker-base`, and `bge-reranker-large`.
+5. **Retrieval Comparisons:** The retrieval strategy is key to relevancy and efficiency. Node postprocessors are applied after node retrieval and before response synthesis.
+#### Evaluation of Retrieval and Re-ranking
+The `RetrieverEvaluator` is used to evaluate the quality of the retriever with metrics such as hit-rate and MRR (Mean Reciprocal Rank). A synthetic dataset is generated using the `generate_question_context_pairs` function, which auto-generates questions from each context chunk using the LLM.
+#### Results and Conclusion
+The results highlight the significance of rerankers in optimizing the retrieval process, with `CohereRerank` showing notable performance. The experiment demonstrates that selecting the appropriate embedding for the initial search is crucial, and the combination of embeddings and rerankers is an active research area.
 #### Code Snippets
-The article includes Python code snippets that demonstrate the setup and evaluation process. The code is structured to load documents, parse nodes, configure the LLM and embedding models, set up the service context, create the index, configure the retriever, and define the re-rankers. Helper functions are provided to retrieve nodes, visualize results, and display evaluation metrics.
+The article includes Python code snippets for setting up the experiment, which are rendered verbatim below:
 ```python
-# Imports and configurations are assumed but not explicitly provided in the excerpt.
-# The following code snippets are based on the provided excerpt.
-# Initialization of LLM and embedding models
-llm = HuggingFaceLLM(
-    model_name="HuggingFaceH4/zephyr-7b-alpha",
-    tokenizer_name="HuggingFaceH4/zephyr-7b-alpha",
-    # Additional configuration omitted for brevity
+from google.colab import userdata
+# huggingface and cohere api token
+hf_token = userdata.get('hf_token')
+quantization_config = BitsAndBytesConfig(
+    load_in_4bit=True,
+    bnb_4bit_compute_dtype=torch.float16,
+    bnb_4bit_quant_type="nf4",
+    bnb_4bit_use_double_quant=True,
 )
-embed_model = HuggingFaceInstructEmbeddings(
-    model_name="hkunlp/instructor-large", 
-    # Additional configuration omitted for brevity
-)
-# ServiceContext setup
-service_context = ServiceContext.from_defaults(llm=llm, embed_model=embed_model)
-# Index configuration
-vector_index = VectorStoreIndex(nodes, service_context=service_context)
-# Retriever configuration
-retriever = VectorIndexRetriever(
-    index=vector_index,
-    similarity_top_k=10,
-    service_context=service_context
-)
-# Define re-rankers
+# ... (Code continues with the setup of LLM, embedding, ServiceContext, index, and retriever)
+# Define all embeddings and rerankers
 RERANKERS = {
     "WithoutReranker": "None",
     "CohereRerank": CohereRerank(api_key=cohere_api_key, top_n=5),
     "bge-reranker-base": SentenceTransformerRerank(model="BAAI/bge-reranker-base", top_n=5),
     "bge-reranker-large": SentenceTransformerRerank(model="BAAI/bge-reranker-large", top_n=5)
 }
-# Helper functions and evaluation logic omitted for brevity
+# ... (Code continues with helper functions, visualization, and evaluation setup)
 ```
-#### Conclusion and Further Research
-The results from the evaluation highlight the significance of re-rankers in optimizing retrieval. The author suggests that the choice of embedding for the initial search is crucial, as even the best re-ranker cannot compensate for poor initial retrieval. The article concludes by encouraging further experimentation to find the optimal combination of embeddings and re-rankers.
 #### External Links and References
-The article provides several external links, including GitHub repositories for the complete code and advanced RAG methods, as well as links to the models and tools used in the implementation. Here are some of the key references:
-- [Zephyr-7B LLM on HuggingFace](https://huggingface.co/HuggingFaceH4/zephyr-7b-alpha)
-- [Instructor-Large Embedding on HuggingFace](https://huggingface.co/hkunlp/instructor-large)
+The article contains numerous external links and references, including links to the author's GitHub repository, HuggingFace models, and documentation for LlamaIndex. Here are some of the key references:
+- [HuggingFace Model: zephyr-7b-alpha](https://huggingface.co/HuggingFaceH4/zephyr-7b-alpha)
+- [HuggingFace Model: hkunlp/instructor-large](https://huggingface.co/hkunlp/instructor-large)
 - [MTEB Leaderboard](https://huggingface.co/spaces/mteb/leaderboard)
-- [Cohere Re-rank](https://txt.cohere.com/rerank/)
-- [Bge-reranker-base on HuggingFace](https://huggingface.co/BAAI/bge-reranker-base)
-- [Bge-reranker-large on HuggingFace](https://huggingface.co/BAAI/bge-reranker-large)
-- [LlamaIndex Documentation](https://docs.llamaindex.ai/en/stable/module_guides/querying/node_postprocessors/root.html)
-- [Mean Reciprocal Rank on Wikipedia](https://en.wikipedia.org/wiki/Mean_reciprocal_rank)
 - [GitHub Repository for Reranker Models Evaluation](https://github.com/akashmathur-2212/LLMs-playground/tree/main/LlamaIndex-applications/Advanced-RAG/reranker_models_evaluation?source=post_page-----3f104f24607e--------------------------------)
-- [GitHub Repository for Advanced RAG Methods](https://github.com/akashmathur-2212/LLMs-playground/tree/main/LlamaIndex-applications/Advanced-RAG?source=post_page-----3f104f24607e--------------------------------)
-The article also includes links to the author's LinkedIn and GitHub profiles, as well as various Medium tags related to the topic.
-#### Final Remarks
-The article by Akash Mathur provides a comprehensive overview of enhancing retrieval efficiency in RAG systems using LlamaIndex and re-ranking. It combines theoretical explanations with practical implementation, offering readers valuable insights into the optimization of retrieval processes in recommendation systems.
+- [Cohere Rerank](https://txt.cohere.com/rerank/)
+- [SentenceTransformerRerank Models](https://huggingface.co/BAAI/bge-reranker-base) and [here](https://huggingface.co/BAAI/bge-reranker-large)
+- [LlamaIndex Node Postprocessors Documentation](https://docs.llamaindex.ai/en/stable/module_guides/querying/node_postprocessors/root.html)
+- [Mean Reciprocal Rank Wikipedia Page](https://en.wikipedia.org/wiki/Mean_reciprocal_rank)
+- [LlamaIndex Retrieval Evaluation Documentation](https://docs.llamaindex.ai/en/stable/module_guides/evaluating/usage_pattern_retrieval.html)
+#### Conclusion
+The article provides a comprehensive guide on enhancing retrieval efficiency in RAG systems using LlamaIndex and re-ranking methods. It demonstrates the importance of combining embeddings and rerankers to optimize retrieval performance and presents an experiment that showcases the effectiveness of this approach.
