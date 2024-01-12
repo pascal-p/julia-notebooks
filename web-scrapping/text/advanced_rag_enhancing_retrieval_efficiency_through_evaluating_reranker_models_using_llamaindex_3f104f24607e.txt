@@ -290,9 +290,11 @@ results_df = pd.concat([results_df, current_df], ignore_index=True)
  - https://huggingface.co/hkunlp/instructor-large
  - https://huggingface.co/spaces/mteb/leaderboard
  - https://github.com/akashmathur-2212/LLMs-playground/tree/main/LlamaIndex-applications/Advanced-RAG/reranker_models_evaluation?source=post_page-----3f104f24607e--------------------------------
+ - https://txt.cohere.com/rerank/
  - https://huggingface.co/BAAI/bge-reranker-base
  - https://huggingface.co/BAAI/bge-reranker-large
  - https://docs.llamaindex.ai/en/stable/module_guides/querying/node_postprocessors/root.html
+ - https://en.wikipedia.org/wiki/Mean_reciprocal_rank
  - https://docs.llamaindex.ai/en/stable/module_guides/evaluating/usage_pattern_retrieval.html
  - https://github.com/akashmathur-2212/LLMs-playground/tree/main/LlamaIndex-applications/Advanced-RAG/reranker_models_evaluation?source=post_page-----3f104f24607e--------------------------------
  - https://github.com/akashmathur-2212/LLMs-playground/tree/main/LlamaIndex-applications/Advanced-RAG?source=post_page-----3f104f24607e--------------------------------

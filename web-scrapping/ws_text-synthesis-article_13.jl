@@ -49,10 +49,10 @@ ref. "Advanced RAG: Enhancing Retrieval Efficiency through Rerankers using Llama
 const URL = "https://akash-mathur.medium.com/advanced-rag-enhancing-retrieval-efficiency-through-evaluating-reranker-models-using-llamaindex-3f104f24607e"
 
 # ╔═╡ 797e6deb-e014-4609-b0d4-7f3ec670cb1c
-const TOPIC = "advanced RAG with LlamaIndex"
+const TOPIC = "advanced RAG with LlamaIndex using re-ranking"
 
 # ╔═╡ 2f4ae40f-a1ab-470b-a1b7-a04fec353b0e
-const INSTRUCT_PROMPT = """Generate a comprehensive and detailed synthesis of the following excerpt (delimited by triple backticks) about $(TOPIC). 
+const INSTRUCT_PROMPT = """Generate a comprehensive and detailed synthesis of the following excerpt (delimited by triple backticks) about $(TOPIC). Please provide all the details about the reranker used and the evaluation performed.
 Also note that the python snipets should be rendered verbatim in full (if present) and correctly delimited as python code blocks. Each code block would normally start with the module imports with keywords such as `import` or `from`.""";
 
 # ╔═╡ ba4e4c0f-2835-4a76-a9d4-7d7ba02becb2
@@ -204,7 +204,7 @@ links = extract_links(
 	rroot;
 	selector="a", 
 	verbose=false, 
-	restrict_to=["github", "LinkedIn", "huggingface", "arxiv", "medium", "edu", "llamaindex", "langchain"]
+	restrict_to=["github", "LinkedIn", "huggingface", "arxiv", "medium", "edu", "llamaindex", "langchain", "wikipedia", "cohere"]
 )
 # "towardsdatascience", "medium",
 # https://docs.llamaindex.ai/en/stable/examples/retrievers/recursive_retriever_nodes.html
