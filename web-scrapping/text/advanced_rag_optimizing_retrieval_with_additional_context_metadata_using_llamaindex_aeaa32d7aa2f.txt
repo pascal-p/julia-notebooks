@@ -146,12 +146,15 @@ Refer to the notebook code on Github:
 To refer to other advanced RAG methods, refer to this repo:
 References
 Thank you for reading this article, I hope it added some pieces to your knowledge stack! Before you go, if you enjoyed reading this article:
+```code
 PDFReader = download_loader("PDFReader")
 loader = PDFReader()
 docs = loader.load_data(file=Path("./data/QLoRa.pdf"))
 # combine all the text
 doc_text = "\n\n".join([d.get_content() for d in docs])
 documents = [Document(text=doc_text)]
+```
+```code
 node_parser = SentenceSplitter(chunk_size=1024)
 base_nodes = node_parser.get_nodes_from_documents(documents)
 # set node ids to be a constant
@@ -160,6 +163,8 @@ node.id_ = f"node-{idx}"
 # print all the node ids corrosponding to all the chunks
 for node in base_nodes:
 print(node.id_)
+```
+```code
 from google.colab import userdata
 # huggingface api token for downloading zephyr-7b
 hf_token = userdata.get('hf_token')
@@ -205,8 +210,12 @@ model_name="hkunlp/instructor-large", model_kwargs={"device": DEVICE}
 service_context = ServiceContext.from_defaults(
 llm=llm, embed_model=embed_model
 )
+```
+```code
 # index
 base_index = VectorStoreIndex(base_nodes, service_context=service_context)
+```
+```code
 # find top 2 nodes
 base_retriever = base_index.as_retriever(similarity_top_k=2)
 retrievals = base_retriever.retrieve(
@@ -214,6 +223,8 @@ retrievals = base_retriever.retrieve(
 )
 for n in retrievals:
 display_source_node(n, source_length=1500)
+```
+```code
 # create a query engine
 query_engine_base = RetrieverQueryEngine.from_args(
 base_retriever, service_context=service_context
@@ -222,6 +233,8 @@ base_retriever, service_context=service_context
 response = query_engine_base.query(
 "Can you tell me about the Paged Optimizers?"
 )
+```
+```code
 sub_chunk_sizes = [256, 512]
 sub_node_parsers = [SentenceSplitter(chunk_size=c) for c in sub_chunk_sizes]
 all_nodes = []
@@ -236,10 +249,14 @@ all_nodes.extend(sub_inodes)
 original_node = IndexNode.from_text_node(base_node, base_node.node_id)
 all_nodes.append(original_node)
 all_nodes_dict = {n.node_id: n for n in all_nodes}
+```
+```code
 vector_index_chunk = VectorStoreIndex(
 all_nodes, service_context=service_context
 )
 vector_retriever_chunk = vector_index_chunk.as_retriever(similarity_top_k=2)
+```
+```code
 # Recursive Retriever
 retriever_chunk = RecursiveRetriever(
 "vector",
@@ -253,6 +270,8 @@ nodes = retriever_chunk.retrieve(
 )
 for node in nodes:
 display_source_node(node, source_length=2000)
+```
+```code
 # Retriever Query Engine
 query_engine_chunk = RetrieverQueryEngine.from_args(
 retriever_chunk, service_context=service_context
@@ -261,6 +280,8 @@ retriever_chunk, service_context=service_context
 response = query_engine_chunk.query(
 "Can you tell me about the Paged Optimizers?"
 )
+```
+```code
 import nest_asyncio
 nest_asyncio.apply()
 extractors = [
@@ -271,6 +292,8 @@ QuestionsAnsweredExtractor(questions=1, llm=llm, show_progress=True),
 metadata_dicts = []
 for extractor in extractors:
 metadata_dicts.extend(extractor.extract(base_nodes))
+```
+```code
 # all nodes consists of source nodes, along with metadata
 import copy
 all_nodes = copy.deepcopy(base_nodes)
@@ -286,8 +309,12 @@ index_id=base_nodes[idx].node_id,
 all_nodes.extend([inode_q]) #, inode_s
 # all_nodes_dict
 all_nodes_dict = {n.node_id: n for n in all_nodes}
+```
+```code
 vector_index_metadata = VectorStoreIndex(all_nodes, service_context=service_context)
 vector_retriever_metadata = vector_index_metadata.as_retriever(similarity_top_k=2)
+```
+```code
 retriever_metadata = RecursiveRetriever(
 "vector",
 retriever_dict={"vector": vector_retriever_metadata},
@@ -299,12 +326,16 @@ nodes = retriever_metadata.retrieve(
 )
 for node in nodes:
 display_source_node(node, source_length=2000)
+```
+```code
 query_engine_metadata = RetrieverQueryEngine.from_args(
 retriever_metadata, service_context=service_context
 )
 response = query_engine_metadata.query(
 "Can you tell me about the Paged Optimizers?"
 )
+```
+```code
 # initialize client, setting path to save data
 db = chromadb.PersistentClient(path="./chroma_db")
 # create collection
@@ -318,6 +349,7 @@ all_nodes,
 storage_context=storage_context,
 service_context=service_context
 )
+```
  Links:
  - https://rsci.app.link/?%24canonical_url=https%3A%2F%2Fmedium.com%2Fp%2Faeaa32d7aa2f&%7Efeature=LoOpenInAppButton&%7Echannel=ShowPostUnderUser&source=---two_column_layout_nav----------------------------------
  - https://medium.com/m/signin?operation=login&redirect=https%3A%2F%2Fakash-mathur.medium.com%2Fadvanced-rag-optimizing-retrieval-with-additional-context-metadata-using-llamaindex-aeaa32d7aa2f&source=post_page---two_column_layout_nav-----------------------global_nav-----------

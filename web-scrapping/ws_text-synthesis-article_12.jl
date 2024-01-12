@@ -40,7 +40,7 @@ md"""
 ## Web Scraping article + synthesis
 
 1. Web extraction
-1. Summarization and Synthesis
+1. Synthesis
 
 ref. "Advanced RAG: Optimizing Retrieval with Additional Context & MetaData using LlamaIndex"
 """
@@ -52,8 +52,9 @@ const URL = "https://akash-mathur.medium.com/advanced-rag-optimizing-retrieval-w
 const TOPIC = "advanced RAG with LlamaIndex"
 
 # ╔═╡ 2f4ae40f-a1ab-470b-a1b7-a04fec353b0e
-const INSTRUCT_PROMPT = """Generate a comprehensive and detailed synthesis of the following excerpt (delimited by triple backticks) about $(TOPIC). 
-Also note that the python snipets should be rendered verbatim in full (if present) and correctly delimited as python code blocks. Each code block would normally start with the module imports with keywords such as `import` or `from`.""";
+const INSTRUCT_PROMPT = """Generate a comprehensive and detailed synthesis of the following excerpt (delimited by triple backticks) about $(TOPIC).""";
+
+# Also note that all the python snipets should be rendered verbatim in full (if present) and correctly delimited as python code blocks. Each code block would normally start with the module imports with keywords such as `import` or `from`.
 
 # ╔═╡ ba4e4c0f-2835-4a76-a9d4-7d7ba02becb2
 println(INSTRUCT_PROMPT)
@@ -144,29 +145,33 @@ md"""
 """
 
 # ╔═╡ b1309566-ded6-4f9f-a7b5-76e892991e65
-function extract_llm_settings(root; selectors = ["p.nx-mt-6"], verbose=true)::String
+function extract_llm_settings(root; selectors = ["p.nx-mt-6"], detect_code=false, verbose=true)::String
 	fulltext = String[]
 	sel_vec = vcat(
 		(eachmatch(Selector(selector), rroot) for selector ∈ selectors)...
 	)
-	println(sel_vec)
+	iscode = false
 	for (ix, element) ∈ enumerate(sel_vec)
-		verbose && println("$(ix) - [$(propertynames(element))]")
-		
+		verbose &&  println("$(ix) - [$(element)] /// [$(element.attributes["class"])]")
+
+		iscode = detect_code && hasproperty(element, :attributes) && !occursin("pw-post-body-paragraph", element.attributes["class"])
+
 		if hasproperty(element, :children)
-			verbose && println("  go deeper: $(propertynames(element))")
 			text = dft(element.children)
+			text = iscode ? string("```code\n", text, "\n```") : text
 			push!(fulltext, text)
 		end
+
+		iscode = false
 	end
 
 	join(
 		filter(
 			l -> length(strip(l)) > 0,
-			fulltext	
+			fulltext
 		),
 		"\n"
-	) 
+	)
 end
 
 # ╔═╡ a76cd62d-98dc-4043-8a44-6b2020625f8f
@@ -195,6 +200,7 @@ md = extract_llm_settings(rroot; selectors=[".bm"], verbose=false)  # other meta
 text = extract_llm_settings(
 	rroot; 
 	selectors=["p.pw-post-body-paragraph", "pre.ba.bj"],  #  "pre.ba.bj": for code snipet or "pre"
+	detect_code=true,
 	verbose=false
 )
 # html body div#root div.a.b.c div.l.c div.l div.fr.fs.ft.fu.fv.l article div.l div.l section div div.gk.gl.gm.gn.go div.ab.ca div.ch.bg.fw.fx.fy.fz pre.pr.ps.pt.pu.pv.pw.px.py.bo.pz.ba.bj span#4a9d.qa.op.gr.px.b.bf.qb.qc.l.qd.qe
@@ -204,7 +210,7 @@ links = extract_links(
 	rroot;
 	selector="a", 
 	verbose=false, 
-	restrict_to=["github", "LinkedIn", "huggingface", "arxiv", "medium", "edu", "llamaindex", "langchain"]
+	restrict_to=["github", "LinkedIn", "huggingface", "arxiv", "medium", "edu", "llamaindex", "langchain", "wikipedia", "cohere"]
 )
 # "towardsdatascience", "medium",
 # https://docs.llamaindex.ai/en/stable/examples/retrievers/recursive_retriever_nodes.html
@@ -235,7 +241,7 @@ md"""
 	 temperature=0.1,
 	 seed=117,
 )
-# Elapsed time for call to `make_openai_request_chat`: 39207 milliseconds
+# # Elapsed time for call to `make_openai_request_chat`: 39207 milliseconds
 
 # ╔═╡ c4f7a724-fe95-45cb-94af-656cc5fbebb5
 md"""
