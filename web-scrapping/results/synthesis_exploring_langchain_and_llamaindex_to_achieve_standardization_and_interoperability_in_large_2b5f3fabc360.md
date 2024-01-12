@@ -1,74 +1,70 @@
-### Article Overview
-**Title:** Exploring LangChain and LlamaIndex to Achieve Standardization and Interoperability in Large Language Models  
-**Author and Date:** Majid, May 10, 2023  
-**Publication:** Badal-io  
-**Reading Time:** 22 min read  
-**Link:** [Exploring LangChain and LlamaIndex](https://medium.com/badal-io/exploring-langchain-and-llamaindex-to-achieve-standardization-and-interoperability-in-large-2b5f3fabc360)
-### Introduction
-The article discusses the rapid development of Large Language Models (LLMs) and introduces two tools, LangChain and LlamaIndex, which aim to provide standardization and interoperability among these models. The author emphasizes that these tools are in their early stages and are updated frequently, which may affect the current applicability of the details provided.
-### Large Language Models (LLMs)
-LLMs are machine learning models capable of generating human-like text and responding to prompts in natural language. They are trained on extensive datasets and use statistical patterns to predict words or phrases that logically follow a given input.
-### LangChain
-LangChain is a response to the challenges posed by the complexity and frequent updates of LLMs. It aims to simplify the process of using these models by providing standardized interactions and interoperability, thus avoiding vendor lock-in and allowing users to switch between providers based on various factors.
-#### Building Blocks of LangChain
-LangChain's components are categorized into several classes and functionalities:
-1. **System Messages and Human Messages:**
-   - These messages are combined into a prompt and sent to the chat model, which returns a text response encapsulated in an `AIMessage`.
-   - The documentation acknowledges that abstractions for chat models are still developing.
-2. **Embedding Models:**
-   - Embedding models create vector representations for texts, commonly used in semantic search.
-   - LangChain provides methods `embed_query` and `embed_document` to cater to different embedding methods used by LLM providers.
-3. **Prompt Templates:**
-   - LangChain utilizes carefully designed prompts for various tasks, such as querying a SQL database in natural language.
-   - There are four categories of prompt templates in LangChain, which can be explored on [LangChainHub](https://github.com/hwchase17/langchain-hub).
-4. **Chat Prompt Templates:**
-   - These templates are built upon `MessageTemplates` (`HumanMessages`, `AIMessages`, and `SystemMessages`), providing structure to conversational use cases.
-5. **Example Selectors:**
-   - LangChain allows users to select input examples for few-shot learning based on various strategies, such as input length.
-6. **Output Parsers:**
-   - These parsers format the output from LLMs for downstream tasks, such as parsing into a list of comma-separated values.
-7. **Document Loaders:**
-   - LangChain offers tools for loading documents from various sources and formats, utilizing `Unstructured` under the hood.
-8. **Text Splitters:**
-   - Due to token size limitations of LLMs, documents need to be split into coherent pieces, which LangChain facilitates through various splitters.
-9. **VectorStores:**
-   - These are databases for storing embedding vectors and exposing semantic similarity search functionalities.
-10. **Retrievers:**
-    - Related to VectorStore indexes, retrievers are designed specifically for document retrieval.
-11. **Memory Objects:**
-    - LangChain provides memory objects for applications like chatbots to maintain interaction history and context.
-12. **Chains:**
-    - Chains combine multiple components to create complex functionalities, such as combining prompts with LLMs or chat models.
-13. **Agents:**
-    - Agents decide which tools are relevant for each query and use them accordingly, provided they are given a list of tools.
-14. **Tools:**
-    - Tools can be off-the-shelf or custom-made, with descriptions that help agents decide their relevance to a query.
-### LlamaIndex
-LlamaIndex is a tool that leverages LangChain for searching and summarizing documents through a conversational interface. It uses graph indexes to organize data efficiently.
-#### Workflow of LlamaIndex
-1. **Knowledge Base:**
-   - Documents are chunked and stored in node objects, forming a graph index.
-2. **Graph Index:**
-   - The index can be a list, tree, or keyword table, and can be composed of different indexes for hierarchical organization.
-3. **Text Splitters:**
-   - LlamaIndex uses LangChain's textSplitter classes to chunk documents.
-4. **Querying Index Graph:**
-   - Relevant nodes are fetched based on the query, and a `response_sythesis` module generates a coherent answer.
-5. **Response Synthesis:**
-   - Various modes are available, such as "Create and refine," "Tree summarize," and "Compact."
-6. **Index Composition:**
-   - Indexes can be composed from other indexes, allowing for hierarchical organization of data sources.
-7. **Data Connectors and Loaders:**
-   - LlamaIndex provides connectors and loaders for various data sources, which can be found on LlamaHub.
-8. **Query Transformations:**
-   - Queries can be transformed for more accurate answers using modules like HyDE, single-step, and multi-step query decomposition.
-9. **Node Post-Processors:**
-   - These refine the set of selected nodes after retrieval and before response synthesis.
-10. **Storage:**
-    - Storage for vectors, nodes, and the index itself is crucial, with options for in-memory and disk storage.
-### Conclusion
-LangChain and LlamaIndex are tools designed to enhance the usability and interoperability of LLMs. They offer a range of components and functionalities that cater to various use cases, from document retrieval to conversational interfaces. While LangChain provides granular control and covers a broader spectrum of applications, LlamaIndex specializes in creating hierarchical indexes for document management. Both libraries are under active development and may evolve to offer more consolidated solutions in the future.
-### Python Code Snippets
+# Article Synthesis: Exploring LangChain and LlamaIndex for Standardization and Interoperability in LLMs
+## Article Details
+- **Title**: Exploring LangChain and LlamaIndex to Achieve Standardization and Interoperability in Large Language Models
+- **Author**: Majid
+- **Publication**: Badal-io
+- **Publication Date**: May 10, 2023
+- **Reading Time**: 22 min read
+- **Article Link**: [Exploring LangChain and LlamaIndex](https://medium.com/badal-io/exploring-langchain-and-llamaindex-to-achieve-standardization-and-interoperability-in-large-2b5f3fabc360)
+## Introduction
+The article discusses the rapid development of Large Language Models (LLMs) and introduces LangChain and LlamaIndex as tools that provide standardization and interoperability among these models. It emphasizes the complexity of LLMs and the challenges in their utilization, which these tools aim to address. The article also notes that the libraries are in their early stages and are frequently updated.
+## Large Language Models (LLMs)
+LLMs are machine learning models capable of generating human-like text and responding to natural language prompts. They are trained on extensive datasets and use statistical patterns to predict text sequences.
+## LangChain Overview
+LangChain is a response to the challenges posed by the complexity and frequent updates of LLMs. It aims to standardize interactions and enable interoperability among different LLM providers, such as Huggingface and Cohere.
+### Building Blocks of LangChain
+LangChain's components are categorized into several classes:
+#### 1. System Messages and Human Messages
+These are combined into prompts and sent to chat models, which return text responses wrapped in an `AIMessage`.
+#### 2. Embedding Models
+Embedding models create vector representations for texts, primarily used for semantic search. LangChain provides `embed_query` and `embed_document` methods to cater to different embedding methods used by LLM providers.
+#### 3. Prompt Templates
+LangChain utilizes carefully designed prompts for various tasks, such as querying a SQL database. It offers four categories of prompt templates, which can be found on [LangChainHub](https://github.com/hwchase17/langchain-hub).
+#### 4. Example Selectors
+LangChain allows for the selection of input examples for few-shot learning based on strategies like input length.
+#### 5. Output Parsers
+These parse the LLM output for downstream tasks, such as converting responses into CSV files.
+### LangChain Classes
+LangChain offers a variety of classes for different functionalities:
+#### Document Loaders
+These assist in loading documents from various sources and formats, using `Unstructured` under the hood.
+#### Text Splitters
+Text splitters chunk documents into coherent pieces to fit within LLM token size limitations.
+#### VectorStores
+These are databases for storing embedding vectors and provide semantic similarity search functionalities.
+#### Retrievers
+Retrievers are designed for document retrieval and can be used in chains requiring a retrieval component.
+#### Memory Objects
+LangChain provides memory objects for applications like chatbots to store interaction history.
+#### Chains
+Chains combine multiple components to create complex functionalities, such as combining prompts with LLM or chat models.
+#### Agents
+Agents decide which tools are relevant for each query and use them accordingly.
+### LangChain Tools and Agents
+LangChain tools have descriptions that agents use to determine their relevance to a query. An example is the `OpenWeatherMap-API` tool, which is described for the agent to decide its use.
+## LlamaIndex Overview
+LlamaIndex is a tool built on LangChain for searching and summarizing documents using a conversational interface with LLMs. It features graph indexes for efficient data organization.
+### LlamaIndex Workflow
+The workflow involves chunking a knowledge base into nodes to form a graph index, which is then queried to fetch relevant nodes and synthesize a response.
+### Querying Index Graphs
+Different index types, such as list and vector indexes, determine how nodes are retrieved for response synthesis.
+### Response Synthesis Modes
+LlamaIndex offers modes like `Create and refine`, `Tree summarize`, and `Compact` for generating responses based on the nodes retrieved.
+### Composing Indexes
+Indexes can be composed of other indexes, allowing for hierarchical organization of documents for better search results.
+### Data Connectors and Loaders
+LlamaIndex provides data connectors and loaders for various document sources, which can be customized for better accuracy.
+### Query Transformations
+Query transformations rephrase or decompose queries for more accurate answers.
+### Node Post-Processors
+These refine the set of selected nodes before response synthesis.
+### Storage
+LlamaIndex uses storage for vectors, nodes, and indexes, with options for in-memory and disk storage.
+## Conclusion
+LangChain and LlamaIndex are new libraries that offer standardization and interoperability for LLMs. LangChain provides granular control for a wide range of use cases, while LlamaIndex specializes in creating hierarchical indexes. Both libraries are under active development and may converge in the future.
+## Code Examples
+The article includes several Python code snippets demonstrating the use of LangChain and LlamaIndex components. These snippets are presented verbatim below:
+### LangChain Code Examples
 ```python
 from langchain.chat_models import ChatOpenAI
 from langchain.schema import (
@@ -82,6 +78,8 @@ messages = [
     HumanMessage(content="Describe chicken pox to me.")
 ]
 chat(messages)
+```
+```python
 from langchain import PromptTemplate
 prompt = PromptTemplate(
     input_variables=["topic", "city"],
@@ -89,24 +87,26 @@ prompt = PromptTemplate(
 )
 prompt.format(topic="food", city="Rome")
 # Tell me about food in Rome
-systemTemplate = SystemMessagePromptTemplate.from_template("You are a helpful AI that talks about {topic} in {country}")
-humanTemplate = HumanMessagePromptTemplate.from_template('{input}')
-chatTemplate = ChatPromptTemplate.from_messages([systemTemplate, humanTemplate])
-chatTemplate.format_prompt(topic="food", country="Italy", input="I like to learn a new recipe").to_messages()
-# output would be: [AIMessage(content='You are a helpful AI that talks about food in Italy', additional_kwargs={}),
-# HumanMessage(content='I like to learn a new recipe', additional_kwargs={})]
+```
+```python
 from langchain.document_loaders import TextLoader
 loader = TextLoader('../state_of_the_union.txt')
 documents = loader.load()
+```
+```python
 from langchain.text_splitter import CharacterTextSplitter
 text_splitter = CharacterTextSplitter(chunk_size=1000, chunk_overlap=0)
 texts = text_splitter.split_documents(documents)
+```
+```python
 from langchain.embeddings import OpenAIEmbeddings
 from langchain.vectorstores import Chroma
 embedder = OpenAIEmbeddings()
 db = Chroma.from_documents(texts, embedder)
 output = db.similarity_search(query)
 # This output would be a list of relevant documents
+```
+```python
 from langchain.chains import RetrievalQA
 from langchain.embeddings import OpenAIEmbeddings
 from langchain.vectorstores import Chroma
@@ -122,6 +122,8 @@ qa = RetrievalQA.from_chain_type(llm=OpenAI(), chain_type="stuff", retriever=ret
 query = "What did the president say about Ketanji Brown Jackson"
 qa.run(query)
 # This will return a chat like response for the query rather than only listing the relevant documents.
+```
+```python
 from langchain.llm import LLM
 from langchain.chat import ChatMessageHistory
 # Create a new ChatMessageHistory object and add some messages
@@ -132,6 +134,8 @@ history.add_user_message("How are you?")
 # Create a new LLM object and train it on the chat history
 llm = LLM()
 llm(f"Given the history: {history.messages} tell me what the first human message was")
+```
+```python
 from langchain.memory import ConversationBufferMemory
 memory = ConversationBufferMemory()
 memory.chat_memory.add_user_message("hi!")
@@ -157,6 +161,8 @@ conversation.predict(input="what was my first message to you?")
 # AI:
 # > Finished chain.
 # ' Your first message to me was "hi!"'
+```
+```python
 from langchain.schema import messages_from_dict, messages_to_dict
 dicts = messages_to_dict(history.messages)
 # Output:
@@ -167,6 +173,8 @@ print(loaded_history)
 # Output
 # [HumanMessage(content='hi!', additional_kwargs={}),
 #  AIMessage(content='whats up?', additional_kwargs={})]
+```
+```python
 from langchain.prompts import PromptTemplate
 from langchain.chains import LLMChain
 from langchain.llms import OpenAI
@@ -179,14 +187,8 @@ chain = LLMChain(llm=llm, prompt=prompt)
 print(chain.run("Europe"))
 # This will output something like:
 # French Riviera
-prompt2 = PromptTemplate(
-    input_variables=["destination"],
-    template="What food should I try when in {destination}?"
-)
-chain2 = LLMChain(llm=llm, prompt=prompt2)
-chain2.run("Ibiza")
-# Output:
-# Paella: This traditional Spanish dish is a must-try when in Ibiza. It is a rice dish cooked with seafood, vegetables, and spices.
+```
+```python
 from langchain.chains import SimpleSequentialChain
 overall_chain = SimpleSequentialChain(chains=[chain, chain2], verbose=True)
 overall_chain.run("Europe")
@@ -196,6 +198,9 @@ overall_chain.run("Europe")
 # When in the French Riviera, you should definitely try some of the local specialties such as ratatouille, bouillabaisse, pissaladière, socca, and pan bagnat. You should also try some of the delicious seafood dishes like grilled sardines, anchovies, and sea bass. For dessert, try some of the local pastries like tarte tropézienne, calisson, and navettes. Bon appétit!
 # > Finished chain.
 # \n\nWhen in the French Riviera, you should definitely try some of the local specialties such as ratatouille, bouillabaisse, pissaladière, socca, and pan bagnat. You should also try some of the delicious seafood dishes like grilled sardines, anchovies, and sea bass. For dessert, try some of the local pastries like tarte tropézienne, calisson, and navettes. Bon appétit!
+```
+### LlamaIndex Code Examples
+```python
 from langchain.agents import load_tools
 from langchain.agents import initialize_agent
 from langchain.agents import AgentType
@@ -208,12 +213,20 @@ agent = initialize_agent(tools, llm, agent=AgentType.ZERO_SHOT_REACT_DESCRIPTION
 # call the agent with your query
 agent.run("what is the temperature of today in Baja California in celcius to the power of two?")
 ```
-### External Links and References
-The article references several external links and resources:
+```python
+Storage_context = StorageContext.from_defaults(
+    docstore = MongoDocumentStore.from_uri(uri="<mongodb+srv://...>")
+    index_store = MongoIndexStore.from_uri(uri="<mongodb+srv://...>")
+    Vector_store = PineconeVectorStore(config)
+)
+index = load_index_from_storage(storage_context, index_id="<index_id>")
+```
+## External Links and References
+The article includes several external links and references:
 - [LangChainHub](https://github.com/hwchase17/langchain-hub)
-- [Official Documentation for LlamaIndex](https://python.langchain.com/en/latest/modules/indexes/getting_started.html)
+- [Official LangChain Documentation](https://python.langchain.com/en/latest/modules/indexes/getting_started.html)
 - Various Medium sign-in and subscription links
-- Medium-related resources such as help center, status page, jobs, blog, privacy policy, and terms of service
-- A link to Speechify for Medium
-### Conclusion
-The article provides a comprehensive overview of LangChain and LlamaIndex, detailing their components and how they contribute to the standardization and interoperability of LLMs. It includes practical examples and Python code snippets to illustrate the usage of these tools. The synthesis captures the essence of the article, ensuring that the information is organized and presented in a coherent manner.
+- Medium-related links (help, status, jobs, blog, privacy policy, terms of service)
+- [Speechify for Medium](https://speechify.com/medium)
+## Conclusion
+The article provides a comprehensive overview of LangChain and LlamaIndex, detailing their components, functionalities, and the potential for these tools to streamline the use of LLMs. The provided code snippets offer practical examples of how to implement these tools in Python. As these libraries continue to evolve, they may further integrate to offer a unified solution for LLM applications.

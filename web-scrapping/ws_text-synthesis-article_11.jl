@@ -259,7 +259,7 @@ end
 # Please return a markdown formatted synthesis of the article."""
 
 INSTRUCT_PROMPT = """Generate a comprehensive and detailed synthesis of the following excerpt (delimited by triple backticks) about LangChain and LlamaIndex. 
-Make sure you report all the building blocks or component of each solution, and avoid mixing up those to keep the synthesis consistent and correct. Also note that the python snipets should be rendered verbatim in full (if present) and correctly delimited as python code blocks."""
+Make sure you report all the building blocks or component of each solution, and avoid mixing up those to keep the synthesis consistent and correct. Also note that the python snipets should be rendered verbatim in full (if present) and correctly delimited as python code blocks. Each code block would normally start with the module imports with keywords such as `import` or `from`."""
 
 # ╔═╡ e2ffe835-65dc-4c85-aa9a-d98867da2ff5
  synthesis = make_timed_chat_request(
@@ -270,6 +270,7 @@ Make sure you report all the building blocks or component of each solution, and 
 	 temperature=0.1,
 	 seed=117, 
 )
+# Elapsed time for call to `make_openai_request_chat`: 121606 milliseconds
 
 # ╔═╡ c4f7a724-fe95-45cb-94af-656cc5fbebb5
 md"""
