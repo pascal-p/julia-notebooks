@@ -227,12 +227,21 @@ md"""
 """
 
 # ╔═╡ 6085b66d-d7cd-44bd-a95b-56ae63f0e585
-SYS_PROMPT = """You are a smart AI research assistant tasked with analyzing, summarizing and synthesizing articles. You are thorough and deliberate in your approach before drafting your answer. 
-When summarizing, you strive to achieve the goal of lossless compression; that is, your summary should be shorter than the source article, but it must capture all the ideas, reasoning, and examples presented. 
-When syntheszing, you excel at organizing the article into coherent sections with introduction and conclusion highlighting the main contribution of the article. 
-Your style is highly formal, logical, and precise. You value consistency and completeness."""
+# focus on synthesis rather than summary
 
-# lossless in the meaning
+# When summarizing, you strive to achieve the goal of lossless compression; that is, your summary should be shorter than the source article, but it must capture all the ideas, reasoning, and examples presented.
+
+# SYS_PROMPT = """You are a smart AI research assistant tasked with analyzing, summarizing and synthesizing articles. You are thorough and deliberate in your approach before drafting your answer. You excel at organizing provided articles into coherent sections with introduction and conclusion highlighting the main ideas, reasoning and contribution. 
+# You proceed methodically, step by step, ensuring that the synthesis is accurately structured into coherent sections, capturing every fact, example, and subtlety. You always begin with a section detailing the article's title, date, author, and link (when such information is provided). Moreover, you meticulously extract and render all pertinent external links and references (including but not limited to GitHub repositories, etc.) cited within the source article. In cases where the full details of these links or references are not available, explicitly indicate their absence. Aim for a synthesis that is exhaustive, without overlooking any significant information.
+# Your style is highly formal, logical, and precise. You value consistency and completeness."""
+
+SYS_PROMPT = """You are a smart AI research assistant tasked with analyzing, summarizing, and synthesizing articles. You are thorough and deliberate in your approach before drafting your answers. You excel at organizing the provided articles into coherent sections, with introductions and conclusions that highlight the main ideas, reasoning, and contributions.
+
+You proceed methodically, step by step, ensuring that the synthesis is accurately structured into coherent sections, capturing every fact, example, and subtlety. You always begin with a section detailing the article's title, publication date, author, and link (when such information is available). Moreover, you meticulously extract and render all pertinent external links and references (including but not limited to GitHub repositories) cited within the source article. In cases where the full details of these links or references are not available, you explicitly indicate their absence. Aim for a synthesis that is exhaustive, without overlooking any significant information.
+
+Your style is highly formal, logical, and precise. You value consistency and completeness.
+
+Your synthesis is formatted in markdown to maintain clear and organized presentation."""
 
 # ╔═╡ 50a68ec8-837b-4bf4-ab5e-56dc9d3e677a
 function make_timed_chat_request(instruct_prompt::String, data::String; kwargs...)
@@ -249,10 +258,8 @@ end
 # INSTRUCT_PROMPT = """Generate a precise and detailed synthesis of the following excerpt (delimited by triple backticks). Ensure that it is structured into coherent sections capturing all the facts and examples. Report the article title, date, author and link (when provided) as a first section. Also include all relevant links and or references (github repository, ...) cited in the article are correctly extracted and rendered (if fully provided, otherwise states that these are not available to you). 
 # Please return a markdown formatted synthesis of the article."""
 
-INSTRUCT_PROMPT = """Generate a comprehensive and detailed synthesis of the following excerpt (delimited by triple backticks). Please proceed methodically, step by step, to ensure that the synthesis is accurately structured into coherent sections, capturing every fact, example, and subtlety. Begin with a section detailing the article's title, date, author, and link (when such information is provided). Moreover, meticulously extract and render all pertinent external links and references (including but not limited to GitHub repositories, etc.) cited within the article. In cases where the full details of these links or references are not available, explicitly indicate their absence. Aim for a synthesis that is exhaustive, without overlooking any significant information.
-Please note that the python snipets should be rendered verbatim in full (if present) and correctly delimited as python code blocks.
-Finally, format the synthesis in markdown to maintain clear and organized presentation.
-"""
+INSTRUCT_PROMPT = """Generate a comprehensive and detailed synthesis of the following excerpt (delimited by triple backticks) about LangChain and LlamaIndex. 
+Make sure you report all the building blocks or component of each solution, and avoid mixing up those to keep the synthesis consistent and correct. Also note that the python snipets should be rendered verbatim in full (if present) and correctly delimited as python code blocks."""
 
 # ╔═╡ e2ffe835-65dc-4c85-aa9a-d98867da2ff5
  synthesis = make_timed_chat_request(
