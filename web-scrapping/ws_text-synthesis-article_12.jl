@@ -53,7 +53,13 @@ const TOPIC = "advanced RAG with LlamaIndex"
 
 # ╔═╡ 2f4ae40f-a1ab-470b-a1b7-a04fec353b0e
 const INSTRUCT_PROMPT = """Generate a comprehensive and detailed synthesis of the following excerpt (delimited by triple backticks) about $(TOPIC). 
-Make sure you report all the building blocks or component of each solution, and avoid mixing up those to keep the synthesis consistent and correct. Also note that the python snipets should be rendered verbatim in full (if present) and correctly delimited as python code blocks. Each code block would normally start with the module imports with keywords such as `import` or `from`."""
+Also note that the python snipets should be rendered verbatim in full (if present) and correctly delimited as python code blocks. Each code block would normally start with the module imports with keywords such as `import` or `from`.""";
+
+# ╔═╡ ba4e4c0f-2835-4a76-a9d4-7d7ba02becb2
+println(INSTRUCT_PROMPT)
+
+# ╔═╡ 27bf4bd5-e50f-4266-9b67-2dec9e3ece3e
+println(SYS_PROMPT)
 
 # ╔═╡ 68c8922f-0cb2-41d9-9efe-3ed7a00dd76f
 const OUTFILE = split(URL, "/")[end:end] |>
@@ -673,6 +679,8 @@ version = "17.4.0+2"
 # ╠═f4c27df9-bbc1-4498-b7a0-42da0d049199
 # ╠═797e6deb-e014-4609-b0d4-7f3ec670cb1c
 # ╠═2f4ae40f-a1ab-470b-a1b7-a04fec353b0e
+# ╠═ba4e4c0f-2835-4a76-a9d4-7d7ba02becb2
+# ╠═27bf4bd5-e50f-4266-9b67-2dec9e3ece3e
 # ╠═68c8922f-0cb2-41d9-9efe-3ed7a00dd76f
 # ╠═2e10b0e3-66ac-4507-ad7b-a19089b85308
 # ╠═077c29e0-f912-44aa-ac3a-633b12318fb0
