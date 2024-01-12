@@ -53,10 +53,12 @@ const TOPIC = "advanced RAG with LlamaIndex using re-ranking"
 
 # ╔═╡ 2f4ae40f-a1ab-470b-a1b7-a04fec353b0e
 const INSTRUCT_PROMPT = """Generate a comprehensive and detailed synthesis of the following excerpt (delimited by triple backticks) about $(TOPIC). 
+
 Please provide all the details about the experiment conducted in this article:
 - from ingestion to chunking then embedding and storinng,
 - retrieval and reranking, taking note of the rerankers used and their performances.
-Also note that the python snipets should be rendered verbatim in full (if present) and correctly delimited as python code blocks. Each code block would normally start with the module imports with keywords such as `import` or `from`.""";
+
+Also note that all the python snipets should be rendered verbatim in full (if present) and correctly delimited as python code blocks. Each code block would normally start with the module imports with keywords such as `import` or `from`.""";
 
 # ╔═╡ ba4e4c0f-2835-4a76-a9d4-7d7ba02becb2
 println(INSTRUCT_PROMPT)
