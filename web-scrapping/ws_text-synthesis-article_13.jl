@@ -42,11 +42,11 @@ md"""
 1. Web extraction
 1. Summarization and Synthesis
 
-ref. "Advanced RAG: Optimizing Retrieval with Additional Context & MetaData using LlamaIndex"
+ref. "Advanced RAG: Enhancing Retrieval Efficiency through Rerankers using LlamaIndex"
 """
 
 # ╔═╡ f4c27df9-bbc1-4498-b7a0-42da0d049199
-const URL = "https://akash-mathur.medium.com/advanced-rag-optimizing-retrieval-with-additional-context-metadata-using-llamaindex-aeaa32d7aa2f"
+const URL = "https://akash-mathur.medium.com/advanced-rag-enhancing-retrieval-efficiency-through-evaluating-reranker-models-using-llamaindex-3f104f24607e"
 
 # ╔═╡ 797e6deb-e014-4609-b0d4-7f3ec670cb1c
 const TOPIC = "advanced RAG with LlamaIndex"
@@ -705,7 +705,7 @@ version = "17.4.0+2"
 # ╠═0df8719c-a91d-4449-8dac-337a832eb065
 # ╟─0883ae28-a94f-4bed-abce-39841605d29b
 # ╠═e2ffe835-65dc-4c85-aa9a-d98867da2ff5
-# ╠═c4f7a724-fe95-45cb-94af-656cc5fbebb5
+# ╟─c4f7a724-fe95-45cb-94af-656cc5fbebb5
 # ╠═e4d711be-c885-404b-a51a-fda50c9d43c7
 # ╟─322ecf98-5694-42a1-84f2-caf8a5fa58ad
 # ╟─00000000-0000-0000-0000-000000000001
