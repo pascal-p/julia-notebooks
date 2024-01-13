@@ -7,7 +7,7 @@ LlamaIndex Blog
 ·
 7 min read
 ·
-2 days ago
+Jan 5
 - Link: https://blog.llamaindex.ai/a-cheat-sheet-and-some-recipes-for-building-advanced-rag-803a9d94c41b
 Main:
 It’s the start of a new year and perhaps you’re looking to break into the RAG scene by building your very first RAG system. Or, maybe you’ve built Basic RAG systems and are now looking to enhance them to something more advanced in order to better handle your user’s queries and data structures.
@@ -60,6 +60,7 @@ notebook guide
 ):
 Evaluating RAG systems are, of course, of utmost importance. In their survey paper, Gao, Yunfan et al. indicate 7 measurement aspects as seen in the top-right portion of the attached RAG cheat sheet. The llama-index library consists of several evaluation abstractions as well as integrations to RAGAs in order to help builders gain an understanding of the level to which their RAG system achieves the success requirements through the lens of these measurement aspects. Below, we list a select few of the evaluation notebook guides.
 After reading this blog post, we hope that you feel more equipped and confident to apply some of these sophisticated techniques for building Advanced RAG systems!
+```code
 from llama_index import SimpleDirectoryReader, VectorStoreIndex
 # load data
 documents = SimpleDirectoryReader(input_dir="...").load_data()
@@ -71,6 +72,8 @@ index = VectorStoreIndex.from_documents(documents=documents)
 query_engine = index.as_query_engine()
 # Use your Default RAG
 response = query_engine.query("A user's query")
+```
+```code
 from llama_index import ServiceContext
 from llama_index.param_tuner.base import ParamTuner, RunResult
 from llama_index.evaluation import SemanticSimilarityEvaluator, BatchEvalRunner
@@ -126,6 +129,8 @@ show_progress=True,
 results = param_tuner.tune()
 best_result = results.best_run_result
 best_chunk_size = results.best_run_result.params["chunk_size"]
+```
+```code
 from llama_index import SimpleDirectoryReader, VectorStoreIndex
 from llama_index.node_parser import SentenceSplitter
 from llama_index.schema import IndexNode
@@ -176,6 +181,8 @@ retriever_chunk, service_context=service_context
 response = query_engine_chunk.query(
 "Can you tell me about the key concepts for safety finetuning"
 )
+```
+```code
 from llama_index import SimpleDirectoryReader, VectorStoreIndex
 from llama_index.query_engine import RetrieverQueryEngine
 from llama_index.postprocessor import LongLLMLinguaPostprocessor
@@ -204,6 +211,8 @@ retriever, node_postprocessors=[node_postprocessor]
 )
 # Used your advanced RAG
 response = retriever_query_engine.query("A user query")
+```
+```code
 import os
 from llama_index import SimpleDirectoryReader, VectorStoreIndex
 from llama_index.postprocessor.cohere_rerank import CohereRerank
@@ -225,6 +234,8 @@ node_postprocessors=[cohere_rerank],
 response = query_engine.query(
 "What did Sam Altman do in this essay?"
 )
+```
+```code
 from llama_index.llms import OpenAI
 from llama_index.query_engine import FLAREInstructQueryEngine
 from llama_index import (
@@ -251,6 +262,8 @@ verbose=True,
 response = flare_query_engine.query(
 "Can you tell me about the author's trajectory in the startup world?"
 )
+```
+```code
 from llama_index.query_engine import RetryQueryEngine
 from llama_index.evaluation import RelevancyEvaluator
 ### Recipe
@@ -268,6 +281,7 @@ base_query_engine, query_response_evaluator
 )
 # Use your advanced rag
 retry_response = retry_query_engine.query("A user query")
+```
  Links:
  - https://medium.com/m/signin?operation=register&redirect=https%3A%2F%2Fblog.llamaindex.ai%2Fa-cheat-sheet-and-some-recipes-for-building-advanced-rag-803a9d94c41b&source=post_page---two_column_layout_nav-----------------------global_nav-----------
  - https://medium.com/m/signin?operation=login&redirect=https%3A%2F%2Fblog.llamaindex.ai%2Fa-cheat-sheet-and-some-recipes-for-building-advanced-rag-803a9d94c41b&source=post_page---two_column_layout_nav-----------------------global_nav-----------

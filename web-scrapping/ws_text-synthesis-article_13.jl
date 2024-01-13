@@ -78,7 +78,7 @@ const TXT_FILEPATH = string("text/", OUTFILE)
 
 # ╔═╡ 077c29e0-f912-44aa-ac3a-633b12318fb0
 const MD_FILEPATH = string(
-	"results/synthesis_", 
+	"results/synthesis_",
 	replace(OUTFILE, ".txt" => ".md")
 )
 
@@ -180,7 +180,7 @@ end
 
 # ╔═╡ a76cd62d-98dc-4043-8a44-6b2020625f8f
 function extract_links(
-	root; 
+	root;
 	selector="a", verbose=true, restrict_to=["github", "LinkedIn"]
 )::Vector{String}
 	links = String[]

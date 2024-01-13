@@ -1,50 +1,31 @@
-# Synthesis of "A Cheat Sheet and Some Recipes For Building Advanced RAG"
-## Article Overview
+### Article Overview
+#### Title and Metadata
 - **Title**: A Cheat Sheet and Some Recipes For Building Advanced RAG
 - **Author**: Andrei
-- **Publication Date**: 2 days ago from the knowledge cutoff date
+- **Publication Date**: January 5
+- **Published In**: LlamaIndex Blog
 - **Reading Time**: 7 min read
-- **Source**: LlamaIndex Blog
-- **Article Link**: [A Cheat Sheet and Some Recipes For Building Advanced RAG](https://blog.llamaindex.ai/a-cheat-sheet-and-some-recipes-for-building-advanced-rag-803a9d94c41b)
-## Introduction
-The article begins by addressing individuals interested in developing Retrieval-Augmented Generation (RAG) systems, either as beginners or those looking to advance their basic RAG systems. It aims to provide guidance and a mental model for decision-making in the construction of sophisticated RAG systems. The inspiration for the RAG cheat sheet provided in the article comes from a recent survey paper by Gao, Yunfan, et al., titled "Retrieval-Augmented Generation for Large Language Models: A Survey" (2023).
-## Mainstream RAG Components
-Mainstream RAG involves three key components:
-1. **Retrieval Component**: Retrieves documents from an external knowledge database.
-2. **External Knowledge Database**: The source of information for the retrieval process.
-3. **Generation Component**: A Large Language Model (LLM) that generates responses based on the user's query and retrieved documents.
-## Success Requirements for RAG Systems
-The article outlines two high-level requirements for a successful RAG system:
-1. Accurate and relevant retrieval of documents.
-2. Generation of useful and relevant answers to user questions.
-Advanced RAG systems apply sophisticated techniques to the retrieval or generation components to meet these requirements, either independently or simultaneously.
-## Techniques for Advanced RAG Systems
-### Retrieval Component Enhancement
-#### LlamaIndex Chunk Size Optimization Recipe
-- **Notebook Guide**: A guide is mentioned but not directly linked.
-- **Structured External Knowledge**: For complex scenarios, the external knowledge may need more structure to allow for recursive retrievals or routed retrieval.
-#### LlamaIndex Recursive Retrieval Recipe
-- **Notebook Guide**: [Recursive Retrieval Recipe Guide](https://docs.llamaindex.ai/en/stable/examples/retrievers/recursive_retriever_nodes.html)
-### Generation Component Enhancement
-#### LlamaIndex Information Compression Recipe
-- **Notebook Guide**: [Information Compression Recipe Guide](https://docs.llamaindex.ai/en/stable/examples/node_postprocessor/LongLLMLingua.html)
-- **Result Re-Rank**: Addresses the "Lost in the Middle" phenomenon by re-ranking retrieved documents before generation.
-#### LlamaIndex Re-Ranking For Better Generation Recipe
-- **Notebook Guide**: [Re-Ranking Recipe Guide](https://docs.llamaindex.ai/en/stable/examples/node_postprocessor/CohereRerank.html)
-### Synergistic Techniques
-#### LlamaIndex Generator-Enhanced Retrieval Recipe
-- **Notebook Guide**: [Generator-Enhanced Retrieval Recipe Guide](https://docs.llamaindex.ai/en/stable/examples/query_engine/flare_query_engine.html)
-#### LlamaIndex Iterative Retrieval-Generator Recipe
-- **Notebook Guide**: [Iterative Retrieval-Generator Recipe Guide](https://docs.llamaindex.ai/en/stable/examples/evaluation/RetryQuery.html#retry-query-engine)
-## Evaluation of RAG Systems
-The evaluation of RAG systems is crucial, and the article references seven measurement aspects from the survey paper by Gao, Yunfan, et al. The llama-index library offers several evaluation abstractions and integrations to RAGAs for assessing the achievement of success requirements.
-## Practical Examples and Code Snippets
-The article provides Python code snippets demonstrating the use of the llama_index library for various tasks related to building and evaluating RAG systems. These include loading data, building a VectorStoreIndex, defining a QueryEngine, and executing queries. Additionally, it outlines a hyperparameter tuning recipe using the ParamTuner class.
-## External Links and References
-The article includes numerous links to external resources, such as notebook guides, documentation pages, and the llama_index GitHub repository. Some of these links are provided within the synthesis, while others are not directly accessible due to the format of the excerpt. The full details of these links are not available within the provided excerpt.
-## Conclusion
-The article concludes with an encouragement to the reader, expressing hope that the provided information and techniques will equip them to build advanced RAG systems confidently.
-## Python Code Snippets
+- **Article Link**: [LlamaIndex Blog Post](https://blog.llamaindex.ai/a-cheat-sheet-and-some-recipes-for-building-advanced-rag-803a9d94c41b)
+#### Introduction
+The blog post by Andrei on LlamaIndex Blog serves as a guide for individuals looking to either enter the Retrieval-Augmented Generation (RAG) scene or enhance their existing RAG systems. The post is intended to provide direction and a mental model for decision-making in the construction of advanced RAG systems. The inspiration for the RAG cheat sheet provided in the article comes from a recent survey paper titled "Retrieval-Augmented Generation for Large Language Models: A Survey" by Gao, Yunfan, et al., 2023.
+#### Main Content
+The article defines mainstream RAG as a process involving the retrieval of documents from an external knowledge database, which are then passed along with the user's query to a Large Language Model (LLM) for response generation. The success of a RAG system is predicated on two high-level requirements: the relevance of the retrieved documents and the usefulness of the generated responses.
+To achieve these requirements, the article outlines several sophisticated techniques and strategies that can be applied to the Retrieval or Generation components of a RAG system. These techniques are categorized based on whether they address one or both of the high-level success requirements.
+#### Advanced Techniques and Recipes
+The blog post provides a series of "recipes" for implementing advanced RAG techniques using the LlamaIndex library. Each recipe is accompanied by a link to a notebook guide for further details. The techniques include:
+1. **Chunk Size Optimization**: Adjusting the chunk size for document retrieval to ensure relevance.
+2. **Structured External Knowledge**: Building an external knowledge base with more structure to allow for recursive retrievals or routed retrieval.
+3. **Recursive Retrieval**: Implementing a recursive retriever that retrieves using small chunks but passes associated larger chunks to the generation stage.
+4. **Information Compression**: Compressing the retrieved information before passing it to the generation component.
+5. **Result Re-Rank**: Re-ranking retrieved documents to counteract the "Lost in the Middle" phenomenon in LLMs.
+6. **Generator-Enhanced Retrieval**: Using the generator LLM to play a more active role in retrieval by prompting it to elicit retrieval instructions.
+7. **Iterative Retrieval-Generator RAG**: Employing multi-step reasoning to provide relevant answers to complex user queries.
+#### Evaluation of RAG Systems
+The article emphasizes the importance of evaluating RAG systems and references the seven measurement aspects indicated in the survey paper by Gao, Yunfan, et al. The LlamaIndex library offers several evaluation abstractions and integrations to assist builders in understanding how well their RAG system meets the success requirements.
+#### Conclusion
+The post concludes with the hope that readers will feel more equipped and confident in applying these sophisticated techniques to build advanced RAG systems.
+### Code Snippets
+#### Basic RAG System Example
 ```python
 from llama_index import SimpleDirectoryReader, VectorStoreIndex
 # load data
@@ -58,15 +39,11 @@ query_engine = index.as_query_engine()
 # Use your Default RAG
 response = query_engine.query("A user's query")
 ```
+#### Chunk Size Optimization Recipe
 ```python
 from llama_index import ServiceContext
 from llama_index.param_tuner.base import ParamTuner, RunResult
 from llama_index.evaluation import SemanticSimilarityEvaluator, BatchEvalRunner
-### Recipe
-### Perform hyperparameter tuning as in traditional ML via grid-search
-### 1. Define an objective function that ranks different parameter combos
-### 2. Build ParamTuner object
-### 3. Execute hyperparameter tuning with ParamTuner.tune()
 # 1. Define objective function
 def objective_function(params_dict):
     chunk_size = params_dict["chunk_size"]
@@ -78,9 +55,7 @@ def objective_function(params_dict):
     index = _build_index(chunk_size, docs)  # helper function not shown here
     query_engine = index.as_query_engine(similarity_top_k=top_k)
     # perform inference with RAG pipeline on a provided questions `eval_qs`
-    pred_response_objs = get_responses(
-        eval_qs, query_engine, show_progress=True
-    )
+    pred_response_objs = get_responses(eval_qs, query_engine, show_progress=True)
     # perform evaluations of predictions by comparing them to reference
     # responses `ref_response_strs`
     evaluator = SemanticSimilarityEvaluator(...)
@@ -114,13 +89,11 @@ results = param_tuner.tune()
 best_result = results.best_run_result
 best_chunk_size = results.best_run_result.params["chunk_size"]
 ```
+#### Recursive Retrieval Recipe
 ```python
 from llama_index import SimpleDirectoryReader, VectorStoreIndex
 from llama_index.node_parser import SentenceSplitter
 from llama_index.schema import IndexNode
-### Recipe
-### Build a recursive retriever that retrieves using small chunks
-### but passes associated larger chunks to the generation stage
 # load data
 documents = SimpleDirectoryReader(
     input_file="some_data_path/llama2.pdf"
@@ -166,13 +139,11 @@ response = query_engine_chunk.query(
     "Can you tell me about the key concepts for safety finetuning"
 )
 ```
+#### Information Compression Recipe
 ```python
 from llama_index import SimpleDirectoryReader, VectorStoreIndex
 from llama_index.query_engine import RetrieverQueryEngine
 from llama_index.postprocessor import LongLLMLinguaPostprocessor
-### Recipe
-### Define a Postprocessor object, here LongLLMLinguaPostprocessor
-### Build QueryEngine that uses this Postprocessor on retrieved docs
 # Define Postprocessor
 node_postprocessor = LongLLMLinguaPostprocessor(
     instruction_str="Given the context, please answer the final question",
@@ -196,14 +167,12 @@ retriever_query_engine = RetrieverQueryEngine.from_args(
 # Used your advanced RAG
 response = retriever_query_engine.query("A user query")
 ```
+#### Result Re-Rank Recipe
 ```python
 import os
 from llama_index import SimpleDirectoryReader, VectorStoreIndex
 from llama_index.postprocessor.cohere_rerank import CohereRerank
 from llama_index.postprocessor import LongLLMLinguaPostprocessor
-### Recipe
-### Define a Postprocessor object, here CohereRerank
-### Build QueryEngine that uses this Postprocessor on retrieved docs
 # Build CohereRerank post retrieval processor
 api_key = os.environ["COHERE_API_KEY"]
 cohere_rerank = CohereRerank(api_key=api_key, top_n=2)
@@ -219,6 +188,7 @@ response = query_engine.query(
     "What did Sam Altman do in this essay?"
 )
 ```
+#### Generator-Enhanced Retrieval Recipe
 ```python
 from llama_index.llms import OpenAI
 from llama_index.query_engine import FLAREInstructQueryEngine
@@ -227,10 +197,6 @@ from llama_index import (
     SimpleDirectoryReader,
     ServiceContext,
 )
-### Recipe
-### Build a FLAREInstructQueryEngine which has the generator LLM play
-### a more active role in retrieval by prompting it to elicit retrieval
-### instructions on what it needs to answer the user query.
 # Build FLAREInstructQueryEngine
 documents = SimpleDirectoryReader("./data/paul_graham").load_data()
 index = VectorStoreIndex.from_documents(documents)
@@ -247,13 +213,10 @@ response = flare_query_engine.query(
     "Can you tell me about the author's trajectory in the startup world?"
 )
 ```
+#### Iterative Retrieval-Generator RAG Recipe
 ```python
 from llama_index.query_engine import RetryQueryEngine
 from llama_index.evaluation import RelevancyEvaluator
-### Recipe
-### Build a RetryQueryEngine which performs retrieval-generation cycles
-### until it either achieves a passing evaluation or a max number of
-### cycles has been reached
 # Build RetryQueryEngine
 documents = SimpleDirectoryReader("./data/paul_graham").load_data()
 index = VectorStoreIndex.from_documents(documents)
@@ -266,19 +229,15 @@ retry_query_engine = RetryQueryEngine(
 # Use your advanced rag
 retry_response = retry_query_engine.query("A user query")
 ```
-## External Links and References
-The article contains several external links to additional resources, including notebook guides, documentation pages, and the llama_index GitHub repository. Some of these links are provided within the synthesis, while others are not directly accessible due to the format of the excerpt. The full details of these links are not available within the provided excerpt. Here is a list of the links that were included in the excerpt:
-- [LlamaIndex Blog](https://blog.llamaindex.ai/?source=post_page-----803a9d94c41b--------------------------------)
-- [RAG Cheat Sheet](https://d3ddy8balm3goa.cloudfront.net/llamaindex/rag-cheat-sheet-final.svg)
-- [RAG Survey Paper](https://arxiv.org/pdf/2312.10997.pdf)
-- [GitHub Repository - llama_index](https://github.com/run-llama/llama_index/blob/main/docs/examples/param_optimizer/param_optimizer.ipynb)
-- [Recursive Retrieval Recipe Guide](https://docs.llamaindex.ai/en/stable/examples/retrievers/recursive_retriever_nodes.html)
-- [Information Compression Recipe Guide](https://docs.llamaindex.ai/en/stable/examples/node_postprocessor/LongLLMLingua.html)
-- [Re-Ranking Recipe Guide](https://docs.llamaindex.ai/en/stable/examples/node_postprocessor/CohereRerank.html)
-- [Generator-Enhanced Retrieval Recipe Guide](https://docs.llamaindex.ai/en/stable/examples/query_engine/flare_query_engine.html)
-- [Iterative Retrieval-Generator Recipe Guide](https://docs.llamaindex.ai/en/stable/examples/evaluation/RetryQuery.html#retry-query-engine)
-- [LlamaIndex Platform Notion Page](https://www.notion.so/LlamaIndex-Platform-0754edd9af1c4159bde12649c184c8ef?pvs=21)
-- [Retriever Evaluation Notebook Guide](https://github.com/run-llama/llama_index/blob/main/docs/examples/evaluation/retrieval/retriever_eval.ipynb)
-- [Batch Evaluation Documentation](https://docs.llamaindex.ai/en/stable/examples/evaluation/batch_eval.html)
-- [LinkedIn Profile for Andrei](https://ca.linkedin.com/in/nerdai)
-The synthesis has been structured to provide a comprehensive and detailed overview of the article, capturing all significant information, examples, and subtleties presented in the excerpt. The synthesis is exhaustive, ensuring no loss of content or context from the original article.
+### External Links and References
+The article includes several external links and references, which are listed below:
+- [LlamaIndex Blog Post](https://blog.llamaindex.ai/a-cheat-sheet-and-some-recipes-for-building-advanced-rag-803a9d94c41b)
+- [RAG Cheat Sheet Image](https://d3ddy8balm3goa.cloudfront.net/llamaindex/rag-cheat-sheet-final.svg)
+- [Survey Paper: "Retrieval-Augmented Generation for Large Language Models: A Survey"](https://arxiv.org/pdf/2312.10997.pdf)
+- [LlamaIndex GitHub Repository](https://github.com/run-llama/llama_index)
+- [LlamaIndex Documentation and Examples](https://docs.llamaindex.ai/en/stable/)
+- [Notion: LlamaIndex Platform](https://www.notion.so/LlamaIndex-Platform-0754edd9af1c4159bde12649c184c8ef?pvs=21)
+- [Andrei's LinkedIn Profile](https://ca.linkedin.com/in/nerdai)
+The links to the notebook guides for the recipes mentioned in the article are not directly accessible within the provided excerpt. However, they are likely to be found within the LlamaIndex documentation or GitHub repository.
+### Conclusion
+The blog post by Andrei provides a comprehensive guide to building advanced RAG systems using LlamaIndex. It covers a range of sophisticated techniques and includes practical recipes with code snippets to help readers implement these strategies. The article also stresses the importance of evaluating RAG systems and provides resources for further exploration and learning.
