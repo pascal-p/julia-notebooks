@@ -154,9 +154,9 @@ function extract_llm_settings(root; selectors = ["p.nx-mt-6"], detect_code=false
 	for (ix, element) ∈ enumerate(sel_vec)
 		verbose &&  println("$(ix) - [$(element)] /// [$(element.attributes["class"])]")
 
+		# TODO: link `!occursin("fz"...` to class selector fro more generality!
 		iscode = detect_code && hasproperty(element, :attributes) && 
 			!occursin("fz", element.attributes["class"])
-			# !occursin("pw-post-body-paragraph", element.attributes["class"])
 
 		if hasproperty(element, :children)
 			text = dft(element.children)
@@ -179,12 +179,15 @@ end
 # ╔═╡ a76cd62d-98dc-4043-8a44-6b2020625f8f
 function extract_links(
 	root;
-	selector="a", 
+	selectors=["a"], 
 	verbose=true, 
 	restrict_to=["github", "LinkedIn"]
 )::Vector{String}
 	links = String[]
-	for element ∈ eachmatch(Selector(selector), rroot)
+	sel_vec = vcat(
+		(eachmatch(Selector(selector), rroot) for selector ∈ selectors)...
+	)
+	for element ∈ sel_vec
 		if hasproperty(element, :attributes)
 			if match(join(restrict_to, "|") |> p -> Regex(p, "i"), element.attributes["href"]) !== nothing
 				push!(links, element.attributes["href"])
@@ -204,16 +207,16 @@ md = extract_llm_settings(rroot; selectors=[".bm"], verbose=false)  # other meta
 # ╔═╡ 67fd72dc-5540-440d-a8f3-8324914553b8
 text = extract_llm_settings(
 	rroot; 
-	# selectors=["p.pw-post-body-paragraph", "pre.ba.bj"],  # "pre.ba.bj": for code snipet or "pre"
-	selectors=["div.ch.bg.fw.fx.fy.fz", "pre.ba.bj"],  # "pre.ba.bj": for code snipet or "pre"
+	# "p.pw-post-body-paragraph"
+	selectors=["div.ch.bg.fw.fx.fy.fz", "pre.ba.bj", "table.highlight"],  # "pre.ba.bj": for code snipet or "pre"
 	detect_code=true,
-	verbose=true
+	verbose=false
 )
 
 # ╔═╡ ed56ba67-5e5a-43e9-9a5f-8e63597725f7
 links = extract_links(
 	rroot;
-	selector="a", 
+	selectors=["a"], 
 	verbose=false, 
 	restrict_to=["github", "LinkedIn", "huggingface", "arxiv", "medium", "edu", "llamaindex", "langchain", "wikipedia", "cohere"]
 )
