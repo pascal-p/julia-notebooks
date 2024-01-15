@@ -1,0 +1,114 @@
+- Title: Improving Llamaindex RAG performance with ranking
+- Author and date: Cole Murray
+·
+Follow
+3 min read
+·
+Dec 19, 2023
+- Link: https://colemurray.medium.com/enhancing-rag-with-baai-bge-reranker-a-comprehensive-guide-fe994ba9f82a
+Main:
+Retrieval-Augmented Generation (RAG) has been a game-changer in the field of natural language processing, especially for tasks that blend information retrieval with generative models. As part of my contributions to the field, I have recently implemented support for the FlagEmbeddingReranker in the
+llama_index
+library. This tool performs reranking, bringing more accuracy and relevance to the retrieval phase. In this article, I'll provide a comprehensive tutorial on the usage of FlagEmbeddingReranker, diving into its functionalities, the problems it solves, and its importance in improving RAG systems.
+The
+FlagEmbeddingReranker
+is a class in the
+llama_index
+library designed for re-ranking nodes (or documents) based on their relevance to a given query. It leverages a pre-trained model to compute relevance scores and select the top
+N
+nodes. This re-ranking mechanism is particularly valuable in RAG, where the quality of retrieved documents directly impacts the generation quality.
+The re-ranker can be used with any of the BAAI/bge-reranker models, such as
+BAAI/bge-reranker-base
+,
+BAAI/bge-reranker-large
+,
+BAAI/bge-reranker-large-en-v1.5
+You can view the available models
+here
+The latest
+BAAI/bge-reranker
+models, integral to the
+FlagEmbeddingReranker
+, are designed to:
+Before diving into the implementation, ensure you have the
+llama_index
+and
+FlagEmbedding
+packages installed. If not, install them using:
+Here’s how to incorporate
+FlagEmbeddingReranker
+into your RAG setup:
+First, import necessary classes and initialize
+FlagEmbeddingReranker
+.
+Assume you have a list of
+NodeWithScore
+objects, each representing a document retrieved by your RAG's initial query phase.
+Invoke
+FlagEmbeddingReranker
+with the nodes and query.
+The returned
+ranked_nodes
+will be a sorted list based on relevance to the query.
+The output should reflect the relevance of each document to the query “What is RAG in NLP?”. Ideally, the document explicitly mentioning RAG and its role in NLP should rank higher.
+Documents about GPT and BERT, while relevant to NLP, are less pertinent to the specific query about RAG and thus should score lower.
+The
+FlagEmbeddingReranker
+equipped with the new
+BAAI/bge-reranker
+models is a powerful addition to any RAG pipeline. It ensures that your retrieval phase is not just fetching a wide array of documents but is accurately focusing on the most relevant ones. Whether you are developing sophisticated NLP applications or exploring the frontiers of language models, integrating this advanced reranking tool is pivotal in achieving high-quality, relevant outputs.
+```code
+pip install llama-index FlagEmbedding
+```
+```code
+from llama_index.postprocessor.flag_embedding_reranker import FlagEmbeddingReranker
+reranker = FlagEmbeddingReranker(
+top_n=3,
+model="BAAI/bge-reranker-large",
+use_fp16=False
+)
+```
+```code
+from llama_index.schema import NodeWithScore, QueryBundle, TextNode
+documents = [
+"Retrieval-Augmented Generation (RAG) combines retrieval and generation for NLP tasks.",
+"Generative Pre-trained Transformer (GPT) is a language generation model.",
+"RAG uses a retriever to fetch relevant documents and a generator to produce answers.",
+"BERT is a model designed for understanding the context of a word in a sentence."
+]
+nodes = [NodeWithScore(node=TextNode(text=doc)) for doc in documents]
+query = "What is RAG in NLP?"
+```
+```code
+query_bundle = QueryBundle(query_str=query)
+ranked_nodes = reranker._postprocess_nodes(nodes, query_bundle)
+```
+```code
+for node in ranked_nodes:
+print(node.node.get_content(), "-> Score:", node.score)
+```
+ Links:
+ - https://rsci.app.link/?%24canonical_url=https%3A%2F%2Fmedium.com%2Fp%2Ffe994ba9f82a&%7Efeature=LoOpenInAppButton&%7Echannel=ShowPostUnderUser&source=---two_column_layout_nav----------------------------------
+ - https://medium.com/m/signin?operation=login&redirect=https%3A%2F%2Fcolemurray.medium.com%2Fenhancing-rag-with-baai-bge-reranker-a-comprehensive-guide-fe994ba9f82a&source=post_page---two_column_layout_nav-----------------------global_nav-----------
+ - https://medium.com/?source=---two_column_layout_nav----------------------------------
+ - https://medium.com/m/signin?operation=register&redirect=https%3A%2F%2Fmedium.com%2Fnew-story&source=---two_column_layout_nav-----------------------new_post_topnav-----------
+ - https://medium.com/search?source=---two_column_layout_nav----------------------------------
+ - https://medium.com/m/signin?operation=login&redirect=https%3A%2F%2Fcolemurray.medium.com%2Fenhancing-rag-with-baai-bge-reranker-a-comprehensive-guide-fe994ba9f82a&source=post_page---two_column_layout_nav-----------------------global_nav-----------
+ - https://medium.com/m/signin?actionUrl=https%3A%2F%2Fmedium.com%2F_%2Fsubscribe%2Fuser%2F8d62c20970c7&operation=register&redirect=https%3A%2F%2Fcolemurray.medium.com%2Fenhancing-rag-with-baai-bge-reranker-a-comprehensive-guide-fe994ba9f82a&user=Cole+Murray&userId=8d62c20970c7&source=post_page-8d62c20970c7----fe994ba9f82a---------------------post_header-----------
+ - https://huggingface.co/BAAI/bge-reranker-large
+ - https://medium.com/tag/machine-learning?source=post_page-----fe994ba9f82a---------------machine_learning-----------------
+ - https://medium.com/tag/artificial-intelligence?source=post_page-----fe994ba9f82a---------------artificial_intelligence-----------------
+ - https://medium.com/tag/programming?source=post_page-----fe994ba9f82a---------------programming-----------------
+ - https://medium.com/tag/python?source=post_page-----fe994ba9f82a---------------python-----------------
+ - https://medium.com/tag/large-language-models?source=post_page-----fe994ba9f82a---------------large_language_models-----------------
+ - https://medium.com/m/signin?actionUrl=%2F_%2Fapi%2Fsubscriptions%2Fnewsletters%2Fd43660522c32&operation=register&redirect=https%3A%2F%2Fcolemurray.medium.com%2Fenhancing-rag-with-baai-bge-reranker-a-comprehensive-guide-fe994ba9f82a&newsletterV3=8d62c20970c7&newsletterV3Id=d43660522c32&user=Cole+Murray&userId=8d62c20970c7&source=-----fe994ba9f82a---------------------subscribe_user-----------
+ - https://medium.com/m/signin?actionUrl=%2F_%2Fapi%2Fsubscriptions%2Fnewsletters%2Fd43660522c32&operation=register&redirect=https%3A%2F%2Fcolemurray.medium.com%2Fenhancing-rag-with-baai-bge-reranker-a-comprehensive-guide-fe994ba9f82a&newsletterV3=8d62c20970c7&newsletterV3Id=d43660522c32&user=Cole+Murray&userId=8d62c20970c7&source=-----fe994ba9f82a---------------------subscribe_user-----------
+ - https://help.medium.com/hc/en-us?source=post_page-----fe994ba9f82a--------------------------------
+ - https://medium.statuspage.io/?source=post_page-----fe994ba9f82a--------------------------------
+ - https://medium.com/about?autoplay=1&source=post_page-----fe994ba9f82a--------------------------------
+ - https://medium.com/jobs-at-medium/work-at-medium-959d1a85284e?source=post_page-----fe994ba9f82a--------------------------------
+ - https://blog.medium.com/?source=post_page-----fe994ba9f82a--------------------------------
+ - https://policy.medium.com/medium-privacy-policy-f03bf92035c9?source=post_page-----fe994ba9f82a--------------------------------
+ - https://policy.medium.com/medium-terms-of-service-9db0094a1e0f?source=post_page-----fe994ba9f82a--------------------------------
+ - https://speechify.com/medium?source=post_page-----fe994ba9f82a--------------------------------
+ - https://medium.com/business?source=post_page-----fe994ba9f82a--------------------------------
