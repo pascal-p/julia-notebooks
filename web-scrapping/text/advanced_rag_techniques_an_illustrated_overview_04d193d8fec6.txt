@@ -10,9 +10,25 @@ Towards AI
 Dec 17, 2023
 - Link: https://pub.towardsai.net/advanced-rag-techniques-an-illustrated-overview-04d193d8fec6
 Main:
+Advanced RAG Techniques: an Illustrated Overview
+IVAN ILIN
+·
+Follow
+Published in
+Towards AI
+·
+19 min read
+·
+Dec 17, 2023
+--
+19
+Listen
+Share
+A comprehensive study of the advanced retrieval augmented generation techniques and algorithms, systemising various approaches. The article comes with a collection of links in my knowledge base referencing various implementations and studies mentioned.
 Since the goal of the post is to make an overview & explanation of avaliable RAG algorithms and techniques, I won’t dive into implementations details in code, just referencing them and leaving it to the vast
 documentation & tutorials
 available.
+Intro
 If you are familiar with the RAG concept, please skip to the Advanced RAG part.
 Retrieval Augmented Generation, aka RAG, provides LLMs with the information retrieved from some data source to ground its generated answer on.
 Basically RAG is Search + LLM prompting
@@ -37,11 +53,17 @@ LangChain
 and
 LlamaIndex
 , founded with a month difference in October and November 2022, respectfully, inspired by the ChatGPT launch and having gained massive adoption in 2023.
+The purpose of this article is to systemise the key advanced RAG techniques with references to their implementations — mostly in the LlamaIndex — in order to facilitate other developers’ dive into the technology.
+The problem is that most of the tutorials cherry-pick one or several techniques and explain in details how to implement them rather than decribing the full variety of the avaliable tools .
+Another thing is that both LlamaIndex and LangChain are amazing open source projects, developing at such a pace that their documentation is already thicker than a machine learning textbook in 2016.
+Naive RAG
 The starting point of the RAG pipeline in this article would be a corpus of text documents — we skip everything before that point, leaving it to the amazing open source data loaders connecting to any imaginable source from Youtube to Notion.
+A scheme by author, as well all the schemes further in the text
 Vanilla RAG case
 in brief looks the following way: you split your texts into chunks, then you embed these chunks into vectors with some Transformer Encoder model, you put all those vectors into an index and finally you create a prompt for an LLM that tells the model to answers user’s query given the context we found on the search step.
 In the runtime we vectorise user’s query with the same Encoder model and then execute search of this query vector against the index, find the top-k results, retrieve the corresponding text chunks from our database and feed them into the LLM prompt as context.
 The prompt can look like that:
+an example of a RAG prompt
 Prompt engineering
 is the cheapest thing you can try to improve your RAG pipeline. Make sure you’ve checked a quite comprehensive OpenAI
 prompt engineering guide
@@ -59,10 +81,12 @@ OpenLLaMA
 ,
 Falcon
 , so you have a choice of the brain for your RAG pipeline.
+Advanced RAG
 Now we’ll dive into the overview of the advanced RAG techniques.
 Here is a scheme depicting core steps and algorithms involved.
 Some logic loops and complex multistep agentic behaviours are omitted to keep the scheme readable.
 The green elements on the scheme are the core RAG techniques discussed further, the blue ones are texts. Not all the advanced RAG ideas are easily visualised on a single scheme, for example, various context enlarging approaches are omitted — we’ll dive into that on the way.
+1. Chunking & vectorisation
 First of all we want to create an index of vectors, representing our document contents and then in the runtime to search for the least cosine distance between all these vectors and the query vector which corresponds to the closest semantic meaning.
 1.1 Chunking
 Transformer models have fixed input sequence length and even if the input context window is large, the vector of a sentence or a few better represents their semantic meaning than a vector averaged over a few pages of text (depends on the model too, but true in general), so
@@ -91,6 +115,9 @@ for the latest updates.
 For an end2end implementation of the chunking & vectorisation step check an
 example
 of a full data ingestion pipeline in LlamaIndex.
+2. Search index
+2.1 Vector store index
+In this scheme and everywhere further in the text I omit the Encoder block and send our query straight to the index for the scheme simplicity. The query always gets vectorised first of course. Same with the top k cunks — index retrieves top k vectors, not chunks, but I replace them with chunks as fetching them is a trivial step.
 The crucial part of the RAG pipeline is the search index
 , storing your vectorised content we got in the previous step. The most naive implementation uses a flat index — a brute force distance calculation between the query vector and all the chunks’ vectors.
 A proper search index, optimised for efficient retrieval
@@ -120,9 +147,11 @@ to search for information within some dates or sources for example.
 LlamaIndex supports lots of
 vector store indices
 but there are also other simpler index implementations supported like list index, tree index, and keyword table index — we’ll talk about the latter in the Fusion retrieval part.
+2. 2 Hierarchical indices
 In case you have many documents to retrieve from, you need to be able to efficiently search inside them, find relevant information and synthesise it in a single answer with references to the sources. An efficient way to do that in case of a large database is to
 create two indices — one composed of summaries and the other one composed of document chunks
 , and to search in two steps, first filtering out the relevant docs by summaries and then searching just inside this relevant group.
+2.3 Hypothetical Questions and HyDE
 Another approach is to ask an LLM to
 generate a question for each chunk and embed these questions in vectors
 , at runtime performing query search against this index of question vectors (replacing chunks vectors with questions vectors in our index) and then after retrieval route to original text chunks and send them as the context for the LLM to get an answer.
@@ -132,6 +161,7 @@ compared to what we’d have for an actual chunk.
 There is also the reversed logic apporach called
 HyDE
 — you ask an LLM to generate a hypothetical response given the query and then use its vector along with the query vector to enhance search quality.
+2.4 Context enrichment
 The concept here is to retrieve smaller chunks for better search quality
 ,
 but add up surrounding context for LLM to reason upon
@@ -156,6 +186,7 @@ k
 retrieved chunks are linked to the same parent node (larger chunk), we replace the context fed to the LLM by this parent node — works like auto merging a few retrieved chunks into a larger parent chunk, hence the method name. Just to note — search is performed just within the child nodes index. Check the LlamaIndex tutorial on
 Recursive Retriever + Node References
 for a deeper dive.
+2.5 Fusion retrieval or hybrid search
 A relatively old idea that you could
 take the best from both worlds — keyword-based old school search
 — sparse retrieval algorithms like
@@ -176,6 +207,7 @@ In LlamaIndex this is
 done
 in a pretty similar fashion.
 Hybrid or fusion search usually provides better retrieval results as two complementary search algorithms are combined, taking into account both semantic similarity and keyword matching between the query and the stored documents.
+3. Reranking & filtering
 So we got our retrieval results with any of the algorithms described above, now it is time to refine them through filtering, re-ranking or some transformation. In LlamaIndex there is a variety of available
 Postprocessors
 ,
@@ -188,8 +220,10 @@ or based on metadata like date recency — basically, all you could imagine.
 This is the final step before feeding our retrieved context to LLM in order to get the resulting answer.
 Now it is time to get to the more sophisticated RAG techniques like Query transformation and Routing, both involving LLMs and thus representing
 agentic behaviour — some complex logic involving LLM reasoning within our RAG pipeline.
+4. Query transformations
 Query transformations are a family of techniques using an LLM as a reasoning engine to modify user input in order to improve retrieval quality.
 There are different options to do that.
+Query transformation principles illustrated
 If the query is complex, LLM can decompose it into several sub queries.
 For examle, if you ask:
 — “What framework has more stars on Github, Langchain or LlamaIndex?”,
@@ -201,12 +235,36 @@ Multi Query Retriever
 in Langchain and as a
 Sub Question Query Engine
 in Llamaindex.
+Step-back prompting
+uses LLM to generate a more general query
+, retrieving for which we obtain a more general or high-level context useful to ground the answer to our original query on.
+Retrieval for the original query is also performed and both contexts are fed to the LLM on the final answer generation step.
+Here is a LangChain
+implementation
+.
+Query re-writing uses LLM to reformulate initial query
+in order to improve retrieval. Both
+LangChain
+and
+LlamaIndex
+have implementations, tough a bit different, I find LlamaIndex solution being more powerful here.
+Reference citations
 This one goes without a number as this is more an instrument than a retrieval improvement technique, although a very important one.
 If we’ve used multiple sources to generate an answer
 either due to the initial query complexity (we had to execute multiple subqueries and then to combine retrieved context in one answer), or because we found relevant context for a single query in various documents, the question rises if we could
 accurately back reference our sources
 .
 There are a couple of ways to do that:
+Insert this referencing task into our prompt
+and ask LLM to mention ids of the used sources.
+Match the parts of generated response to the original text chunks
+in our index — llamaindex offers an efficient
+fuzzy matching based solution
+for this case. In case you have not heard of fuzzy matching, this is an
+incredibly powerful string matching technique
+.
+5.
+Chat Engine
 The next big thing about building a nice RAG system that can work more than once for a single query is the
 chat logic, taking into account the dialogue context
 , same as in the classic chat bots in the pre-LLM era.
@@ -227,9 +285,11 @@ OpenAI agents based Chat Engine
 in LlamaIndex providing a more flexible chat mode and Langchain also
 supports
 OpenAI functional API.
+An illustration of different Chat Engine types and principles
 There are other Chat engine types like
 ReAct Agent
 , but let’s skip to Agents themselves in section 7.
+6. Query Routing
 Query routing is the step of LLM-powered decision making upon what to do next given the user query
 — the options usually are to summarise, to perform search against some data index or to try a number of different routes and then to synthesise their output in a single answer.
 Query routers are also used to select an index, or, broader, data store, where to send user query — either you have multiple sources of data, for example, a classic vector store and a graph database or a relational DB, or you have an hierarchy of indices — for a multi-document storage a pretty classic case would be an index of summaries and another index of document chunks vectors for example.
@@ -242,6 +302,7 @@ LlamaIndex
 and
 LangChain
 have support for query routers.
+7. Agents in RAG
 Agents (supported both by
 Langchain
 and
@@ -278,7 +339,9 @@ And for the top agent, all document agents are tools respectfully.
 This scheme illustrates an advanced RAG architecture with a lot of routing decisions made by each involved agent.
 The benefit of such approach is the ability to compare different solutions or entities, described in different documents and their summaries
 along with the classic single doc summarisation and QA mechanics — this basically covers the most frequent chat-with-collection-of-docs usecases.
+A scheme illustrating multi document agents, involving both query routing and agentic behavior patterns.
 The drawback of such a complex scheme can be guessed from the picture — it’s a bit slow due to multiple back and forth iterations with the LLMs inside our agents. Just in case, an LLM call is always the longest operation in a RAG pipeline — search is optimised for speed by design. So for a large multi document storage I’d recommed to think of some simplifications to this scheme making it scalable.
+8. Response synthesiser
 This is the final step of any RAG pipeline — generate an answer based on all the context we carefully retrieved and on the initial user query.
 The simplest approach would be just to concatenate and feed all the fetched context (above some relevance threshold) along with the query to an LLM at once.
 But, as always, there are other more sophisticated options involving multiple LLM calls to refine retrieved context and generate a better answer.
@@ -297,6 +360,7 @@ summarise them
 For more details please check the
 Response synthesizer module docs
 .
+Encoder and LLM fine-tuning
 This approach involves fine-tuning of some of the two DL models involved in our RAG pipeline — either the Transformer
 Encoder, resposible for embeddings quality and thus context retrieval quality
 or an
@@ -304,6 +368,7 @@ LLM, responsible for the best usage of the provided context to answer user query
 — luckily, the latter is a good few shot learner.
 One big advantage nowadays is the availability of high-end LLMs like GPT-4 to generate high quality synthetic datasets.
 But you should always be aware that taking an open-source model trained by professional research teams on carefully collected, cleaned and validated large datasets and making a quick tuning using small synthetic dataset might narrow down the model’s capabilities in general.
+Encoder fine-tuning
 I’ve also been a bit skeptical about the Encoder funetuning approach as the latest Transformer Encoders optimised for search are pretty efficient.
 So I have tested the performance increase provided by finetuning of
 bge-large-en-v1.5
@@ -312,12 +377,14 @@ MTEB leaderboard
 at the time of writing) in the
 LlamaIndex notebook
 setting, and it demonstrated a 2% retrieval quality increase. Nothing dramatic but it is nice to be aware of that option, especially if you have a narrow domain dataset you’re building RAG for.
+Ranker fine-tuning
 The other good old option is to have a cross-encoder for reranking your retrieved results
 if you dont trust your base Encoder completely.
 It works the following way — you pass the query and each of the top k retrieved text chunks to the cross-encoder, separated by a SEP token, and fine-tune it to output 1 for relevant chunks and 0 for non-relevant.
 A good example of such tuning process could be found
 here
 , the results say the pairwise score was improved by 4% by cross-encoder finetuning.
+LLM fine-tuning
 Recently OpenAI started providing LLM finetuning
 API
 and LlamaIndex has a
@@ -341,6 +408,7 @@ guide
 .
 This technique was used both to fine-tune OpenAI LLMs through the fine-tuning API and Llama2 open-source model (in the original paper), resulting in ~5% increase in knowledge-intense tasks metrics (compared to Llama2 65B with RAG) and a couple percent increase in common sense reasoning tasks.
 In case you know better approaches to LLM finetuning for RAG, please share your expertise in the comments section, especially if they are applied to the smaller open source LLMs.
+Evaluation
 There are
 several frameworks for RAG systems performance evaluation
 sharing the idea of having a few separate metrics like overall
@@ -387,6 +455,7 @@ where custom evaluators may be implemented plus it monitors the traces running i
 In case you are building with LlamaIndex, there is a
 rag_evaluator llama pack
 , providing a quick tool to evaluate your pipeline with a public dataset.
+Conclusion
 I tried to outline the core algorithmic approaches to RAG and to illustrate some of them in hopes this might spark some novel ideas to try in your RAG pipeline, or bring some system to the vast variety of tecniques that have been invented this year — for me 2023 was the most exciting year in ML so far.
 There are many more
 other things to consider
@@ -414,20 +483,40 @@ Find me on
 LinkedIn
 or
 Twitter
+ML
+Llm
+NLP
+Retrieval Augmented
+AI
+--
+--
+19
+Follow
+Written by
+IVAN ILIN
+740 Followers
+·
+Writer for
+Towards AI
+CEO, co-founder of
+iki.ai
+, PhD in Applied Mathematics, ML Engineer (NLP), Information retrieval, Search&LLMs, ex Head of Search in 1M MAU assistant. Netherlands
+Follow
+Help
+Status
+About
+Careers
+Blog
+Privacy
+Terms
+Text to speech
+Teams
  Links:
  - https://rsci.app.link/?%24canonical_url=https%3A%2F%2Fmedium.com%2Fp%2F04d193d8fec6&%7Efeature=LoOpenInAppButton&%7Echannel=ShowPostUnderCollection&source=---two_column_layout_nav----------------------------------
- - https://medium.com/m/signin?operation=register&redirect=https%3A%2F%2Fpub.towardsai.net%2Fadvanced-rag-techniques-an-illustrated-overview-04d193d8fec6&source=post_page---two_column_layout_nav-----------------------global_nav-----------
- - https://medium.com/m/signin?operation=login&redirect=https%3A%2F%2Fpub.towardsai.net%2Fadvanced-rag-techniques-an-illustrated-overview-04d193d8fec6&source=post_page---two_column_layout_nav-----------------------global_nav-----------
  - https://medium.com/?source=---two_column_layout_nav----------------------------------
- - https://medium.com/m/signin?operation=register&redirect=https%3A%2F%2Fmedium.com%2Fnew-story&source=---two_column_layout_nav-----------------------new_post_topnav-----------
  - https://medium.com/search?source=---two_column_layout_nav----------------------------------
- - https://medium.com/m/signin?operation=register&redirect=https%3A%2F%2Fpub.towardsai.net%2Fadvanced-rag-techniques-an-illustrated-overview-04d193d8fec6&source=post_page---two_column_layout_nav-----------------------global_nav-----------
- - https://medium.com/m/signin?operation=login&redirect=https%3A%2F%2Fpub.towardsai.net%2Fadvanced-rag-techniques-an-illustrated-overview-04d193d8fec6&source=post_page---two_column_layout_nav-----------------------global_nav-----------
  - https://medium.com/@ivanilin_iki?source=post_page-----04d193d8fec6--------------------------------
  - https://medium.com/@ivanilin_iki?source=post_page-----04d193d8fec6--------------------------------
- - https://medium.com/m/signin?actionUrl=https%3A%2F%2Fmedium.com%2F_%2Fsubscribe%2Fuser%2F4a0803226977&operation=register&redirect=https%3A%2F%2Fpub.towardsai.net%2Fadvanced-rag-techniques-an-illustrated-overview-04d193d8fec6&user=IVAN+ILIN&userId=4a0803226977&source=post_page-4a0803226977----04d193d8fec6---------------------post_header-----------
- - https://medium.com/m/signin?actionUrl=https%3A%2F%2Fmedium.com%2F_%2Fvote%2Ftowards-artificial-intelligence%2F04d193d8fec6&operation=register&redirect=https%3A%2F%2Fpub.towardsai.net%2Fadvanced-rag-techniques-an-illustrated-overview-04d193d8fec6&user=IVAN+ILIN&userId=4a0803226977&source=-----04d193d8fec6---------------------clap_footer-----------
- - https://medium.com/m/signin?actionUrl=https%3A%2F%2Fmedium.com%2F_%2Fbookmark%2Fp%2F04d193d8fec6&operation=register&redirect=https%3A%2F%2Fpub.towardsai.net%2Fadvanced-rag-techniques-an-illustrated-overview-04d193d8fec6&source=-----04d193d8fec6---------------------bookmark_footer-----------
  - https://github.com/chroma-core/chroma
  - https://github.com/nmslib/nmslib
  - https://python.langchain.com/docs/get_started/introduction
@@ -497,22 +586,13 @@ Twitter
  - https://medium.com/tag/nlp?source=post_page-----04d193d8fec6---------------nlp-----------------
  - https://medium.com/tag/retrieval-augmented?source=post_page-----04d193d8fec6---------------retrieval_augmented-----------------
  - https://medium.com/tag/ai?source=post_page-----04d193d8fec6---------------ai-----------------
- - https://medium.com/m/signin?actionUrl=https%3A%2F%2Fmedium.com%2F_%2Fvote%2Ftowards-artificial-intelligence%2F04d193d8fec6&operation=register&redirect=https%3A%2F%2Fpub.towardsai.net%2Fadvanced-rag-techniques-an-illustrated-overview-04d193d8fec6&user=IVAN+ILIN&userId=4a0803226977&source=-----04d193d8fec6---------------------clap_footer-----------
- - https://medium.com/m/signin?actionUrl=https%3A%2F%2Fmedium.com%2F_%2Fvote%2Ftowards-artificial-intelligence%2F04d193d8fec6&operation=register&redirect=https%3A%2F%2Fpub.towardsai.net%2Fadvanced-rag-techniques-an-illustrated-overview-04d193d8fec6&user=IVAN+ILIN&userId=4a0803226977&source=-----04d193d8fec6---------------------clap_footer-----------
- - https://medium.com/m/signin?actionUrl=https%3A%2F%2Fmedium.com%2F_%2Fbookmark%2Fp%2F04d193d8fec6&operation=register&redirect=https%3A%2F%2Fpub.towardsai.net%2Fadvanced-rag-techniques-an-illustrated-overview-04d193d8fec6&source=--------------------------bookmark_footer-----------
  - https://medium.com/@ivanilin_iki?source=post_page-----04d193d8fec6--------------------------------
- - https://medium.com/m/signin?actionUrl=https%3A%2F%2Fmedium.com%2F_%2Fsubscribe%2Fuser%2F4a0803226977&operation=register&redirect=https%3A%2F%2Fpub.towardsai.net%2Fadvanced-rag-techniques-an-illustrated-overview-04d193d8fec6&user=IVAN+ILIN&userId=4a0803226977&source=post_page-4a0803226977----04d193d8fec6---------------------follow_profile-----------
- - https://medium.com/m/signin?actionUrl=%2F_%2Fapi%2Fsubscriptions%2Fnewsletters%2F8f598638a24&operation=register&redirect=https%3A%2F%2Fpub.towardsai.net%2Fadvanced-rag-techniques-an-illustrated-overview-04d193d8fec6&newsletterV3=4a0803226977&newsletterV3Id=8f598638a24&user=IVAN+ILIN&userId=4a0803226977&source=-----04d193d8fec6---------------------subscribe_user-----------
  - https://medium.com/@ivanilin_iki?source=post_page-----04d193d8fec6--------------------------------
  - https://medium.com/@ivanilin_iki/followers?source=post_page-----04d193d8fec6--------------------------------
- - https://medium.com/m/signin?actionUrl=https%3A%2F%2Fmedium.com%2F_%2Fsubscribe%2Fuser%2F4a0803226977&operation=register&redirect=https%3A%2F%2Fpub.towardsai.net%2Fadvanced-rag-techniques-an-illustrated-overview-04d193d8fec6&user=IVAN+ILIN&userId=4a0803226977&source=post_page-4a0803226977----04d193d8fec6---------------------follow_profile-----------
- - https://medium.com/m/signin?actionUrl=%2F_%2Fapi%2Fsubscriptions%2Fnewsletters%2F8f598638a24&operation=register&redirect=https%3A%2F%2Fpub.towardsai.net%2Fadvanced-rag-techniques-an-illustrated-overview-04d193d8fec6&newsletterV3=4a0803226977&newsletterV3Id=8f598638a24&user=IVAN+ILIN&userId=4a0803226977&source=-----04d193d8fec6---------------------subscribe_user-----------
  - https://help.medium.com/hc/en-us?source=post_page-----04d193d8fec6--------------------------------
  - https://medium.statuspage.io/?source=post_page-----04d193d8fec6--------------------------------
  - https://medium.com/about?autoplay=1&source=post_page-----04d193d8fec6--------------------------------
  - https://medium.com/jobs-at-medium/work-at-medium-959d1a85284e?source=post_page-----04d193d8fec6--------------------------------
  - https://blog.medium.com/?source=post_page-----04d193d8fec6--------------------------------
- - https://policy.medium.com/medium-privacy-policy-f03bf92035c9?source=post_page-----04d193d8fec6--------------------------------
- - https://policy.medium.com/medium-terms-of-service-9db0094a1e0f?source=post_page-----04d193d8fec6--------------------------------
  - https://speechify.com/medium?source=post_page-----04d193d8fec6--------------------------------
  - https://medium.com/business?source=post_page-----04d193d8fec6--------------------------------

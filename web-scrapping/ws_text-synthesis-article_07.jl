@@ -52,7 +52,7 @@ const URL = "https://pub.towardsai.net/advanced-rag-techniques-an-illustrated-ov
 const TOPIC = "advanced RAG techniques"
 
 # ╔═╡ 2f4ae40f-a1ab-470b-a1b7-a04fec353b0e
-const INSTRUCT_PROMPT = """Generate a comprehensive and detailed synthesis of the following excerpt (delimited by triple backticks) about $(TOPIC). 
+const INSTRUCT_PROMPT = """Generate a comprehensive and detailed synthesis of the following excerpt (delimited by triple backticks) about $(TOPIC).   
 
 As always, extract all the code snipets.""";
 
@@ -154,7 +154,9 @@ function extract_llm_settings(root; selectors = ["p.nx-mt-6"], detect_code=false
 	for (ix, element) ∈ enumerate(sel_vec)
 		verbose &&  println("$(ix) - [$(element)] /// [$(element.attributes["class"])]")
 
-		iscode = detect_code && hasproperty(element, :attributes) && !occursin("pw-post-body-paragraph", element.attributes["class"])
+		iscode = detect_code && hasproperty(element, :attributes) && 
+			!occursin("fz", element.attributes["class"])
+			# !occursin("pw-post-body-paragraph", element.attributes["class"])
 
 		if hasproperty(element, :children)
 			text = dft(element.children)
@@ -177,7 +179,9 @@ end
 # ╔═╡ a76cd62d-98dc-4043-8a44-6b2020625f8f
 function extract_links(
 	root;
-	selector="a", verbose=true, restrict_to=["github", "LinkedIn"]
+	selector="a", 
+	verbose=true, 
+	restrict_to=["github", "LinkedIn"]
 )::Vector{String}
 	links = String[]
 	for element ∈ eachmatch(Selector(selector), rroot)
@@ -187,7 +191,8 @@ function extract_links(
 			end
 		end
 	end
-	links
+	# remove if link contains "signin?" or "policy..."
+	filter(s -> match(r"signin\?|policy\.medium\.com", s) === nothing, links)
 end
 
 # ╔═╡ 8fe89775-2853-49e4-885a-f3bdb1e792db
@@ -199,11 +204,11 @@ md = extract_llm_settings(rroot; selectors=[".bm"], verbose=false)  # other meta
 # ╔═╡ 67fd72dc-5540-440d-a8f3-8324914553b8
 text = extract_llm_settings(
 	rroot; 
-	selectors=["p.pw-post-body-paragraph", "pre.ba.bj"],  #  "pre.ba.bj": for code snipet or "pre"
+	# selectors=["p.pw-post-body-paragraph", "pre.ba.bj"],  # "pre.ba.bj": for code snipet or "pre"
+	selectors=["div.ch.bg.fw.fx.fy.fz", "pre.ba.bj"],  # "pre.ba.bj": for code snipet or "pre"
 	detect_code=true,
-	verbose=false
+	verbose=true
 )
-# html body div#root div.a.b.c div.l.c div.l div.fr.fs.ft.fu.fv.l article div.l div.l section div div.gk.gl.gm.gn.go div.ab.ca div.ch.bg.fw.fx.fy.fz pre.pr.ps.pt.pu.pv.pw.px.py.bo.pz.ba.bj span#4a9d.qa.op.gr.px.b.bf.qb.qc.l.qd.qe
 
 # ╔═╡ ed56ba67-5e5a-43e9-9a5f-8e63597725f7
 links = extract_links(
