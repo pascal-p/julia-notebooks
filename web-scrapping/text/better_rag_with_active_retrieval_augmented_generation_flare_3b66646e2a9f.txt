@@ -1,0 +1,178 @@
+- Title: Better RAG with Active Retrieval Augmented Generation FLARE
+- Author and date: Akash A Desai
+·
+Follow
+Published in
+LanceDB
+·
+7 min read
+·
+Nov 18, 2023
+- Link: https://blog.lancedb.com/better-rag-with-active-retrieval-augmented-generation-flare-3b66646e2a9f
+Main:
+Welcome to our deep dive into Forward-Looking Active Retrieval Augmented Generation (FLARE), an innovative approach enhancing the accuracy and reliability of large language models (LLMs). we’ll explore how FLARE tackles the challenge of hallucination in LLMs, especially in complex, long-form content generation tasks.
+Hallucination in LLMs refers to generating incorrect or baseless content. This issue becomes more pronounced in tasks involving extensive outputs, such as long-form question answering, open-domain summarization, and Chain of Thought reasoning. FLARE aims to mitigate these inaccuracies by integrating external, verified information during the generation process.
+FLARE stands for Forward-Looking Active Retrieval Augmented Generation. It’s a methodology that supplements LLMs by actively
+incorporating external information as the model generates content
+. This process significantly reduces the risk of hallucination, ensuring the content is continuously checked and supported by external data.
+Traditional Retrieval-Augmented Generation
+In traditional retrieval-augmented generation models, the approach is generally to perform a
+single retrieval at the beginning of the generation process
+. This method involves taking an initial query, for instance, “Summarize the Wikipedia page for Narendra Modi,” and retrieving relevant documents based on this query. The model then uses these documents to generate content. This approach, however, has its limitations, especially when dealing with long and complex texts.
+FLARE’s Methodology:
+Multiple Retrievals: Instead of a fixed retrieval, FLARE uses multiple retrievals at different intervals &
+knows when to retrieve & what to retrieve.
+when to retrieve
+: When LLM lacks the required knowledge & LLM generates low-probability tokens.
+What to retrieve
+: it will consider what LLM intends to generate in the future.
+Understanding FLARE’s Iterative Generation Process:
+FLARE operates by iteratively generating a temporary next sentence, using it as a query to retrieve relevant documents, if they contain low-probability tokens, and regenerates the next sentence until reaches the end of the overall generation
+there are two types of FLARE’s :
+Imagine a scenario where an AI model is tasked with generating a
+summary about Joe Biden
+, prompted by a user’s input query. Here’s how the process unfolds
+This iterative process, blending generation and retrieval, ensures that the AI model produces a well-informed and accurate summary, dynamically incorporating relevant and up-to-date information. This is how FLARE instruct is working.
+now let's understand FLARE Direct
+FLARE Direct
+: Here, the model uses the generated content as a direct query for retrieval when it encounters tokens with low confidence. Let’s delve into this with an example:
+1. Initiating the Query: We start with a language model input: “
+Generate a summary about Joe Biden
+.”
+2.The model generates a response.
+3. If the generated sentence is accurate and has high confidence, it is accepted as a correct sentence.
+4. let’s say the model produces a sentence but with some low-confidence (elements are highlighted) “
+the University of Pennsylvania
+” and “
+a law degree
+.” The model has very low confidence for these lines
+now there are two methods to handle this issue
+Addressing Low Confidence Information:
+To rectify or verify low-confidence information, FLARE Direct employs two approaches:
+By employing these methods, FLARE Direct effectively refines and verifies the content, enhancing the accuracy and reliability of the generated summary.
+The LLM that we use to generate the answer needs to return logprobs so we can identify uncertain tokens. For that reason, we HIGHLY recommend that you use the OpenAI wrapper (NB: not the ChatOpenAI wrapper, as that does not return logprobs).
+The LLM we use to generate hypothetical questions to use in retrieval can be anything. In this notebook we will use ChatOpenAI because it is fast and cheap.
+Below is gradio code you can run it on a local system. we are using arvixloader , so you can ask quetions to paper directly
+Here is an example
+https://arxiv.org/pdf/2305.06983.pdf
+.
+You need to pass this number to query
+2305.06983
+and then you can ask any questions based on the paper.
+FLARE: Forward-Looking Active Retrieval Augmented Generation, enhances Large Language Models (LLMs) by actively integrating external information to reduce hallucination in content generation. It surpasses traditional models with its dynamic, multiple retrievals, adapting to the evolving context. FLARE Instruct and FLARE Direct showcase their capability to generate more accurate and reliable content. The blog also touches on implementation essentials and practical applications using LanceDB and vector databases.
+Stay tuned for upcoming blogs where we’ll take a deeper dive into the captivating realm of Large Language Models (LLMs). If you’ve found our exploration enlightening, we’d greatly appreciate your support. Be sure to leave a like!
+But that’s not all. For even more exciting applications of vector databases and Large Language Models (LLMs), be sure to explore the
+LanceDB
+repository. LanceDB offers a powerful and versatile vector database that can revolutionize the way you work with data.
+Explore the full potential of this cutting-edge technology by visiting the
+vector-recipes repository
+. It’s filled with real-world examples, use cases, and recipes to inspire your next project. We hope you found this journey both informative and inspiring. Cheers!
+```code
+from langchain import PromptTemplate, LLMChain
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain.chains import RetrievalQA
+from langchain.embeddings import HuggingFaceBgeEmbeddings
+from langchain.document_loaders import PyPDFLoader
+from langchain.vectorstores import LanceDB
+from langchain.document_loaders import ArxivLoader
+from langchain.chains import FlareChain
+from langchain.prompts import PromptTemplate
+from langchain.chains import LLMChain
+import os
+import gradio as gr
+import lancedb
+from io import BytesIO
+from langchain.llms import OpenAI
+import getpass
+# pass your api key
+os.environ["OPENAI_API_KEY"] = "sk-yourapikeyforopenai"
+llm = OpenAI()
+os.environ["OPENAI_API_KEY"] = "sk-yourapikeyforopenai"
+llm = OpenAI()
+model_name = "BAAI/bge-large-en"
+model_kwargs = {'device': 'cpu'}
+encode_kwargs = {'normalize_embeddings': False}
+embeddings = HuggingFaceBgeEmbeddings(
+model_name=model_name,
+model_kwargs=model_kwargs,
+encode_kwargs=encode_kwargs
+)
+# here is example https://arxiv.org/pdf/2305.06983.pdf
+# you need to pass this number to query 2305.06983
+# fetch docs from arxiv, in this case it's the FLARE paper
+docs = ArxivLoader(query="2305.06983", load_max_docs=2).load()
+# instantiate text splitter
+text_splitter = RecursiveCharacterTextSplitter(chunk_size=1500, chunk_overlap=150)
+# split the document into chunks
+doc_chunks = text_splitter.split_documents(docs)
+# lancedb vectordb
+db = lancedb.connect('/tmp/lancedb')
+table = db.create_table("documentsai", data=[
+{"vector": embeddings.embed_query("Hello World"), "text": "Hello World", "id": "1"}
+], mode="overwrite")
+vector_store = LanceDB.from_documents(doc_chunks, embeddings, connection=table)
+vector_store_retriever = vector_store.as_retriever()
+flare = FlareChain.from_llm(
+llm=llm,
+retriever=vector_store_retriever,
+max_generation_len=300,
+min_prob=0.45
+)
+# Define a function to generate FLARE output based on user input
+def generate_flare_output(input_text):
+output = flare.run(input_text)
+return output
+input = gr.Text(
+label="Prompt",
+show_label=False,
+max_lines=1,
+placeholder="Enter your prompt",
+container=False,
+)
+iface = gr.Interface(fn=generate_flare_output,
+inputs=input,
+outputs="text",
+title="My AI bot",
+description="FLARE implementation with lancedb & bge embedding.",
+allow_screenshot=False,
+allow_flagging=False
+)
+iface.launch(debug=True)
+```
+ Links:
+ - https://rsci.app.link/?%24canonical_url=https%3A%2F%2Fmedium.com%2Fp%2F3b66646e2a9f&%7Efeature=LoOpenInAppButton&%7Echannel=ShowPostUnderCollection&source=---two_column_layout_nav----------------------------------
+ - https://medium.com/m/signin?operation=register&redirect=https%3A%2F%2Fblog.lancedb.com%2Fbetter-rag-with-active-retrieval-augmented-generation-flare-3b66646e2a9f&source=post_page---two_column_layout_nav-----------------------global_nav-----------
+ - https://medium.com/m/signin?operation=login&redirect=https%3A%2F%2Fblog.lancedb.com%2Fbetter-rag-with-active-retrieval-augmented-generation-flare-3b66646e2a9f&source=post_page---two_column_layout_nav-----------------------global_nav-----------
+ - https://medium.com/?source=---two_column_layout_nav----------------------------------
+ - https://medium.com/m/signin?operation=register&redirect=https%3A%2F%2Fmedium.com%2Fnew-story&source=---two_column_layout_nav-----------------------new_post_topnav-----------
+ - https://medium.com/search?source=---two_column_layout_nav----------------------------------
+ - https://medium.com/m/signin?operation=register&redirect=https%3A%2F%2Fblog.lancedb.com%2Fbetter-rag-with-active-retrieval-augmented-generation-flare-3b66646e2a9f&source=post_page---two_column_layout_nav-----------------------global_nav-----------
+ - https://medium.com/m/signin?operation=login&redirect=https%3A%2F%2Fblog.lancedb.com%2Fbetter-rag-with-active-retrieval-augmented-generation-flare-3b66646e2a9f&source=post_page---two_column_layout_nav-----------------------global_nav-----------
+ - https://aksdesai1998.medium.com/?source=post_page-----3b66646e2a9f--------------------------------
+ - https://aksdesai1998.medium.com/?source=post_page-----3b66646e2a9f--------------------------------
+ - https://medium.com/m/signin?actionUrl=https%3A%2F%2Fmedium.com%2F_%2Fsubscribe%2Fuser%2F69105e0dd028&operation=register&redirect=https%3A%2F%2Fblog.lancedb.com%2Fbetter-rag-with-active-retrieval-augmented-generation-flare-3b66646e2a9f&user=Akash+A+Desai&userId=69105e0dd028&source=post_page-69105e0dd028----3b66646e2a9f---------------------post_header-----------
+ - https://medium.com/m/signin?actionUrl=https%3A%2F%2Fmedium.com%2F_%2Fvote%2Fetoai%2F3b66646e2a9f&operation=register&redirect=https%3A%2F%2Fblog.lancedb.com%2Fbetter-rag-with-active-retrieval-augmented-generation-flare-3b66646e2a9f&user=Akash+A+Desai&userId=69105e0dd028&source=-----3b66646e2a9f---------------------clap_footer-----------
+ - https://medium.com/m/signin?actionUrl=https%3A%2F%2Fmedium.com%2F_%2Fbookmark%2Fp%2F3b66646e2a9f&operation=register&redirect=https%3A%2F%2Fblog.lancedb.com%2Fbetter-rag-with-active-retrieval-augmented-generation-flare-3b66646e2a9f&source=-----3b66646e2a9f---------------------bookmark_footer-----------
+ - https://arxiv.org/pdf/2305.06983.pdf
+ - https://arxiv.org/pdf/2305.06983.pdf
+ - https://github.com/lancedb/lancedb
+ - https://github.com/lancedb/vectordb-recipes
+ - https://medium.com/m/signin?actionUrl=https%3A%2F%2Fmedium.com%2F_%2Fvote%2Fetoai%2F3b66646e2a9f&operation=register&redirect=https%3A%2F%2Fblog.lancedb.com%2Fbetter-rag-with-active-retrieval-augmented-generation-flare-3b66646e2a9f&user=Akash+A+Desai&userId=69105e0dd028&source=-----3b66646e2a9f---------------------clap_footer-----------
+ - https://medium.com/m/signin?actionUrl=https%3A%2F%2Fmedium.com%2F_%2Fvote%2Fetoai%2F3b66646e2a9f&operation=register&redirect=https%3A%2F%2Fblog.lancedb.com%2Fbetter-rag-with-active-retrieval-augmented-generation-flare-3b66646e2a9f&user=Akash+A+Desai&userId=69105e0dd028&source=-----3b66646e2a9f---------------------clap_footer-----------
+ - https://medium.com/m/signin?actionUrl=https%3A%2F%2Fmedium.com%2F_%2Fbookmark%2Fp%2F3b66646e2a9f&operation=register&redirect=https%3A%2F%2Fblog.lancedb.com%2Fbetter-rag-with-active-retrieval-augmented-generation-flare-3b66646e2a9f&source=--------------------------bookmark_footer-----------
+ - https://aksdesai1998.medium.com/?source=post_page-----3b66646e2a9f--------------------------------
+ - https://medium.com/m/signin?actionUrl=https%3A%2F%2Fmedium.com%2F_%2Fsubscribe%2Fuser%2F69105e0dd028&operation=register&redirect=https%3A%2F%2Fblog.lancedb.com%2Fbetter-rag-with-active-retrieval-augmented-generation-flare-3b66646e2a9f&user=Akash+A+Desai&userId=69105e0dd028&source=post_page-69105e0dd028----3b66646e2a9f---------------------follow_profile-----------
+ - https://medium.com/m/signin?actionUrl=%2F_%2Fapi%2Fsubscriptions%2Fnewsletters%2F34018b07f426&operation=register&redirect=https%3A%2F%2Fblog.lancedb.com%2Fbetter-rag-with-active-retrieval-augmented-generation-flare-3b66646e2a9f&newsletterV3=69105e0dd028&newsletterV3Id=34018b07f426&user=Akash+A+Desai&userId=69105e0dd028&source=-----3b66646e2a9f---------------------subscribe_user-----------
+ - https://aksdesai1998.medium.com/?source=post_page-----3b66646e2a9f--------------------------------
+ - https://aksdesai1998.medium.com/followers?source=post_page-----3b66646e2a9f--------------------------------
+ - https://medium.com/m/signin?actionUrl=https%3A%2F%2Fmedium.com%2F_%2Fsubscribe%2Fuser%2F69105e0dd028&operation=register&redirect=https%3A%2F%2Fblog.lancedb.com%2Fbetter-rag-with-active-retrieval-augmented-generation-flare-3b66646e2a9f&user=Akash+A+Desai&userId=69105e0dd028&source=post_page-69105e0dd028----3b66646e2a9f---------------------follow_profile-----------
+ - https://medium.com/m/signin?actionUrl=%2F_%2Fapi%2Fsubscriptions%2Fnewsletters%2F34018b07f426&operation=register&redirect=https%3A%2F%2Fblog.lancedb.com%2Fbetter-rag-with-active-retrieval-augmented-generation-flare-3b66646e2a9f&newsletterV3=69105e0dd028&newsletterV3Id=34018b07f426&user=Akash+A+Desai&userId=69105e0dd028&source=-----3b66646e2a9f---------------------subscribe_user-----------
+ - https://help.medium.com/hc/en-us?source=post_page-----3b66646e2a9f--------------------------------
+ - https://medium.statuspage.io/?source=post_page-----3b66646e2a9f--------------------------------
+ - https://medium.com/about?autoplay=1&source=post_page-----3b66646e2a9f--------------------------------
+ - https://medium.com/jobs-at-medium/work-at-medium-959d1a85284e?source=post_page-----3b66646e2a9f--------------------------------
+ - https://blog.medium.com/?source=post_page-----3b66646e2a9f--------------------------------
+ - https://policy.medium.com/medium-privacy-policy-f03bf92035c9?source=post_page-----3b66646e2a9f--------------------------------
+ - https://policy.medium.com/medium-terms-of-service-9db0094a1e0f?source=post_page-----3b66646e2a9f--------------------------------
+ - https://speechify.com/medium?source=post_page-----3b66646e2a9f--------------------------------
+ - https://medium.com/business?source=post_page-----3b66646e2a9f--------------------------------
