@@ -29,8 +29,8 @@ using OpenAI
 using Dates
 
 # ╔═╡ a36fa736-120b-4192-9781-0a5d39e3d51a
-include("../Summarize_Papers_with_GPT/support/api_module.jl")
-# include("../../../NLP_LLM/Summarize_Papers_with_GPT/support/api_module.jl")
+# include("../Summarize_Papers_with_GPT/support/api_module.jl")
+include("../../../NLP_LLM/Summarize_Papers_with_GPT/support/api_module.jl")
 
 # ╔═╡ 59d0b923-435a-4dc8-902f-02a9b5a177db
 include("./utils.jl")
@@ -54,7 +54,7 @@ const TOPIC = "advanced RAG with Forward-Looking Active Retrieval Augmented Gene
 # ╔═╡ 2f4ae40f-a1ab-470b-a1b7-a04fec353b0e
 const INSTRUCT_PROMPT = """Generate a comprehensive and detailed synthesis of the following excerpt (delimited by triple backticks) about $(TOPIC). 
 
-As always, extract all the code snipets.""";
+As always, extract all the code snipets and restore the correct indentation if required.""";
 
 # ╔═╡ ba4e4c0f-2835-4a76-a9d4-7d7ba02becb2
 println(INSTRUCT_PROMPT)
@@ -672,7 +672,7 @@ version = "17.4.0+2"
 """
 
 # ╔═╡ Cell order:
-# ╠═c94c972e-a75f-11ee-153c-771e07689f95
+# ╟─c94c972e-a75f-11ee-153c-771e07689f95
 # ╠═bf0e8d60-d704-4c66-ad3f-d372cb2963a2
 # ╠═c8b1224e-d1f3-4aaa-8d5b-26a7362af6f5
 # ╠═f3b4e922-34fd-432e-b45a-66ec7a4bea87
