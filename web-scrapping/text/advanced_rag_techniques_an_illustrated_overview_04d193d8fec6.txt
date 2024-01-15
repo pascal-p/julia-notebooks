@@ -415,6 +415,19 @@ LinkedIn
 or
 Twitter
  Links:
+ - https://rsci.app.link/?%24canonical_url=https%3A%2F%2Fmedium.com%2Fp%2F04d193d8fec6&%7Efeature=LoOpenInAppButton&%7Echannel=ShowPostUnderCollection&source=---two_column_layout_nav----------------------------------
+ - https://medium.com/m/signin?operation=register&redirect=https%3A%2F%2Fpub.towardsai.net%2Fadvanced-rag-techniques-an-illustrated-overview-04d193d8fec6&source=post_page---two_column_layout_nav-----------------------global_nav-----------
+ - https://medium.com/m/signin?operation=login&redirect=https%3A%2F%2Fpub.towardsai.net%2Fadvanced-rag-techniques-an-illustrated-overview-04d193d8fec6&source=post_page---two_column_layout_nav-----------------------global_nav-----------
+ - https://medium.com/?source=---two_column_layout_nav----------------------------------
+ - https://medium.com/m/signin?operation=register&redirect=https%3A%2F%2Fmedium.com%2Fnew-story&source=---two_column_layout_nav-----------------------new_post_topnav-----------
+ - https://medium.com/search?source=---two_column_layout_nav----------------------------------
+ - https://medium.com/m/signin?operation=register&redirect=https%3A%2F%2Fpub.towardsai.net%2Fadvanced-rag-techniques-an-illustrated-overview-04d193d8fec6&source=post_page---two_column_layout_nav-----------------------global_nav-----------
+ - https://medium.com/m/signin?operation=login&redirect=https%3A%2F%2Fpub.towardsai.net%2Fadvanced-rag-techniques-an-illustrated-overview-04d193d8fec6&source=post_page---two_column_layout_nav-----------------------global_nav-----------
+ - https://medium.com/@ivanilin_iki?source=post_page-----04d193d8fec6--------------------------------
+ - https://medium.com/@ivanilin_iki?source=post_page-----04d193d8fec6--------------------------------
+ - https://medium.com/m/signin?actionUrl=https%3A%2F%2Fmedium.com%2F_%2Fsubscribe%2Fuser%2F4a0803226977&operation=register&redirect=https%3A%2F%2Fpub.towardsai.net%2Fadvanced-rag-techniques-an-illustrated-overview-04d193d8fec6&user=IVAN+ILIN&userId=4a0803226977&source=post_page-4a0803226977----04d193d8fec6---------------------post_header-----------
+ - https://medium.com/m/signin?actionUrl=https%3A%2F%2Fmedium.com%2F_%2Fvote%2Ftowards-artificial-intelligence%2F04d193d8fec6&operation=register&redirect=https%3A%2F%2Fpub.towardsai.net%2Fadvanced-rag-techniques-an-illustrated-overview-04d193d8fec6&user=IVAN+ILIN&userId=4a0803226977&source=-----04d193d8fec6---------------------clap_footer-----------
+ - https://medium.com/m/signin?actionUrl=https%3A%2F%2Fmedium.com%2F_%2Fbookmark%2Fp%2F04d193d8fec6&operation=register&redirect=https%3A%2F%2Fpub.towardsai.net%2Fadvanced-rag-techniques-an-illustrated-overview-04d193d8fec6&source=-----04d193d8fec6---------------------bookmark_footer-----------
  - https://github.com/chroma-core/chroma
  - https://github.com/nmslib/nmslib
  - https://python.langchain.com/docs/get_started/introduction
@@ -431,20 +444,23 @@ Twitter
  - https://github.com/nmslib/nmslib
  - https://github.com/spotify/annoy
  - https://docs.llamaindex.ai/en/latest/community/integrations/vector_stores.html
+ - http://boston.lti.cs.cmu.edu/luyug/HyDE/HyDE.pdf
  - https://docs.llamaindex.ai/en/stable/examples/node_postprocessor/MetadataReplacementDemo.html
  - https://docs.llamaindex.ai/en/latest/examples/retrievers/auto_merging_retriever.html
  - https://python.langchain.com/docs/modules/data_connection/retrievers/parent_document_retriever
  - https://docs.llamaindex.ai/en/stable/examples/retrievers/recursive_retriever_nodes.html
+ - https://en.wikipedia.org/wiki/Tf–idf
+ - https://en.wikipedia.org/wiki/Okapi_BM25
  - https://python.langchain.com/docs/modules/data_connection/retrievers/ensemble
  - https://docs.llamaindex.ai/en/stable/examples/retrievers/reciprocal_rerank_fusion.html
  - https://docs.llamaindex.ai/en/stable/module_guides/querying/node_postprocessors/root.html
+ - https://txt.cohere.com/rerank/
  - https://python.langchain.com/docs/modules/data_connection/retrievers/MultiQueryRetriever?ref=blog.langchain.dev
  - https://docs.llamaindex.ai/en/stable/examples/query_engine/sub_question_query_engine.html
  - https://arxiv.org/pdf/2310.06117.pdf?ref=blog.langchain.dev
  - https://github.com/langchain-ai/langchain/blob/master/cookbook/stepback-qa.ipynb?ref=blog.langchain.dev
  - https://github.com/langchain-ai/langchain/blob/master/cookbook/rewrite.ipynb?ref=blog.langchain.dev
  - https://github.com/run-llama/llama-hub/tree/main/llama_hub/llama_packs/fuzzy_citation
- - https://towardsdatascience.com/fuzzy-matching-at-scale-84f2bfd0c536
  - https://docs.llamaindex.ai/en/stable/module_guides/deploying/chat_engines/root.html
  - https://docs.llamaindex.ai/en/stable/examples/chat_engine/chat_engine_context.html
  - https://docs.llamaindex.ai/en/stable/examples/chat_engine/chat_engine_condense_plus_context.html
@@ -476,3 +492,27 @@ Twitter
  - https://blog.langchain.dev/openais-bet-on-a-cognitive-architecture/
  - https://blog.langchain.dev/adding-long-term-memory-to-opengpts/
  - https://www.linkedin.com/in/ivan-ilin-/
+ - https://medium.com/tag/ml?source=post_page-----04d193d8fec6---------------ml-----------------
+ - https://medium.com/tag/llm?source=post_page-----04d193d8fec6---------------llm-----------------
+ - https://medium.com/tag/nlp?source=post_page-----04d193d8fec6---------------nlp-----------------
+ - https://medium.com/tag/retrieval-augmented?source=post_page-----04d193d8fec6---------------retrieval_augmented-----------------
+ - https://medium.com/tag/ai?source=post_page-----04d193d8fec6---------------ai-----------------
+ - https://medium.com/m/signin?actionUrl=https%3A%2F%2Fmedium.com%2F_%2Fvote%2Ftowards-artificial-intelligence%2F04d193d8fec6&operation=register&redirect=https%3A%2F%2Fpub.towardsai.net%2Fadvanced-rag-techniques-an-illustrated-overview-04d193d8fec6&user=IVAN+ILIN&userId=4a0803226977&source=-----04d193d8fec6---------------------clap_footer-----------
+ - https://medium.com/m/signin?actionUrl=https%3A%2F%2Fmedium.com%2F_%2Fvote%2Ftowards-artificial-intelligence%2F04d193d8fec6&operation=register&redirect=https%3A%2F%2Fpub.towardsai.net%2Fadvanced-rag-techniques-an-illustrated-overview-04d193d8fec6&user=IVAN+ILIN&userId=4a0803226977&source=-----04d193d8fec6---------------------clap_footer-----------
+ - https://medium.com/m/signin?actionUrl=https%3A%2F%2Fmedium.com%2F_%2Fbookmark%2Fp%2F04d193d8fec6&operation=register&redirect=https%3A%2F%2Fpub.towardsai.net%2Fadvanced-rag-techniques-an-illustrated-overview-04d193d8fec6&source=--------------------------bookmark_footer-----------
+ - https://medium.com/@ivanilin_iki?source=post_page-----04d193d8fec6--------------------------------
+ - https://medium.com/m/signin?actionUrl=https%3A%2F%2Fmedium.com%2F_%2Fsubscribe%2Fuser%2F4a0803226977&operation=register&redirect=https%3A%2F%2Fpub.towardsai.net%2Fadvanced-rag-techniques-an-illustrated-overview-04d193d8fec6&user=IVAN+ILIN&userId=4a0803226977&source=post_page-4a0803226977----04d193d8fec6---------------------follow_profile-----------
+ - https://medium.com/m/signin?actionUrl=%2F_%2Fapi%2Fsubscriptions%2Fnewsletters%2F8f598638a24&operation=register&redirect=https%3A%2F%2Fpub.towardsai.net%2Fadvanced-rag-techniques-an-illustrated-overview-04d193d8fec6&newsletterV3=4a0803226977&newsletterV3Id=8f598638a24&user=IVAN+ILIN&userId=4a0803226977&source=-----04d193d8fec6---------------------subscribe_user-----------
+ - https://medium.com/@ivanilin_iki?source=post_page-----04d193d8fec6--------------------------------
+ - https://medium.com/@ivanilin_iki/followers?source=post_page-----04d193d8fec6--------------------------------
+ - https://medium.com/m/signin?actionUrl=https%3A%2F%2Fmedium.com%2F_%2Fsubscribe%2Fuser%2F4a0803226977&operation=register&redirect=https%3A%2F%2Fpub.towardsai.net%2Fadvanced-rag-techniques-an-illustrated-overview-04d193d8fec6&user=IVAN+ILIN&userId=4a0803226977&source=post_page-4a0803226977----04d193d8fec6---------------------follow_profile-----------
+ - https://medium.com/m/signin?actionUrl=%2F_%2Fapi%2Fsubscriptions%2Fnewsletters%2F8f598638a24&operation=register&redirect=https%3A%2F%2Fpub.towardsai.net%2Fadvanced-rag-techniques-an-illustrated-overview-04d193d8fec6&newsletterV3=4a0803226977&newsletterV3Id=8f598638a24&user=IVAN+ILIN&userId=4a0803226977&source=-----04d193d8fec6---------------------subscribe_user-----------
+ - https://help.medium.com/hc/en-us?source=post_page-----04d193d8fec6--------------------------------
+ - https://medium.statuspage.io/?source=post_page-----04d193d8fec6--------------------------------
+ - https://medium.com/about?autoplay=1&source=post_page-----04d193d8fec6--------------------------------
+ - https://medium.com/jobs-at-medium/work-at-medium-959d1a85284e?source=post_page-----04d193d8fec6--------------------------------
+ - https://blog.medium.com/?source=post_page-----04d193d8fec6--------------------------------
+ - https://policy.medium.com/medium-privacy-policy-f03bf92035c9?source=post_page-----04d193d8fec6--------------------------------
+ - https://policy.medium.com/medium-terms-of-service-9db0094a1e0f?source=post_page-----04d193d8fec6--------------------------------
+ - https://speechify.com/medium?source=post_page-----04d193d8fec6--------------------------------
+ - https://medium.com/business?source=post_page-----04d193d8fec6--------------------------------

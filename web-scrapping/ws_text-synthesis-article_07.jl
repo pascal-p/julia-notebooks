@@ -28,22 +28,39 @@ using OpenAI
 # ╔═╡ eb167d46-4631-40b3-8537-bc138cd6bf7e
 using Dates
 
-# ╔═╡ d2f5330d-78d3-40ce-b21f-6c38e4a351bd
+# ╔═╡ a36fa736-120b-4192-9781-0a5d39e3d51a
 # include("../Summarize_Papers_with_GPT/support/api_module.jl")
 include("../../../NLP_LLM/Summarize_Papers_with_GPT/support/api_module.jl")
+
+# ╔═╡ 59d0b923-435a-4dc8-902f-02a9b5a177db
+include("./utils.jl")
 
 # ╔═╡ c94c972e-a75f-11ee-153c-771e07689f95
 md"""
 ## Web Scraping article + synthesis
 
 1. Web extraction
-1. Summarization and Synthesis
+1. Synthesis
 
-ref. "Advanced RAG Techniques: an Illustrated Overview"
+ref. "Improving Llamaindex RAG performance with ranking"
 """
 
 # ╔═╡ f4c27df9-bbc1-4498-b7a0-42da0d049199
 const URL = "https://pub.towardsai.net/advanced-rag-techniques-an-illustrated-overview-04d193d8fec6"
+
+# ╔═╡ 797e6deb-e014-4609-b0d4-7f3ec670cb1c
+const TOPIC = "advanced RAG techniques"
+
+# ╔═╡ 2f4ae40f-a1ab-470b-a1b7-a04fec353b0e
+const INSTRUCT_PROMPT = """Generate a comprehensive and detailed synthesis of the following excerpt (delimited by triple backticks) about $(TOPIC). 
+
+As always, extract all the code snipets.""";
+
+# ╔═╡ ba4e4c0f-2835-4a76-a9d4-7d7ba02becb2
+println(INSTRUCT_PROMPT)
+
+# ╔═╡ 27bf4bd5-e50f-4266-9b67-2dec9e3ece3e
+println(SYS_PROMPT)
 
 # ╔═╡ 68c8922f-0cb2-41d9-9efe-3ed7a00dd76f
 const OUTFILE = split(URL, "/")[end:end] |>
@@ -51,6 +68,15 @@ const OUTFILE = split(URL, "/")[end:end] |>
 	s -> replace(s, r"\W" => "_") |>
 	s -> string(s, ".txt") |>
 	s -> replace(s, "-_" => "-")
+
+# ╔═╡ 2e10b0e3-66ac-4507-ad7b-a19089b85308
+const TXT_FILEPATH = string("text/", OUTFILE)
+
+# ╔═╡ 077c29e0-f912-44aa-ac3a-633b12318fb0
+const MD_FILEPATH = string(
+	"results/synthesis_",
+	replace(OUTFILE, ".txt" => ".md")
+)
 
 # ╔═╡ 96f81b71-da5b-469b-80a6-a9b436491b61
 @time req = HTTP.get(URL)
@@ -118,55 +144,41 @@ md"""
 #### Get the text
 """
 
-# ╔═╡ 54ec9961-d015-411d-a563-84d0e8f56249
-function dft(v_elt::Vector{<: Any})::String
-	"""
-	depth first traversal
-	"""
-	vtext = String[]
-	
-	function _dft(v_elt::Vector{<: Any})
-		for elt ∈ v_elt
-			if hasproperty(elt, :children)
-				_dft(elt.children)
-			elseif hasproperty(elt, :text)
-				push!(vtext, strip(elt.text))
-			end
-		end
-		vtext
-	end
-	
-	_dft(v_elt) |> v -> join(v, "\n")
-end
-
 # ╔═╡ b1309566-ded6-4f9f-a7b5-76e892991e65
-function extract_llm_settings(root; selectors = ["p.nx-mt-6"], verbose=true)::String
+function extract_llm_settings(root; selectors = ["p.nx-mt-6"], detect_code=false, verbose=true)::String
 	fulltext = String[]
 	sel_vec = vcat(
 		(eachmatch(Selector(selector), rroot) for selector ∈ selectors)...
 	)
-	println(sel_vec)
+	iscode = false
 	for (ix, element) ∈ enumerate(sel_vec)
-		verbose && println("$(ix) - [$(propertynames(element))]")
-		
+		verbose &&  println("$(ix) - [$(element)] /// [$(element.attributes["class"])]")
+
+		iscode = detect_code && hasproperty(element, :attributes) && !occursin("pw-post-body-paragraph", element.attributes["class"])
+
 		if hasproperty(element, :children)
-			verbose && println("  go deeper: $(propertynames(element))")
 			text = dft(element.children)
+			text = iscode ? string("```code\n", text, "\n```") : text
 			push!(fulltext, text)
 		end
+
+		iscode = false
 	end
 
 	join(
 		filter(
 			l -> length(strip(l)) > 0,
-			fulltext	
+			fulltext
 		),
 		"\n"
-	) 
+	)
 end
 
 # ╔═╡ a76cd62d-98dc-4043-8a44-6b2020625f8f
-function extract_links(root; selector = "a", verbose=true, restrict_to=["github", "LinkedIn"])::Vector{String}
+function extract_links(
+	root;
+	selector="a", verbose=true, restrict_to=["github", "LinkedIn"]
+)::Vector{String}
 	links = String[]
 	for element ∈ eachmatch(Selector(selector), rroot)
 		if hasproperty(element, :attributes)
@@ -178,13 +190,6 @@ function extract_links(root; selector = "a", verbose=true, restrict_to=["github"
 	links
 end
 
-# ╔═╡ 4850d717-806b-49d2-8a14-f4b935bc96b9
-function save_text(text::String; outfile=string("text/", OUTFILE))
-	open(outfile, "w") do fh
-		write(fh, text)
-	end
-end
-
 # ╔═╡ 8fe89775-2853-49e4-885a-f3bdb1e792db
 md_title = extract_llm_settings(rroot; selectors=[".pw-post-title"], verbose=false)  # Title
 
@@ -194,17 +199,18 @@ md = extract_llm_settings(rroot; selectors=[".bm"], verbose=false)  # other meta
 # ╔═╡ 67fd72dc-5540-440d-a8f3-8324914553b8
 text = extract_llm_settings(
 	rroot; 
-	selectors=["p.pw-post-body-paragraph", "pre.ba.bj"],  
+	selectors=["p.pw-post-body-paragraph", "pre.ba.bj"],  #  "pre.ba.bj": for code snipet or "pre"
+	detect_code=true,
 	verbose=false
 )
 # html body div#root div.a.b.c div.l.c div.l div.fr.fs.ft.fu.fv.l article div.l div.l section div div.gk.gl.gm.gn.go div.ab.ca div.ch.bg.fw.fx.fy.fz pre.pr.ps.pt.pu.pv.pw.px.py.bo.pz.ba.bj span#4a9d.qa.op.gr.px.b.bf.qb.qc.l.qd.qe
 
 # ╔═╡ ed56ba67-5e5a-43e9-9a5f-8e63597725f7
 links = extract_links(
-	rroot; 
+	rroot;
 	selector="a", 
 	verbose=false, 
-	restrict_to=["github", "LinkedIn", "huggingface", "arxiv", "towardsdatascience", "llamaindex", "langchain"]
+	restrict_to=["github", "LinkedIn", "huggingface", "arxiv", "medium", "edu", "llamaindex", "langchain", "wikipedia", "cohere"]
 )
 # "towardsdatascience", "medium",
 # https://docs.llamaindex.ai/en/stable/examples/retrievers/recursive_retriever_nodes.html
@@ -219,39 +225,11 @@ full_text = string(
 )
 
 # ╔═╡ 0df8719c-a91d-4449-8dac-337a832eb065
-save_text(full_text)
+save_text(TXT_FILEPATH, full_text)
 
 # ╔═╡ 0883ae28-a94f-4bed-abce-39841605d29b
 md"""
-### Summarization and synthesis
-"""
-
-# ╔═╡ 6085b66d-d7cd-44bd-a95b-56ae63f0e585
-SYS_PROMPT = """You are a smart AI research assistant tasked with analyzing, summarizing and synthesizing articles. You are thorough and deliberate in your approach before drafting your answer. 
-When summarizing, you strive to achieve the goal of lossless compression; that is, your summary should be shorter than the source article, but it must capture all the ideas, reasoning, and examples presented. 
-When syntheszing, you excel at organizing the article into coherent sections with introduction and conclusion highlighting the main contribution of the article. 
-Your style is highly formal, logical, and precise. You value consistency and completeness."""
-
-# lossless in the meaning
-
-# ╔═╡ 50a68ec8-837b-4bf4-ab5e-56dc9d3e677a
-function make_timed_chat_request(instruct_prompt::String, data::String; kwargs...)
-  timeit(
-    make_openai_request_chat,
-    SYS_PROMPT,
-    instruct_prompt,
-    data;
-    kwargs...
-  )
-end
-
-# ╔═╡ 17800316-94ea-457d-bf2c-21cffcbb7b0a
-# INSTRUCT_PROMPT = """Generate a precise and detailed synthesis of the following excerpt (delimited by triple backticks). Ensure that it is structured into coherent sections capturing all the facts and examples. Report the article title, date, author and link (when provided) as a first section. Also include all relevant links and or references (github repository, ...) cited in the article are correctly extracted and rendered (if fully provided, otherwise states that these are not available to you). 
-# Please return a markdown formatted synthesis of the article."""
-
-INSTRUCT_PROMPT = """Generate a comprehensive and detailed synthesis of the following excerpt (delimited by triple backticks). Please proceed methodically, step by step, to ensure that the synthesis is accurately structured into coherent sections, capturing every fact, example, and subtlety. Begin with a section detailing the article's title, date, author, and link (when such information is provided). Moreover, meticulously extract and render all pertinent external links and references (including but not limited to GitHub repositories, etc.) cited within the article. In cases where the full details of these links or references are not available, explicitly indicate their absence. Aim for a synthesis that is exhaustive, without overlooking any significant information.
-Please note that the python snipets should be rendered verbatim in full (if present) and correctly delimited as python code blocks.
-Finally, format the synthesis in markdown to maintain clear and organized presentation.
+### Synthesis
 """
 
 # ╔═╡ e2ffe835-65dc-4c85-aa9a-d98867da2ff5
@@ -261,8 +239,9 @@ Finally, format the synthesis in markdown to maintain clear and organized presen
 	 max_tokens=4096,
 	 model="gpt-4-1106-preview",
 	 temperature=0.1,
-	 seed=117, 
+	 seed=117,
 )
+# Elapsed time for call to `make_openai_request_chat`: 39207 milliseconds
 
 # ╔═╡ c4f7a724-fe95-45cb-94af-656cc5fbebb5
 md"""
@@ -271,8 +250,8 @@ $(join(synthesis, "\n"))
 
 # ╔═╡ e4d711be-c885-404b-a51a-fda50c9d43c7
 save_text(
-	join(synthesis, "\n"); # |> s -> replace(s, "```markdown" => "", "```" => ""); 
-	outfile=string("results/synthesis_", replace(OUTFILE, ".txt" => ".md"))
+	MD_FILEPATH,
+	join(synthesis, "\n") # |> s -> replace(s, "```markdown" => "", "```" => "")
 )
 
 # ╔═╡ 322ecf98-5694-42a1-84f2-caf8a5fa58ad
@@ -693,7 +672,7 @@ version = "17.4.0+2"
 """
 
 # ╔═╡ Cell order:
-# ╠═c94c972e-a75f-11ee-153c-771e07689f95
+# ╟─c94c972e-a75f-11ee-153c-771e07689f95
 # ╠═bf0e8d60-d704-4c66-ad3f-d372cb2963a2
 # ╠═c8b1224e-d1f3-4aaa-8d5b-26a7362af6f5
 # ╠═f3b4e922-34fd-432e-b45a-66ec7a4bea87
@@ -701,8 +680,16 @@ version = "17.4.0+2"
 # ╠═9732f467-bd58-4420-81d9-0011fc3d2a4e
 # ╠═7dba565b-24af-4eaa-ae0e-07e4d33876eb
 # ╠═eb167d46-4631-40b3-8537-bc138cd6bf7e
+# ╠═a36fa736-120b-4192-9781-0a5d39e3d51a
+# ╠═59d0b923-435a-4dc8-902f-02a9b5a177db
 # ╠═f4c27df9-bbc1-4498-b7a0-42da0d049199
+# ╠═797e6deb-e014-4609-b0d4-7f3ec670cb1c
+# ╠═2f4ae40f-a1ab-470b-a1b7-a04fec353b0e
+# ╠═ba4e4c0f-2835-4a76-a9d4-7d7ba02becb2
+# ╠═27bf4bd5-e50f-4266-9b67-2dec9e3ece3e
 # ╠═68c8922f-0cb2-41d9-9efe-3ed7a00dd76f
+# ╠═2e10b0e3-66ac-4507-ad7b-a19089b85308
+# ╠═077c29e0-f912-44aa-ac3a-633b12318fb0
 # ╠═96f81b71-da5b-469b-80a6-a9b436491b61
 # ╠═67f54eb2-d985-4a57-a3f4-0d10ae033104
 # ╠═4c25bfae-6f3f-4389-b4bf-adc706e64bc8
@@ -714,10 +701,8 @@ version = "17.4.0+2"
 # ╠═78389e7c-e6a5-4bd2-9274-d1a2c68a4920
 # ╠═8fdfb225-1475-483e-a81a-5a450b5b0dbd
 # ╟─f1dd1b92-b841-414b-8cca-d3bcdda675dd
-# ╠═54ec9961-d015-411d-a563-84d0e8f56249
 # ╠═b1309566-ded6-4f9f-a7b5-76e892991e65
 # ╠═a76cd62d-98dc-4043-8a44-6b2020625f8f
-# ╠═4850d717-806b-49d2-8a14-f4b935bc96b9
 # ╠═8fe89775-2853-49e4-885a-f3bdb1e792db
 # ╠═72d4f892-2bd2-43af-b71e-5252a666ce0c
 # ╠═67fd72dc-5540-440d-a8f3-8324914553b8
@@ -725,10 +710,6 @@ version = "17.4.0+2"
 # ╠═0110956d-424d-4c7c-87ef-eda4a2cfc291
 # ╠═0df8719c-a91d-4449-8dac-337a832eb065
 # ╟─0883ae28-a94f-4bed-abce-39841605d29b
-# ╠═6085b66d-d7cd-44bd-a95b-56ae63f0e585
-# ╠═d2f5330d-78d3-40ce-b21f-6c38e4a351bd
-# ╠═50a68ec8-837b-4bf4-ab5e-56dc9d3e677a
-# ╠═17800316-94ea-457d-bf2c-21cffcbb7b0a
 # ╠═e2ffe835-65dc-4c85-aa9a-d98867da2ff5
 # ╟─c4f7a724-fe95-45cb-94af-656cc5fbebb5
 # ╠═e4d711be-c885-404b-a51a-fda50c9d43c7
