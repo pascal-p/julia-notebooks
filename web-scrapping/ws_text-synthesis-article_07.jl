@@ -49,10 +49,10 @@ ref. "Improving Llamaindex RAG performance with ranking"
 const URL = "https://pub.towardsai.net/advanced-rag-techniques-an-illustrated-overview-04d193d8fec6"
 
 # ╔═╡ 797e6deb-e014-4609-b0d4-7f3ec670cb1c
-const TOPIC = "advanced RAG techniques"
+const TOPIC = "advanced RAG techniques overview"
 
 # ╔═╡ 2f4ae40f-a1ab-470b-a1b7-a04fec353b0e
-const INSTRUCT_PROMPT = """Generate a comprehensive and detailed synthesis of the following excerpt (delimited by triple backticks) about $(TOPIC). As always, extract all the code snipets (if present), and list all the web links from the excerpt, relevant to the synthesis. Here is the excerpt:""";
+const INSTRUCT_PROMPT = """Generate a comprehensive and detailed synthesis of the following excerpt (delimited by triple backticks) about $(TOPIC). Please report all the details and principles on each of the technique families and sub-techniques in those families. In particular keep the acronyms used, with their meaning. Each technique family should be in its own section. As always, extract all the code snipets (if present), and make sure you list all the web links from the excerpt, relevant to the synthesis. Without those links the synthesis is useless. Here is the excerpt:""";
 
 # ╔═╡ ba4e4c0f-2835-4a76-a9d4-7d7ba02becb2
 println(INSTRUCT_PROMPT)
