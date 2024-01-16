@@ -52,7 +52,9 @@ const URL = "https://blog.llamaindex.ai/boosting-rag-picking-the-best-embedding-
 const TOPIC = "boosting RAG with embeddings and rerankers"
 
 # ╔═╡ 2f4ae40f-a1ab-470b-a1b7-a04fec353b0e
-const INSTRUCT_PROMPT = """Generate a comprehensive and detailed synthesis of the following excerpt (delimited by triple backticks) about $(TOPIC). Please report all the metrics used and the results of the evaluation for each language model, as well as the key insights. As always, extract all the code snipets (if present), and make sure you list all the web links from the excerpt, relevant to the synthesis. Without those links the synthesis is useless. Here is the excerpt:""";
+const INSTRUCT_PROMPT = """Generate a comprehensive and detailed synthesis of the following excerpt (delimited by triple backticks) about $(TOPIC). Please report all the metrics used and the results of the evaluation for each language model, as well as the key insights. As always, extract all the code snipets (if present). Here is the excerpt:""";
+
+#  and make sure you list all the web links from the excerpt, relevant to the synthesis. Without those links the synthesis is useless.
 
 # ╔═╡ ba4e4c0f-2835-4a76-a9d4-7d7ba02becb2
 println(INSTRUCT_PROMPT)
@@ -180,20 +182,24 @@ function extract_links(
 	selectors=["a"], 
 	verbose=true, 
 	restrict_to=["github", "LinkedIn"]
-)::Vector{String}
-	links = String[]
+)::Vector{Tuple{String, String}}
+	links = Tuple{String, String}[] # String[]
 	sel_vec = vcat(
 		(eachmatch(Selector(selector), rroot) for selector ∈ selectors)...
 	)
 	for element ∈ sel_vec
 		if hasproperty(element, :attributes)
 			if match(join(restrict_to, "|") |> p -> Regex(p, "i"), element.attributes["href"]) !== nothing
-				push!(links, element.attributes["href"])
+				# println("1. ", element, "\n")
+				push!(
+					links, 
+					(element.attributes["href"], dft(element.children))
+				)
 			end
 		end
 	end
 	# remove if link contains "signin?" or "policy..."
-	filter(s -> match(r"signin\?|policy\.medium\.com", s) === nothing, links)
+	filter(tupl -> match(r"signin\?|policy\.medium\.com", tupl[1]) === nothing, links)
 end
 
 # ╔═╡ 8fe89775-2853-49e4-885a-f3bdb1e792db
@@ -254,10 +260,20 @@ md"""
 $(join(synthesis, "\n"))
 """
 
+# ╔═╡ 9b661918-23b6-46fb-9af1-53454d750d5f
+synthesis_links = string(
+	join(synthesis, "\n"),
+	"\n#### Links:\n",
+	join(
+		map(tupl -> string("""  - [$(length(tupl[2]) > 0 ? tupl[2] : "...")]""", "($(tupl[1]))"), links), 
+		"\n"
+	)
+)
+
 # ╔═╡ e4d711be-c885-404b-a51a-fda50c9d43c7
 save_text(
 	MD_FILEPATH,
-	join(synthesis, "\n") # |> s -> replace(s, "```markdown" => "", "```" => "")
+	synthesis_links  # join(synthesis_links, "\n") # |> s -> replace(s, "```markdown" => "", "```" => "")
 )
 
 # ╔═╡ 322ecf98-5694-42a1-84f2-caf8a5fa58ad
@@ -718,6 +734,7 @@ version = "17.4.0+2"
 # ╟─0883ae28-a94f-4bed-abce-39841605d29b
 # ╠═e2ffe835-65dc-4c85-aa9a-d98867da2ff5
 # ╟─c4f7a724-fe95-45cb-94af-656cc5fbebb5
+# ╠═9b661918-23b6-46fb-9af1-53454d750d5f
 # ╠═e4d711be-c885-404b-a51a-fda50c9d43c7
 # ╟─322ecf98-5694-42a1-84f2-caf8a5fa58ad
 # ╟─00000000-0000-0000-0000-000000000001

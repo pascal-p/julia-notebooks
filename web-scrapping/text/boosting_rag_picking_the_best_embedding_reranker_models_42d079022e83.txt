@@ -411,33 +411,33 @@ retriever_evaluator = RetrieverEvaluator.from_metric_names(
 eval_results = await retriever_evaluator.aevaluate_dataset(qa_dataset)
 ```
  Links:
- - https://rsci.app.link/?%24canonical_url=https%3A%2F%2Fmedium.com%2Fp%2F42d079022e83&%7Efeature=LoOpenInAppButton&%7Echannel=ShowPostUnderCollection&source=---two_column_layout_nav----------------------------------
- - https://medium.com/?source=---two_column_layout_nav----------------------------------
- - https://medium.com/search?source=---two_column_layout_nav----------------------------------
- - https://ravidesetty.medium.com/?source=post_page-----42d079022e83--------------------------------
- - https://blog.llamaindex.ai/?source=post_page-----42d079022e83--------------------------------
- - https://ravidesetty.medium.com/?source=post_page-----42d079022e83--------------------------------
- - https://blog.llamaindex.ai/?source=post_page-----42d079022e83--------------------------------
- - https://txt.cohere.com/introducing-embed-v3/
- - https://huggingface.co/jinaai/jina-embeddings-v2-small-en
- - https://huggingface.co/BAAI/bge-large-en
- - https://txt.cohere.com/rerank/
- - https://huggingface.co/BAAI/bge-reranker-base
- - https://huggingface.co/BAAI/bge-reranker-large
- - https://medium.com/tag/embedding?source=post_page-----42d079022e83---------------embedding-----------------
- - https://medium.com/tag/llm?source=post_page-----42d079022e83---------------llm-----------------
- - https://medium.com/tag/openai?source=post_page-----42d079022e83---------------openai-----------------
- - https://medium.com/tag/search?source=post_page-----42d079022e83---------------search-----------------
- - https://medium.com/tag/llamaindex?source=post_page-----42d079022e83---------------llamaindex-----------------
- - https://ravidesetty.medium.com/?source=post_page-----42d079022e83--------------------------------
- - https://blog.llamaindex.ai/?source=post_page-----42d079022e83--------------------------------
- - https://ravidesetty.medium.com/?source=post_page-----42d079022e83--------------------------------
- - https://ravidesetty.medium.com/followers?source=post_page-----42d079022e83--------------------------------
- - https://blog.llamaindex.ai/?source=post_page-----42d079022e83--------------------------------
- - https://help.medium.com/hc/en-us?source=post_page-----42d079022e83--------------------------------
- - https://medium.statuspage.io/?source=post_page-----42d079022e83--------------------------------
- - https://medium.com/about?autoplay=1&source=post_page-----42d079022e83--------------------------------
- - https://medium.com/jobs-at-medium/work-at-medium-959d1a85284e?source=post_page-----42d079022e83--------------------------------
- - https://blog.medium.com/?source=post_page-----42d079022e83--------------------------------
- - https://speechify.com/medium?source=post_page-----42d079022e83--------------------------------
- - https://medium.com/business?source=post_page-----42d079022e83--------------------------------
+ - ("https://rsci.app.link/?%24canonical_url=https%3A%2F%2Fmedium.com%2Fp%2F42d079022e83&%7Efeature=LoOpenInAppButton&%7Echannel=ShowPostUnderCollection&source=---two_column_layout_nav----------------------------------", "Open in app")
+ - ("https://medium.com/?source=---two_column_layout_nav----------------------------------", "")
+ - ("https://medium.com/search?source=---two_column_layout_nav----------------------------------", "")
+ - ("https://ravidesetty.medium.com/?source=post_page-----42d079022e83--------------------------------", "")
+ - ("https://blog.llamaindex.ai/?source=post_page-----42d079022e83--------------------------------", "")
+ - ("https://ravidesetty.medium.com/?source=post_page-----42d079022e83--------------------------------", "Ravi Theja")
+ - ("https://blog.llamaindex.ai/?source=post_page-----42d079022e83--------------------------------", "LlamaIndex Blog")
+ - ("https://txt.cohere.com/introducing-embed-v3/", "CohereAI Embedding")
+ - ("https://huggingface.co/jinaai/jina-embeddings-v2-small-en", "Jina Embeddings")
+ - ("https://huggingface.co/BAAI/bge-large-en", "BAAI/bge-large-en")
+ - ("https://txt.cohere.com/rerank/", "CohereAI")
+ - ("https://huggingface.co/BAAI/bge-reranker-base", "bge-reranker-base")
+ - ("https://huggingface.co/BAAI/bge-reranker-large", "bge-reranker-large")
+ - ("https://medium.com/tag/embedding?source=post_page-----42d079022e83---------------embedding-----------------", "Embedding")
+ - ("https://medium.com/tag/llm?source=post_page-----42d079022e83---------------llm-----------------", "Llm")
+ - ("https://medium.com/tag/openai?source=post_page-----42d079022e83---------------openai-----------------", "OpenAI")
+ - ("https://medium.com/tag/search?source=post_page-----42d079022e83---------------search-----------------", "Search")
+ - ("https://medium.com/tag/llamaindex?source=post_page-----42d079022e83---------------llamaindex-----------------", "Llamaindex")
+ - ("https://ravidesetty.medium.com/?source=post_page-----42d079022e83--------------------------------", "")
+ - ("https://blog.llamaindex.ai/?source=post_page-----42d079022e83--------------------------------", "")
+ - ("https://ravidesetty.medium.com/?source=post_page-----42d079022e83--------------------------------", "Written by\nRavi Theja")
+ - ("https://ravidesetty.medium.com/followers?source=post_page-----42d079022e83--------------------------------", "604 Followers")
+ - ("https://blog.llamaindex.ai/?source=post_page-----42d079022e83--------------------------------", "LlamaIndex Blog")
+ - ("https://help.medium.com/hc/en-us?source=post_page-----42d079022e83--------------------------------", "Help")
+ - ("https://medium.statuspage.io/?source=post_page-----42d079022e83--------------------------------", "Status")
+ - ("https://medium.com/about?autoplay=1&source=post_page-----42d079022e83--------------------------------", "About")
+ - ("https://medium.com/jobs-at-medium/work-at-medium-959d1a85284e?source=post_page-----42d079022e83--------------------------------", "Careers")
+ - ("https://blog.medium.com/?source=post_page-----42d079022e83--------------------------------", "Blog")
+ - ("https://speechify.com/medium?source=post_page-----42d079022e83--------------------------------", "Text to speech")
+ - ("https://medium.com/business?source=post_page-----42d079022e83--------------------------------", "Teams")
