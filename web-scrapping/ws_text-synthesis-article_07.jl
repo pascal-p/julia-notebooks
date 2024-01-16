@@ -52,9 +52,7 @@ const URL = "https://pub.towardsai.net/advanced-rag-techniques-an-illustrated-ov
 const TOPIC = "advanced RAG techniques"
 
 # ╔═╡ 2f4ae40f-a1ab-470b-a1b7-a04fec353b0e
-const INSTRUCT_PROMPT = """Generate a comprehensive and detailed synthesis of the following excerpt (delimited by triple backticks) about $(TOPIC).   
-
-As always, extract all the code snipets.""";
+const INSTRUCT_PROMPT = """Generate a comprehensive and detailed synthesis of the following excerpt (delimited by triple backticks) about $(TOPIC). As always, extract all the code snipets (if present), and list all the web links from the excerpt, relevant to the synthesis. Here is the excerpt:""";
 
 # ╔═╡ ba4e4c0f-2835-4a76-a9d4-7d7ba02becb2
 println(INSTRUCT_PROMPT)
@@ -208,7 +206,7 @@ md = extract_llm_settings(rroot; selectors=[".bm"], verbose=false)  # other meta
 text = extract_llm_settings(
 	rroot; 
 	# "p.pw-post-body-paragraph"
-	selectors=["div.ch.bg.fw.fx.fy.fz", "pre.ba.bj", "table.highlight"],  # "pre.ba.bj": for code snipet or "pre"
+	selectors=["div.ch.bg.fw.fx.fy.fz", "pre.ba.bj"],  # "pre.ba.bj": for code snipet or "pre", did not work with (table extraction): "table.highlight" 
 	detect_code=true,
 	verbose=false
 )
