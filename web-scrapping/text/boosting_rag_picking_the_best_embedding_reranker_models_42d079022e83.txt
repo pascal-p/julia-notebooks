@@ -282,7 +282,7 @@ Llamaindex
 Follow
 Written by
 Ravi Theja
-604 Followers
+614 Followers
 ·
 Writer for
 LlamaIndex Blog
@@ -432,7 +432,6 @@ eval_results = await retriever_evaluator.aevaluate_dataset(qa_dataset)
  - ("https://ravidesetty.medium.com/?source=post_page-----42d079022e83--------------------------------", "")
  - ("https://blog.llamaindex.ai/?source=post_page-----42d079022e83--------------------------------", "")
  - ("https://ravidesetty.medium.com/?source=post_page-----42d079022e83--------------------------------", "Written by\nRavi Theja")
- - ("https://ravidesetty.medium.com/followers?source=post_page-----42d079022e83--------------------------------", "604 Followers")
  - ("https://blog.llamaindex.ai/?source=post_page-----42d079022e83--------------------------------", "LlamaIndex Blog")
  - ("https://help.medium.com/hc/en-us?source=post_page-----42d079022e83--------------------------------", "Help")
  - ("https://medium.statuspage.io/?source=post_page-----42d079022e83--------------------------------", "Status")

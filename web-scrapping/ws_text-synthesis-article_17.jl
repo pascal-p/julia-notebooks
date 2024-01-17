@@ -176,32 +176,6 @@ function extract_llm_settings(root; selectors = ["p.nx-mt-6"], detect_code=false
 	)
 end
 
-# ╔═╡ a76cd62d-98dc-4043-8a44-6b2020625f8f
-function extract_links(
-	root;
-	selectors=["a"], 
-	verbose=true, 
-	restrict_to=["github", "LinkedIn"]
-)::Vector{Tuple{String, String}}
-	links = Tuple{String, String}[] # String[]
-	sel_vec = vcat(
-		(eachmatch(Selector(selector), rroot) for selector ∈ selectors)...
-	)
-	for element ∈ sel_vec
-		if hasproperty(element, :attributes)
-			if match(join(restrict_to, "|") |> p -> Regex(p, "i"), element.attributes["href"]) !== nothing
-				# println("1. ", element, "\n")
-				push!(
-					links, 
-					(element.attributes["href"], dft(element.children))
-				)
-			end
-		end
-	end
-	# remove if link contains "signin?" or "policy..."
-	filter(tupl -> match(r"signin\?|policy\.medium\.com", tupl[1]) === nothing, links)
-end
-
 # ╔═╡ 8fe89775-2853-49e4-885a-f3bdb1e792db
 md_title = extract_llm_settings(rroot; selectors=[".pw-post-title"], verbose=false)  # Title
 
@@ -265,7 +239,7 @@ synthesis_links = string(
 	join(synthesis, "\n"),
 	"\n#### Links:\n",
 	join(
-		map(tupl -> string("""  - [$(length(tupl[2]) > 0 ? tupl[2] : "...")]""", "($(tupl[1]))"), links), 
+		map(tupl -> string("""  - [$(length(tupl[2]) > 0 ? tupl[2] : tag_link(tupl))]""", "($(tupl[1]))"), handle_duplicate_tag(links)),
 		"\n"
 	)
 )
@@ -724,7 +698,6 @@ version = "17.4.0+2"
 # ╠═8fdfb225-1475-483e-a81a-5a450b5b0dbd
 # ╟─f1dd1b92-b841-414b-8cca-d3bcdda675dd
 # ╠═b1309566-ded6-4f9f-a7b5-76e892991e65
-# ╠═a76cd62d-98dc-4043-8a44-6b2020625f8f
 # ╠═8fe89775-2853-49e4-885a-f3bdb1e792db
 # ╠═72d4f892-2bd2-43af-b71e-5252a666ce0c
 # ╠═67fd72dc-5540-440d-a8f3-8324914553b8
