@@ -258,12 +258,52 @@ md"""
 $(join(synthesis, "\n"))
 """
 
+# ╔═╡ 45ac1bc4-e110-40a0-bf58-32afe2b142af
+function tag_link(tupl::Tuple{String, String})::String
+	link, tag = tupl
+	# @assert length(tag) == 0 "Expect the tag to be empty, when this function is called"
+
+	chunks = split(link, "/")
+	tag = length(tag) == 0 ? chunks[3] : tag
+	(endswith(chunks[end], ".html") || endswith(chunks[end], ".pynb")) && 
+		(tag = string(tag, " - ", replace(chunks[end], ".html" => "")))
+	tag
+end
+
+# ╔═╡ c096c24a-9d69-49d6-8ee5-ee07cd490c90
+tag_link(("https://docs.llamaindex.ai/en/stable/examples/node_postprocessor/LongLLMLingua.html", ""))
+
+# ╔═╡ 4b72eec3-5d95-475a-99ef-47d39eb3861b
+function detect_duplicate_tag(links::Vector{Tuple{String, String}})::Vector{Tuple{String, String}}
+	tags = Dict{String, Int}()
+	nlinks = Vector{Tuple{String, String}}()
+	for (link, tag) ∈ links
+		if haskey(tags, tag)
+			tags[tag] += 1
+		else
+			tags[tag] = 1
+		end
+	end
+	for (link, tag) ∈ links
+		tags[tag] > 1 && (tag = tag_link((link, tag)))
+		push!(nlinks, (link, tag))
+	end
+	nlinks
+end
+
+# ╔═╡ 9465877c-942f-42bd-8d91-7ff8f5a501f7
+links
+
+# ╔═╡ 519114c9-f3b3-4059-9850-26585ec6b25d
+nlinks = detect_duplicate_tag(links)
+
 # ╔═╡ 9b661918-23b6-46fb-9af1-53454d750d5f
 synthesis_links = string(
 	join(synthesis, "\n"),
 	"\n#### Links:\n",
 	join(
-		map(tupl -> string("""  - [$(length(tupl[2]) > 0 ? tupl[2] : split(tupl[1], "/")[3])]""", "($(tupl[1]))"), links),
+		# map(tupl -> string("""  - [$(length(tupl[2]) > 0 ? tupl[2] : split(tupl[1], "/")[3])]""", "($(tupl[1]))"), links),
+		map(tupl -> string("""  - [$(length(tupl[2]) > 0 ? tupl[2] : tag_link(tupl))]""", "($(tupl[1]))"), nlinks),
 		"\n"
 	)
 )
@@ -732,6 +772,11 @@ version = "17.4.0+2"
 # ╟─0883ae28-a94f-4bed-abce-39841605d29b
 # ╠═e2ffe835-65dc-4c85-aa9a-d98867da2ff5
 # ╟─c4f7a724-fe95-45cb-94af-656cc5fbebb5
+# ╠═45ac1bc4-e110-40a0-bf58-32afe2b142af
+# ╠═c096c24a-9d69-49d6-8ee5-ee07cd490c90
+# ╠═4b72eec3-5d95-475a-99ef-47d39eb3861b
+# ╠═9465877c-942f-42bd-8d91-7ff8f5a501f7
+# ╠═519114c9-f3b3-4059-9850-26585ec6b25d
 # ╠═9b661918-23b6-46fb-9af1-53454d750d5f
 # ╠═e4d711be-c885-404b-a51a-fda50c9d43c7
 # ╟─322ecf98-5694-42a1-84f2-caf8a5fa58ad
