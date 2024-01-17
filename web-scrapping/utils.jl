@@ -52,6 +52,30 @@ function save_text(filepath::String, text::String)
   end
 end
 
+function extract_links(root; selectors=["a"], verbose=true, restrict_to=["github", "LinkedIn"])::Vector{Tuple{String, String}}
+  links = Tuple{String, String}[] # String[]
+  sel_vec = vcat(
+    (eachmatch(Selector(selector), rroot) for selector ∈ selectors)...
+      )
+  for element ∈ sel_vec
+    if hasproperty(element, :attributes)
+      if match(join(restrict_to, "|") |> p -> Regex(p, "i"), element.attributes["href"]) !== nothing
+	# println("1. ", element, "\n")
+	push!(
+	  links,
+	  (element.attributes["href"], dft(element.children))
+	)
+      end
+    end
+  end
+  # remove if link contains "signin?" or "policy..."
+  filter(
+    tupl -> match(r"signin\?|policy\.medium\.com|followers\?|help\.medium|work\-at\-medium|com/about"i,
+                  tupl[1]) === nothing,
+    links
+  )
+end
+
 function tag_link(tupl::Tuple{String, String})::String
   link, tag = tupl
   # @assert length(tag) == 0 "Expect the tag to be empty, when this function is called"
