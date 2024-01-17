@@ -52,8 +52,7 @@ const URL = "https://blog.llamaindex.ai/a-cheat-sheet-and-some-recipes-for-build
 const TOPIC = "advanced RAG techniques with LlamaIndex"
 
 # ╔═╡ 2f4ae40f-a1ab-470b-a1b7-a04fec353b0e
-INSTRUCT_PROMPT = """Generate a comprehensive and detailed synthesis of the following excerpt (delimited by triple backticks) about $(TOPIC).
-As always, extract all the code snipets.""";
+const INSTRUCT_PROMPT = """Generate a comprehensive and detailed synthesis of the following excerpt (delimited by triple backticks) about $(TOPIC). Please report all the techniques used with their name and principle. As always, extract all the code snipets. Please ignore the links and the prior directive about links (those will be extracted with a different method). Here is the excerpt:""";
 
 # ╔═╡ ba4e4c0f-2835-4a76-a9d4-7d7ba02becb2
 println(INSTRUCT_PROMPT)
@@ -153,7 +152,9 @@ function extract_llm_settings(root; selectors = ["p.nx-mt-6"], detect_code=false
 	for (ix, element) ∈ enumerate(sel_vec)
 		verbose &&  println("$(ix) - [$(element)] /// [$(element.attributes["class"])]")
 
-		iscode = detect_code && hasproperty(element, :attributes) && !occursin("pw-post-body-paragraph", element.attributes["class"])
+		# TODO: link `!occursin("fz"...` to class selector fro more generality!
+		iscode = detect_code && hasproperty(element, :attributes) &&
+			!occursin("fz", element.attributes["class"])
 
 		if hasproperty(element, :children)
 			text = dft(element.children)
@@ -173,20 +174,31 @@ function extract_llm_settings(root; selectors = ["p.nx-mt-6"], detect_code=false
 	)
 end
 
+
 # ╔═╡ a76cd62d-98dc-4043-8a44-6b2020625f8f
 function extract_links(
 	root;
-	selector="a", verbose=true, restrict_to=["github", "LinkedIn"]
-)::Vector{String}
-	links = String[]
-	for element ∈ eachmatch(Selector(selector), rroot)
+	selectors=["a"],
+	verbose=true,
+	restrict_to=["github", "LinkedIn"]
+)::Vector{Tuple{String, String}}
+	links = Tuple{String, String}[] # String[]
+	sel_vec = vcat(
+		(eachmatch(Selector(selector), rroot) for selector ∈ selectors)...
+	)
+	for element ∈ sel_vec
 		if hasproperty(element, :attributes)
 			if match(join(restrict_to, "|") |> p -> Regex(p, "i"), element.attributes["href"]) !== nothing
-				push!(links, element.attributes["href"])
+				# println("1. ", element, "\n")
+				push!(
+					links,
+					(element.attributes["href"], dft(element.children))
+				)
 			end
 		end
 	end
-	links
+	# remove if link contains "signin?" or "policy..."
+	filter(tupl -> match(r"signin\?|policy\.medium\.com", tupl[1]) === nothing, links)
 end
 
 # ╔═╡ 8fe89775-2853-49e4-885a-f3bdb1e792db
@@ -198,7 +210,7 @@ md = extract_llm_settings(rroot; selectors=[".bm"], verbose=false)  # other meta
 # ╔═╡ 67fd72dc-5540-440d-a8f3-8324914553b8
 text = extract_llm_settings(
 	rroot; 
-	selectors=["p.pw-post-body-paragraph", "pre.ba.bj"],  #  "pre.ba.bj": for code snipet or "pre"
+	selectors=["div.ch.bg.fw.fx.fy.fz", "pre.ba.bj"],
 	detect_code=true,
 	verbose=false
 )
@@ -207,7 +219,7 @@ text = extract_llm_settings(
 # ╔═╡ ed56ba67-5e5a-43e9-9a5f-8e63597725f7
 links = extract_links(
 	rroot;
-	selector="a", 
+	selectors=["a"],
 	verbose=false, 
 	restrict_to=["github", "LinkedIn", "huggingface", "arxiv", "towardsdatascience", "edu", "llamaindex", "langchain", "wikipedia", "cohere"]
 )
@@ -246,10 +258,20 @@ md"""
 $(join(synthesis, "\n"))
 """
 
+# ╔═╡ 9b661918-23b6-46fb-9af1-53454d750d5f
+synthesis_links = string(
+	join(synthesis, "\n"),
+	"\n#### Links:\n",
+	join(
+		map(tupl -> string("""  - [$(length(tupl[2]) > 0 ? tupl[2] : split(tupl[1], "/")[3])]""", "($(tupl[1]))"), links),
+		"\n"
+	)
+)
+
 # ╔═╡ e4d711be-c885-404b-a51a-fda50c9d43c7
 save_text(
 	MD_FILEPATH,
-	join(synthesis, "\n") # |> s -> replace(s, "```markdown" => "", "```" => "")
+	synthesis_links  # join(synthesis_links, "\n") # |> s -> replace(s, "```markdown" => "", "```" => "")
 )
 
 # ╔═╡ 322ecf98-5694-42a1-84f2-caf8a5fa58ad
@@ -710,6 +732,7 @@ version = "17.4.0+2"
 # ╟─0883ae28-a94f-4bed-abce-39841605d29b
 # ╠═e2ffe835-65dc-4c85-aa9a-d98867da2ff5
 # ╟─c4f7a724-fe95-45cb-94af-656cc5fbebb5
+# ╠═9b661918-23b6-46fb-9af1-53454d750d5f
 # ╠═e4d711be-c885-404b-a51a-fda50c9d43c7
 # ╟─322ecf98-5694-42a1-84f2-caf8a5fa58ad
 # ╟─00000000-0000-0000-0000-000000000001
