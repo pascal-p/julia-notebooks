@@ -1,48 +1,51 @@
-# Hybrid Document Retrieval: A Comprehensive Synthesis
+# Hybrid Document Retrieval
 ## Article Overview
 - **Title**: Hybrid Document Retrieval
 - **Author**: Isabelle Nguyen
 - **Publication Date**: August 25, 2023
 - **Published In**: deepset-ai
-- **Read Time**: 6 minutes
-- **Article Link**: [Hybrid Document Retrieval](https://medium.com/deepset-ai/hybrid-document-retrieval-f657a6bb4bb5)
+- **Reading Time**: 6 min read
 ## Introduction
-The article "Hybrid Document Retrieval" by Isabelle Nguyen, published on August 25, 2023, in deepset-ai, explores the concept of combining different document retrieval methods to enhance the efficiency and accuracy of extracting relevant documents from a corpus. The author discusses the advantages and limitations of both keyword-based and dense encoder models for document retrieval and proposes a hybrid approach that leverages the strengths of both. The article also introduces Haystack, a framework that facilitates the creation of such hybrid retrieval pipelines.
-## Main Concepts and Discussion
-### The Need for Hybrid Document Retrieval
-Document retrieval is crucial in processing large collections of documents, especially when it is impractical to run language models on the entire corpus. The author emphasizes the importance of using retrievers to efficiently pre-select documents for further processing, such as extractive question answering or summarization.
-### Types of Retrievers
+The article "Hybrid Document Retrieval" by Isabelle Nguyen, published on August 25, 2023, in deepset-ai, explores the concept of combining different document retrieval methods to enhance the effectiveness of extracting relevant documents from a corpus. The author discusses the advantages and limitations of both keyword-based and semantic embedding-based approaches and introduces the idea of a hybrid retrieval system that leverages the strengths of both methods.
+## Document Retrieval and Its Importance
+Document retrieval is defined as the process of finding relevant documents from a large corpus in response to a user's query. The article emphasizes the importance of document retrieval in large-scale NLP systems, where it is impractical to run language models on the entire corpus due to resource and time constraints. Retrievers are presented as a solution, pre-selecting documents for further processing in tasks such as extractive question answering, generative AI, or summarization.
+## Types of Retrievers
 Retrievers are categorized into two main types:
-1. **Sparse Retrievers**: These rely on keyword-based methods like BM25, which produce long, sparse vectors representing documents. Sparse retrievers are lexical, language- and domain-agnostic, and do not require training.
-   
-2. **Dense Retrievers**: These use Transformers and require data and training to produce shorter, dense vectors that represent semantic features. However, they may perform poorly on data that is outside the domain of their training.
-### Combining Dense and Sparse Retrievers
-The author suggests combining dense and sparse retrievers to mitigate their individual weaknesses and capitalize on their strengths. This hybrid approach involves using two retrievers and merging their outputs, potentially with a ranker to improve the relevance of the results.
-### Implementing a Hybrid Retrieval Pipeline in Haystack
-Haystack is presented as a modular framework that simplifies the creation of hybrid retrieval pipelines. The author describes how to customize a pipeline with two retriever nodes and a `JoinDocuments` node to combine the results. Different methods for merging results are discussed:
-- **Concatenation**: Combines all documents without considering their order.
-- **Reciprocal Rank Fusion (RRF)**: Reranks documents, prioritizing those appearing in both result lists.
-- **Merging**: Ranks documents according to the scores from the retrievers, which is not recommended for hybrid retrieval due to score incompatibility.
-An additional ranking step can be added using a `SentenceTransformersRanker` node, which re-ranks documents and standardizes relevance scores for downstream tasks.
-## Conclusion and Additional Resources
-The article concludes by endorsing Haystack as the preferred framework for building natural language search systems that incorporate the latest language models. The author invites readers to join the Haystack Discord community for further assistance and discussion on open-source NLP and LLMs.
-## Links and References
-The article provides several links for further exploration and resources:
-- [Open in app](https://rsci.app.link/?%24canonical_url=https%3A%2F%2Fmedium.com%2Fp%2Ff657a6bb4bb5&%7Efeature=LoOpenInAppButton&%7Echannel=ShowPostUnderCollection&source=---two_column_layout_nav----------------------------------)
-- [deepset-ai](https://medium.com/deepset-ai?source=post_page-----f657a6bb4bb5--------------------------------)
-- [Haystack on GitHub](https://github.com/deepset-ai/haystack)
-- [Status](https://medium.statuspage.io/?source=post_page-----f657a6bb4bb5--------------------------------)
-- [Blog](https://blog.medium.com/?source=post_page-----f657a6bb4bb5--------------------------------)
-- [Text to speech](https://speechify.com/medium?source=post_page-----f657a6bb4bb5--------------------------------)
-The article does not contain any code snippets to be rendered verbatim.
+### Sparse Retrievers
+- **Characteristics**: Sparse retrievers generate long vectors with many zeroes, corresponding to the size of the vocabulary. They are lexical, meaning they can only match words that are part of the vocabulary.
+- **Common Algorithm**: BM25, an advancement over Tf-Idf, is the most commonly used sparse retrieval algorithm today.
+- **Advantages**: No training required, making them language- and domain-agnostic.
+### Dense Retrievers
+- **Characteristics**: Dense retrievers require data and training to produce shorter, semantic feature-based vectors.
+- **Training**: The language model learns to embed documents as vectors from the data.
+- **Limitations**: Performance can be poor on data that is outside the domain of the training data.
+## Combining Retrievers
+The article proposes combining dense and sparse retrievers to create a hybrid retrieval pipeline, which can be easily set up using a modular framework like Haystack.
+### Hybrid Retrieval Pipeline in Haystack
+Haystack's modular pipelines and nodes facilitate the customization of retrieval systems. A hybrid retrieval pipeline can include two retriever nodes and a `JoinDocuments` node to merge the output from both retrievers. The author describes several methods for joining the results:
+#### Concatenation
+- **Description**: Documents are appended to the final results list, without concern for order.
+- **Use Case**: Suitable for pipelines where all results are used, such as extractive question answering.
+#### Reciprocal Rank Fusion (RRF)
+- **Description**: Reranks documents, prioritizing those appearing in both results lists.
+- **Use Case**: Useful when the order of results is important.
+#### Merging
+- **Description**: Documents are ranked according to the scores from the retrievers.
+- **Use Case**: Applicable when combining documents from similar retrievers, not ideal for hybrid retrieval.
+### Intermediate Ranking Step
+An intermediate ranking step can be added after merging documents to further refine the order of the results. The `SentenceTransformersRanker` node is mentioned as a powerful tool for this purpose, capable of determining the relevance of a document to a given query.
+## Conclusion
+The article concludes by endorsing Haystack as a preferred framework for developers to build customizable natural language search systems. It invites readers to join the Haystack community for support and discussions on open-source NLP and the latest language models.
+## Author Information
+- **Written by**: Isabelle Nguyen
+- **Followers**: 17
+- **Editor for**: deepset-ai
+The article does not contain any code snippets to extract.
 #### Links:
   - [Open in app](https://rsci.app.link/?%24canonical_url=https%3A%2F%2Fmedium.com%2Fp%2Ff657a6bb4bb5&%7Efeature=LoOpenInAppButton&%7Echannel=ShowPostUnderCollection&source=---two_column_layout_nav----------------------------------)
   - [medium.com](https://medium.com/deepset-ai?source=post_page-----f657a6bb4bb5--------------------------------)
-  - [deepset-ai](https://medium.com/deepset-ai?source=post_page-----f657a6bb4bb5--------------------------------)
   - [Haystack](https://github.com/deepset-ai/haystack)
   - [Haystack](https://github.com/deepset-ai/haystack/tree/main)
-  - [medium.com](https://medium.com/deepset-ai?source=post_page-----f657a6bb4bb5--------------------------------)
-  - [deepset-ai](https://medium.com/deepset-ai?source=post_page-----f657a6bb4bb5--------------------------------)
   - [Status](https://medium.statuspage.io/?source=post_page-----f657a6bb4bb5--------------------------------)
   - [Blog](https://blog.medium.com/?source=post_page-----f657a6bb4bb5--------------------------------)
   - [Text to speech](https://speechify.com/medium?source=post_page-----f657a6bb4bb5--------------------------------)
