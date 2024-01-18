@@ -88,8 +88,13 @@ function tag_link(tupl::Tuple{String, String})::String
 end
 
 function handle_duplicate_tag(links::Vector{Tuple{String, String}})::Vector{Tuple{String, String}}
+  """
+  add tag to a link
+  """
   tags = Dict{String, Int}()
   nlinks = Vector{Tuple{String, String}}()
+  processed_links = Set{String}()
+
   for (link, tag) ∈ links
     if haskey(tags, tag)
       tags[tag] += 1
@@ -97,7 +102,10 @@ function handle_duplicate_tag(links::Vector{Tuple{String, String}})::Vector{Tupl
       tags[tag] = 1
     end
   end
+
   for (link, tag) ∈ links
+    (link ∈ processed_links) && continue
+    push!(processed_links, link)
     tags[tag] > 1 && (tag = tag_link((link, tag)))
     push!(nlinks, (link, tag))
   end
