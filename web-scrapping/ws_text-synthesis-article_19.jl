@@ -52,7 +52,7 @@ const URL = "https://medium.aiplanet.com/advanced-rag-implementation-on-custom-d
 const TOPIC = "Advanced RAG with Hybrid Search"
 
 # ╔═╡ 2f4ae40f-a1ab-470b-a1b7-a04fec353b0e
-const INSTRUCT_PROMPT = """Generate a comprehensive and detailed synthesis of the following excerpt (delimited by triple backticks) about $(TOPIC). As always, extract all the code snipets (if present) and ignore the web links which will be handled later. Here is the excerpt:""";
+const INSTRUCT_PROMPT = """Generate a comprehensive and detailed synthesis of the following excerpt (delimited by triple backticks) about $(TOPIC). Please extract all the code snipets but those where 'query', 'response' and 'OUTPUT' are displayed. Ignore the web links which will be handled later. Here is the excerpt:""";
 
 # ╔═╡ ba4e4c0f-2835-4a76-a9d4-7d7ba02becb2
 println(INSTRUCT_PROMPT)
