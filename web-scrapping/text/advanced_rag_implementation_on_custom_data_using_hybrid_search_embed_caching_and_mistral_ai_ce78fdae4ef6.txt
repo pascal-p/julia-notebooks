@@ -1,0 +1,995 @@
+- Title: Advanced RAG Implementation on Custom Data Using Hybrid Search, Embed Caching And Mistral-AI
+- Author and date: Plaban Nayak
+·
+Follow
+Published in
+AI Planet
+·
+40 min read
+·
+Oct 8, 2023
+- Link: https://medium.aiplanet.com/advanced-rag-implementation-on-custom-data-using-hybrid-search-embed-caching-and-mistral-ai-ce78fdae4ef6
+Main:
+Advanced RAG Implementation on Custom Data Using Hybrid Search, Embed Caching And Mistral-AI
+Plaban Nayak
+·
+Follow
+Published in
+AI Planet
+·
+40 min read
+·
+Oct 8, 2023
+--
+6
+Listen
+Share
+What is RAG ?
+Retrieval Augmented Generation (RAG)
+is a methodology that combines elements of information retrieval and natural language generation to improve the quality and relevance of generated text, particularly in the context of complex language tasks like question-answering, summarization, and text completion.
+The primary goal of RAG is to enhance the generation process by leveraging the benefits of retrieval, enabling the NLG model to produce more informed and contextually appropriate responses. By incorporating relevant information from retrieval into the generation process,
+RAG aims to improve the accuracy, coherence, and informativeness of the generated content.
+Advanced RAG Concepts Implemented.
+Here we will implement the advanced RAG pipeline using the below concepts:
+Caching Embeddings
+Hybrid vector Search
+InMemory Caching
+Caching Embeddings
+Embeddings can be stored or temporarily cached to avoid needing to recompute them.
+Caching embeddings can be done using a
+CacheBackedEmbeddings
+. The cache backed embedder is a wrapper around an embedder that caches embeddings in a key-value store. The text is hashed and the hash is used as the key in the cache.
+The main supported way to initialized a
+CacheBackedEmbeddings
+is
+from_bytes_store
+. This takes in the following parameters:
+underlying_embedder:
+The embedder to use for embedding.
+document_embedding_cache:
+The cache to use for storing document embeddings.
+namespace: (optional, defaults to
+""
+)
+: The namespace to use for document cache. This namespace is used to avoid collisions with other caches. For example, set it to the name of the embedding model used.
+In our implementation we have used uses the local file system for storing embeddings and FAISS vector store for retrieval.
+store = LocalFileStore("./cache/")
+If we try to create the vector store again, it’ll be much faster since it does not need to re-compute any embeddings.
+We can also set up an in memory cache for embeddings.
+store = InMemoryStore()
+This type of cache is primarily useful for unit tests or prototyping. Do not use this cache if you need to actually store the embeddings.
+Hybrid Vector Search
+Hybrid Search is basically a combination of keyword style search and a vector style search. It has the advantage of doing keyword search as well as the advantage of doing a semantic lookup that we get from embeddings and a vector search.
+Keyword Search :
+Here we use BM25 Algorithm. It generates a sparse vector.BM25 (Best Match 25) is an information retrieval algorithm used to rank and score the relevance of documents to a particular search query. It’s an extension of the
+TF-IDF (Term Frequency-Inverse Document Frequency) approach.
+Key points about BM25:
+Term Frequency (TF):
+Measures the frequency of a term in a document.
+Inverse Document Frequency (IDF):
+Measures the importance of a term based on its frequency across the entire document collection.
+BM25 Weighting:
+Combines TF and IDF to calculate the relevance score of a document for a given query.
+Query Terms:
+BM25 considers the occurrence of query terms in the document and adjusts their scores accordingly.
+Parameter Tuning:
+BM25 involves tuning parameters (k1, b) to optimize the ranking performance based on the dataset.
+Semantic Search:
+Semantic search is a search method that aims to improve the accuracy and relevance of search results by understanding the context and meaning behind a search query. Unlike traditional keyword-based search, which primarily relies on matching keywords, semantic search tries to comprehend the intent and context of the user’s query and the content of the documents being searched.
+Semantic search strives to mimic human understanding of language and context, ultimately delivering search results that align better with the user’s information needs.
+In our implementation we have used FAISS for semantic search and BM25 for keyword search to implement Hybrid Search using langchain
+EnsembleRetriever.
+The
+EnsembleRetriever
+takes a list of retrievers as input and ensemble the results of their
+get_relevant_documents()
+methods and rerank the results based on the
+Reciprocal Rank Fusion
+algorithm.
+By leveraging the strengths of different algorithms, the
+EnsembleRetriever
+can achieve better performance than any single algorithm.
+The most common pattern is to combine a sparse retriever (like BM25) with a dense retriever (like embedding similarity), because their strengths are complementary. It is also known as “hybrid search”.
+The sparse retriever is good at finding relevant documents based on keywords, while the dense retriever is good at finding relevant documents based on semantic similarity.
+InMemoryCaching
+Here Caching happens for every user query and response generated provided the user query does not matches already requested query.
+Implementation Stack:
+Embedder :
+BAAI general embedding
+Retrieval :
+FAISS Vectorstore
+Generation :
+Mistral-7B-Instruct GPTQ model
+Infrastructure :
+Google Colab, A100 GPU
+Data
+: Finacial Documents
+Implementation Details:
+Install required Packages
+!pip install -q git+https://github.com/huggingface/transformers
+!pip install -qU langchain Faiss-gpu tiktoken sentence-transformers
+!pip install -qU trl Py7zr auto-gptq optimum
+!pip install -q rank_bm25
+!pip install -q PyPdf
+Import Necessary packages
+import langchain
+from langchain.embeddings import CacheBackedEmbeddings,HuggingFaceEmbeddings
+from langchain.vectorstores import FAISS
+from langchain.storage import LocalFileStore
+from langchain.retrievers import BM25Retriever,EnsembleRetriever
+from langchain.document_loaders import PyPDFLoader,DirectoryLoader
+from langchain.llms import HuggingFacePipeline
+from langchain.cache import InMemoryCache
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain.schema import prompt
+from langchain.chains import RetrievalQA
+from langchain.callbacks import StdOutCallbackHandler
+from langchain import PromptTemplate
+#
+from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
+Data parsing and Loading using LangChain
+dir_loader = DirectoryLoader("/content/Data",
+glob="*.pdf",
+loader_cls=PyPDFLoader)
+docs = dir_loader.load()
+#
+print(f"len of documents in :{len(docs)}")
+"""
+len of documents in :85
+"""
+Create Managebale pieces of text by using RecursiveCharacterTextSplitter to create chunks for reviews
+#
+text_splitter = RecursiveCharacterTextSplitter(chunk_size=500,
+chunk_overlap=200,)
+#
+esops_documents = text_splitter.transform_documents(docs)
+print(f"number of chunks in barbie documents : {len(esops_documents)}")
+"""
+number of chunks in barbie documents : 429
+"""
+Create Vectorstore
+Here we will leverage a
+CacheBackedEmbeddings
+to prevent us from re-embedding similar queries over and over again.
+Structured documents will be passed into a useful format for querying ,retrieving and use in LLM application
+here we will use FAISS(Facebook AI similarity search) as the vectorstore.
+store = LocalFileStore("./cache/")
+embed_model_id = 'BAAI/bge-small-en-v1.5'
+core_embeddings_model = HuggingFaceEmbeddings(model_name=embed_model_id)
+embedder = CacheBackedEmbeddings.from_bytes_store(core_embeddings_model,
+store,
+namespace=embed_model_id)
+# Create VectorStore
+vectorstore = FAISS.from_documents(esops_documents,embedder)
+Create Sparse Embedding
+bm25_retriever = BM25Retriever.from_documents(esops_documents)
+bm25_retriever.k=5
+Retrieve passages from the vectorstore that are similar to the query
+query = "Ho to save my excess money?"
+embedding_vector = core_embeddings_model.embed_query(query)
+print(len(embedding_vector))
+#
+docs_resp = vectorstore.similarity_search_by_vector(embedding_vector,k=5)
+#
+for page in docs_resp:
+print(page.page_content)
+print("\n")
+"""
+looking at how you could make your money grow if you de -
+cided to spend less on other things and save those extra dollars.
+If you buy on impulse, make a rule that you’ll always wait
+24 hours to buy anything. Y ou may lose your desire to buy it
+after a day. And try emptying your pockets and wallet of spare
+change at the end of each day.  Y ou’ll be surprised how quickly
+those nickels and dimes add up!
+PAY OFF CREDIT CARD OR OTHER HIGH
+INTEREST DEBT
+keep pace with an 18 percent interest charge. That’s why you’re
+better off eliminating all credit card debt before investing savings.
+Once you’ve paid off your credit cards, you can budget your
+money and begin to save and invest. Here are some tips for
+avoiding credit card debt:
+Put Away the Plastic
+Don’t use a credit card unless your debt is at a manageable level and
+you know you’ll have the money to pay the bill when it arrives.
+Know What You Owe
+Add up your total retirement savings, both at
+first pay down the card that charges the highest rate. Pay as much
+as you can toward that debt each month until your balance is once
+again zero, while still paying the minimum on your other cards.
+The same advice goes for any other high interest debt (about 8% or
+above) which does not offer the tax advantages of, for example, a mortgage.
+Now, once you have paid off those credit cards and begun to
+set aside some money to save and invest, what are your choices?
+earns. Over time, even a small amount saved can add up to big money.
+If you are willing to watch what you spend and look for
+little ways to save on a regular schedule, you can make money
+grow. Y ou just did it with one cup of coffee.
+If a small cup of coffee can make such a huge difference, start
+looking at how you could make your money grow if you de -
+cided to spend less on other things and save those extra dollars.
+If you buy on impulse, make a rule that you’ll always wait
+"""
+Check to see how much time CacheBackedEmbeddings pattern saves us
+%%timeit -n 1 -r 1
+query = "How to save my excess money?"
+#
+embedding_vector = core_embeddings_model.embed_query(query)
+docs_resp = vectorstore.similarity_search_by_vector(embedding_vector,k=5)
+"""
+21.1 ms ± 0 ns per loop (mean ± std. dev. of 1 run, 1 loop each)
+"""
+Setup Ensemble Retriever (Hybrid Search)
+faiss_retriever = vectorstore.as_retriever(search_kwargs={"k":5})
+ensemble_retriever = EnsembleRetriever(retrievers=[bm25_retriever,faiss_retriever],
+weights=[0.5,0.5])
+Download the quantized GPTQ Model
+from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
+model_name_or_path = "TheBloke/Mistral-7B-Instruct-v0.1-GPTQ"
+# To use a different branch, change revision
+# For example: revision="gptq-4bit-32g-actorder_True"
+model = AutoModelForCausalLM.from_pretrained(model_name_or_path,
+device_map="auto",
+trust_remote_code=False,
+revision="gptq-8bit-32g-actorder_True")
+#
+tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, use_fast=True)
+Create Pipeline
+pipe = pipeline(
+"text-generation",
+model=model,
+tokenizer=tokenizer,
+max_new_tokens=512,
+do_sample=True,
+temperature=0.1,
+top_p=0.95,
+top_k=40,
+repetition_penalty=1.1
+)
+Initialize LLM using a quantized GPTQ Model
+from langchain.llms import HuggingFacePipeline
+llm = HuggingFacePipeline(pipeline=pipe)
+Setup Caching
+langchain.llm_cache = InMemoryCache()
+Formulate the Prompt Template
+PROMPT_TEMPLATE = '''
+You are my financial advisor. You are great at providing tips on investments, savings and on financial markets with your knowledge in finances.
+With the information being provided try to answer the question.
+If you cant answer the question based on the information either say you cant find an answer or unable to find an answer.
+So try to understand in depth about the context and answer only based on the information provided. Dont generate irrelevant answers
+Context: {context}
+Question: {question}
+Do provide only helpful answers
+Helpful answer:
+'''
+#
+input_variables = ['context', 'question']
+#
+custom_prompt = PromptTemplate(template=PROMPT_TEMPLATE,
+input_variables=input_variables)
+Setup Retrieval chain — without Hybrid Search
+handler = StdOutCallbackHandler()
+#
+qa_with_sources_chain = RetrievalQA.from_chain_type(
+llm=llm,
+chain_type="stuff",
+retriever = vectorstore.as_retriever(search_kwargs={"k":5}),
+verbose=True,
+callbacks=[handler],
+chain_type_kwargs={"prompt": custom_prompt},
+return_source_documents=True
+)
+Process the user query1
+%%time
+query = "How to save my excess money?"
+response = qa_with_sources_chain({"query":query})
+print(f"Response generated : \n {response['result']}")
+print(f"Source Documents : \n {response['source_documents']}")
+"""
+OUTPUT
+Response generated :
+
+To save your excess money, you can consider the following steps:
+1. Set a budget: Determine how much money you can afford to save each month and stick to it.
+2. Automate your savings: Set up automatic transfers from your checking account to your savings account.
+3. Pay off high-interest debt: Interest payments can eat away at your savings over time, so it's important to pay off any high-interest debt as soon as possible.
+4. Invest in low-cost index funds: Index funds are a simple and cost-effective way to invest in the stock market.
+5. Increase your income: Consider taking on a part-time job or negotiating a raise at your current job to increase your income.
+6. Reduce expenses: Look for ways to cut back on discretionary spending, such as dining out or buying new clothes.
+7. Use cashback rewards: Utilize cashback rewards from credit cards or shopping websites to earn additional income.
+8. Monitor your progress: Regularly review your savings progress and adjust your budget and investment strategy as needed.
+Source Documents :
+[Document(page_content='looking at how you could make your money grow if you de -\ncided to spend less on other things and save those extra dollars.\nIf you buy on impulse, make a rule that you’ll always wait \n24 hours to buy anything. Y ou may lose your desire to buy it \nafter a day. And try emptying your pockets and wallet of spare \nchange at the end of each day.  Y ou’ll be surprised how quickly \nthose nickels and dimes add up!\nPAY OFF CREDIT CARD OR OTHER HIGH  \nINTEREST DEBT', metadata={'source': '/content/Data/sec-guide-to-savings-and-investing.pdf', 'page': 9}), Document(page_content='and increase income, you may still have trouble saving enough for retirement and your other goals. Here are some tips.\nnPay yourself first. Put away first \nthe money you want to set aside for goals. Have money automatically withdrawn from your checking account and put into savings or an investment. Join a retirement plan at work that deducts money from your paycheck. Or deposit your retirement savings yourself, the first thing. What you don’t see, you don’t miss.', metadata={'source': '/content/Data/savings-fitness.pdf', 'page': 12}), Document(page_content='keep pace with an 18 percent interest charge. That’s why you’re \nbetter off eliminating all credit card debt before investing savings. \nOnce you’ve paid off your credit cards, you can budget your \nmoney and begin to save and invest. Here are some tips for \navoiding credit card debt:\nPut Away the Plastic\n Don’t use a credit card unless your debt is at a manageable level and \nyou know you’ll have the money to pay the bill when it arrives.\nKnow What You Owe', metadata={'source': '/content/Data/sec-guide-to-savings-and-investing.pdf', 'page': 10}), Document(page_content='earns. Over time, even a small amount saved can add up to big money.\nIf you are willing to watch what you spend and look for \nlittle ways to save on a regular schedule, you can make money \ngrow. Y ou just did it with one cup of coffee.\nIf a small cup of coffee can make such a huge difference, start \nlooking at how you could make your money grow if you de -\ncided to spend less on other things and save those extra dollars.\nIf you buy on impulse, make a rule that you’ll always wait', metadata={'source': '/content/Data/sec-guide-to-savings-and-investing.pdf', 'page': 9}), Document(page_content='too late if you don’t start at all.\nnSock it away. Pump everything you can into your tax-sheltered retirement plans and personal savings. Try to put away at least 20 percent of your income.\nnReduce expenses. Funnel the savings into your nest egg.\nnTake a second job or work extra hours.', metadata={'source': '/content/Data/savings-fitness.pdf', 'page': 10})]
+CPU times: user 23.1 s, sys: 480 ms, total: 23.6 s
+Wall time: 23.9 s
+"""
+Process the user query2
+%%time
+query = "What are the steps to make a financial planning?"
+response = qa_with_sources_chain({"query":query})
+print(f"Response generated : \n {response['result']}")
+print(f"Source Documents : \n {response['source_documents']}")
+"""
+OUTPUT
+Response generated :
+
+To make a financial plan, follow these steps:
+1. Determine your short-term and long-term financial goals.
+2. Calculate your current net worth.
+3. Identify your sources of income and expenses.
+4. Create a budget that includes all of your income and expenses.
+5. Set aside money for emergency funds and unexpected expenses.
+6. Determine how much you can realistically save and invest each month.
+7. Choose investment options that align with your financial goals and risk tolerance.
+8. Review and adjust your financial plan regularly to ensure that you are on track to meet your goals.
+Source Documents :
+[Document(page_content='Make your own list and then think about which goals are the \nmost important to you. List your most important goals first. \nDecide how many years you have to meet each specific goal, \nbecause when you save or invest you’ll need to find a savings or \nYOUR FINANCIAL GOALS\nIf you don’t know where you are going, you may end up somewhere you don’t want \nto be. To end up where you want to be, you’ll need a roadmap, a financial plan.\nWhat do you want to save or invest for? By when?', metadata={'source': '/content/Data/sec-guide-to-savings-and-investing.pdf', 'page': 5}), Document(page_content='How do you manage all these financial \nchallenges and at the same time try to “buy” a secure retirement? How do you turn your dreams into reality?\nStart by writing down each of your goals in \nWorksheet 1 – Goals and Priorities in the back of this booklet. You may want to have family members come up with ideas. Don’t leave something out at this stage because you don’t think you can afford it. This is your “wish list.”\nOrganize them into goals you want to accomplish', metadata={'source': '/content/Data/savings-fitness.pdf', 'page': 5}), Document(page_content='and a comfortable retirement. If they can do it, so can you!\nKEYS  TO FINANCIAL SUCCESS\n1 . Make a financial plan.\n2. Pay off any high interest debts.\n3.  Start saving and investing as soon as you’ve paid off your debts.', metadata={'source': '/content/Data/sec-guide-to-savings-and-investing.pdf', 'page': 4}), Document(page_content='Plan and complete the last two columns to help you track your progress.\nnPeriodically review your spending plan.\nnMonitor the performance of investments. \nMake adjustments if necessary.\nnMake sure you contribute more toward your retirement as you earn more.\nnUpdate your various insurance safety nets to reflect changes in income or personal circumstances.\nnKeep your finances in order .\nWhere To Go From Here', metadata={'source': '/content/Data/savings-fitness.pdf', 'page': 34}), Document(page_content='Let’s start with a “spending plan” – a guide for \nhow we want to spend our money. Some people call this a budget, but since we’re thinking of retirement as something to buy, a spending plan seems more appropriate.\nA spending plan is simple to set up. Consider \nthe following steps as a guide as you fill in the information in Worksheet 5 – Cash Flow \nSpending Plan in the back of this booklet.\nIncome\nAdd up your monthly income: wages, average', metadata={'source': '/content/Data/savings-fitness.pdf', 'page': 11})]
+CPU times: user 12.7 s, sys: 418 ms, total: 13.1 s
+Wall time: 13 s
+"""
+Process the user query3
+%%time
+query = "Please explain in detail the steps to make a financial planning."
+response = qa_with_sources_chain({"query":query})
+print(f"Response generated : \n {response['result']}")
+print(f"Source Documents : \n {response['source_documents']}")
+print(f"Number of of Documents returned : {len(response['source_documents'])}")
+"""
+OUTPUT
+Response generated :
+
+Financial planning is a process of setting goals, analyzing your current financial situation, creating a plan to meet those goals, and implementing that plan. Here are the steps to create a financial plan:
+1. Set your goals: Start by identifying your short-term, medium-term, and long-term financial goals. These could include saving for a vacation, buying a house, paying off debt, funding education, or planning for retirement. Be sure to write down each goal in Worksheet 1 – Goals and Priorities in the back of this booklet.
+2. Assess your current financial situation: Determine your current income, expenses, assets, and liabilities. This will help you understand where you stand financially and identify areas where you may need to make changes.
+3. Create a spending plan: Develop a spending plan that aligns with your goals and takes into account your income and expenses. This plan should help you allocate funds towards your goals while also ensuring that you have enough money for necessities and emergencies.
+4. Determine your savings and investment needs: Based on your goals, determine how much you need to save and invest to meet them. This may involve calculating how much you need to contribute to a retirement account, how much you need to pay off debt, or how much you need to save for a down payment on a home.
+5. Develop a strategy: Once you have determined your savings and investment needs, develop a strategy for achieving those goals. This may involve investing in stocks, bonds, mutual funds, real estate, or other assets. It may also involve making lifestyle changes, such as reducing expenses or increasing income.
+6. Implement the plan: With your strategy in place, implement the plan by taking action. This may involve opening a retirement account, contributing to it regularly, or making changes to your spending habits.
+7. Monitor and adjust: Regularly monitor your progress towards your goals and adjust your plan as needed. This may involve reevaluating your spending plan, adjusting your investments, or making changes to your lifestyle.
+It's important to note that financial planning can be a complex process, and there are many factors to consider. If you feel overwhelmed or unsure about how to proceed, consider working with a financial planner or investment adviser who can provide guidance and support.
+Source Documents :
+[Document(page_content='How do you manage all these financial \nchallenges and at the same time try to “buy” a secure retirement? How do you turn your dreams into reality?\nStart by writing down each of your goals in \nWorksheet 1 – Goals and Priorities in the back of this booklet. You may want to have family members come up with ideas. Don’t leave something out at this stage because you don’t think you can afford it. This is your “wish list.”\nOrganize them into goals you want to accomplish', metadata={'source': '/content/Data/savings-fitness.pdf', 'page': 5}), Document(page_content='Let’s start with a “spending plan” – a guide for \nhow we want to spend our money. Some people call this a budget, but since we’re thinking of retirement as something to buy, a spending plan seems more appropriate.\nA spending plan is simple to set up. Consider \nthe following steps as a guide as you fill in the information in Worksheet 5 – Cash Flow \nSpending Plan in the back of this booklet.\nIncome\nAdd up your monthly income: wages, average', metadata={'source': '/content/Data/savings-fitness.pdf', 'page': 11}), Document(page_content='Make your own list and then think about which goals are the \nmost important to you. List your most important goals first. \nDecide how many years you have to meet each specific goal, \nbecause when you save or invest you’ll need to find a savings or \nYOUR FINANCIAL GOALS\nIf you don’t know where you are going, you may end up somewhere you don’t want \nto be. To end up where you want to be, you’ll need a roadmap, a financial plan.\nWhat do you want to save or invest for? By when?', metadata={'source': '/content/Data/sec-guide-to-savings-and-investing.pdf', 'page': 5}), Document(page_content='Yet like many people you may wonder how you can achieve that dream when so many other financial issues have priority.\nWrite down on Worksheet 1 what you need to \ndo to accomplish each goal: When do you want to accomplish it, what will it cost (we’ll tell you more about that later), what money have you set aside already, and what you are willing to do to reach the goal.\nLook again at the order of priority. How hard', metadata={'source': '/content/Data/savings-fitness.pdf', 'page': 5}), Document(page_content='Some financial planners and investment advisers offer a \ncomplete financial plan, assessing every aspect of your financial \nlife and developing a detailed strategy for meeting your finan -\ncial goals. They may charge you a fee for the plan, a percentage \nof your assets that they manage, or receive commissions from \nthe companies whose products you buy, or a combination of \nthese. Y ou should know exactly what services you are getting \nand how much they will cost.', metadata={'source': '/content/Data/sec-guide-to-savings-and-investing.pdf', 'page': 20})]
+Number of of Documents returned : 5
+CPU times: user 45.6 s, sys: 1.23 s, total: 46.9 s
+Wall time: 46.7 s
+"""
+Process the user query4
+%%time
+query ="How to plan for retirement while still young?"
+response = qa_with_sources_chain({"query":query})
+print(f"Response generated : \n {response['result']}")
+print(f"Source Documents : \n {response['source_documents']}")
+print(f"Number of Documents returned : {len(response['source_documents'])}")
+"""
+OUTPUT
+Response generated :
+
+To plan for retirement while still young, it's important to start early and make regular contributions to a retirement plan. This can help ensure that you have enough savings to support your desired lifestyle during retirement. Additionally, it's important to consider factors such as inflation and potential changes in market conditions when planning for retirement. It may also be helpful to consult with a financial advisor to develop a personalized retirement plan that takes into account your individual financial situation and goals.
+Source Documents :
+[Document(page_content='Fortunately, there are steps you can still take to \nbuild your retirement strength.\nTake a job with a plan\nIf two jobs offer similar pay and working \nconditions, the job that offers retirement benefits may be the better choice.\nStart your own plan\nIf you can’t join a company plan, you can save \non your own. You can’t put away as much as on a tax-deferred basis and you won’t have an employer match. Still, you can build a healthy nest egg if you work at it.\nOpen an IRA', metadata={'source': '/content/Data/savings-fitness.pdf', 'page': 25}), Document(page_content='and increase income, you may still have trouble saving enough for retirement and your other goals. Here are some tips.\nnPay yourself first. Put away first \nthe money you want to set aside for goals. Have money automatically withdrawn from your checking account and put into savings or an investment. Join a retirement plan at work that deducts money from your paycheck. Or deposit your retirement savings yourself, the first thing. What you don’t see, you don’t miss.', metadata={'source': '/content/Data/savings-fitness.pdf', 'page': 12}), Document(page_content='SAVINGS FITNESS: A GUIDE TO YOUR MONEY AND YOUR FINANCIAL FUTURE5\nPLANNING FOR RETIREMENT \nWHILE YOU ARE STILL YOUNG\nRetirement probably seems vague and \nfar off at this stage of your life. Besides, you have other things to buy right now. Yet there are some crucial reasons to start preparing now for retirement.\nYou’ll probably have to pay for more \nof your own retirement than earlier generations. The sooner you get started, the better.\nYou have one huge ally – time. Let’s say', metadata={'source': '/content/Data/savings-fitness.pdf', 'page': 7}), Document(page_content='On line 1, enter your current retirement savings.  Make sure you include all of the savings and assets \nyou have for retirement.  Next, enter the number of years until you plan to retire – use the same number you used in Step 1.  Multiply your current savings by the projected value factor (from the box below the Step 3 worksheet) that you choose based on the number of years until retirement.  The result is what your current savings will be worth at retirement.\nStep 3 \n1. Current savings', metadata={'source': '/content/Data/savings-fitness.pdf', 'page': 44}), Document(page_content='Start by entering the number of years until you plan to retire from Step 1 on line 1.  Next, enter the \nestimated savings needed at retirement from Step 2. From Step 3, write down the value of your current savings at retirement on line 3. Subtract line 3 from line 2 and enter it on line 4 – this is the additional retirement savings you need.\nEnter your current annual salary on line 5. Multiply it by the projected saving rate factor (in the box', metadata={'source': '/content/Data/savings-fitness.pdf', 'page': 45})]
+Number of Documents returned : 5
+CPU times: user 9.19 s, sys: 284 ms, total: 9.48 s
+Wall time: 9.44 s
+"""
+Setup Retrieval chain — with Hybrid Search
+#
+handler = StdOutCallbackHandler()
+#
+qa_with_sources_chain = RetrievalQA.from_chain_type(
+llm=llm,
+chain_type="stuff",
+retriever = ensemble_retriever,
+callbacks=[handler],
+chain_type_kwargs={"prompt": custom_prompt},
+return_source_documents=True
+)
+Process user query1
+%%time
+query = "How to save my excess money?"
+response = qa_with_sources_chain({"query":query})
+print(f"Response generated : \n {response['result']}")
+print(f"Source Documents : \n {response['source_documents']}")
+"""
+OUTPUT
+Response generated :
+
+The best way to save money is to automate the process. Set up automatic transfers from your checking account to your savings account. This ensures that you consistently save money without having to think about it. Additionally, consider setting up automatic contributions to your retirement accounts. This will ensure that you consistently contribute towards your retirement goals without having to remember to make payments.
+Another helpful tip is to create a budget and stick to it. By tracking your expenses and identifying areas where you can cut back, you can free up additional funds to save. It's also important to prioritize your spending and focus on needs rather than wants. By doing so, you can reduce unnecessary expenses and allocate more funds towards your savings goals.
+Lastly, consider finding ways to earn more money. This could include taking on a side hustle, negotiating a raise at work, or investing in passive income streams. By increasing your income, you can save more money and reach your financial goals faster.
+Source Documents :
+[Document(page_content='or are you more concerned about the safety of my money?\n•  Describe your typical client. Can you provide me with ref -\nerences, the names of people who have invested with you \nfor a long time?\n•  How do you get paid? By commission? Based on a per -\ncentage of assets you manage? Another method? Do you \nget paid more for selling your own firm’s products?\n•  How much will it cost me in total to do business with you?\nY our investment professional should understand your invest -', metadata={'source': '/content/Data/sec-guide-to-savings-and-investing.pdf', 'page': 24}), Document(page_content='looking at how you could make your money grow if you de -\ncided to spend less on other things and save those extra dollars.\nIf you buy on impulse, make a rule that you’ll always wait \n24 hours to buy anything. Y ou may lose your desire to buy it \nafter a day. And try emptying your pockets and wallet of spare \nchange at the end of each day.  Y ou’ll be surprised how quickly \nthose nickels and dimes add up!\nPAY OFF CREDIT CARD OR OTHER HIGH  \nINTEREST DEBT', metadata={'source': '/content/Data/sec-guide-to-savings-and-investing.pdf', 'page': 9}), Document(page_content='Here are some questions you should ask when choosing an \ninvestment professional or someone to help you:\n•  What training and experience do you have? How long \nhave you been in business?\n•  What is your investment philosophy? Do you take a lot of risks \nor are you more concerned about the safety of my money?\n•  Describe your typical client. Can you provide me with ref -\nerences, the names of people who have invested with you \nfor a long time?', metadata={'source': '/content/Data/sec-guide-to-savings-and-investing.pdf', 'page': 24}), Document(page_content='and increase income, you may still have trouble saving enough for retirement and your other goals. Here are some tips.\nnPay yourself first. Put away first \nthe money you want to set aside for goals. Have money automatically withdrawn from your checking account and put into savings or an investment. Join a retirement plan at work that deducts money from your paycheck. Or deposit your retirement savings yourself, the first thing. What you don’t see, you don’t miss.', metadata={'source': '/content/Data/savings-fitness.pdf', 'page': 12}), Document(page_content='keep pace with an 18 percent interest charge. That’s why you’re \nbetter off eliminating all credit card debt before investing savings. \nOnce you’ve paid off your credit cards, you can budget your \nmoney and begin to save and invest. Here are some tips for \navoiding credit card debt:\nPut Away the Plastic\n Don’t use a credit card unless your debt is at a manageable level and \nyou know you’ll have the money to pay the bill when it arrives.\nKnow What You Owe', metadata={'source': '/content/Data/sec-guide-to-savings-and-investing.pdf', 'page': 10}), Document(page_content='A ROADMAP TO YOUR JOURNEY TO FINANCIAL SECURITY  |  27•How will the investment make money?\n•How is this investment consistent with my investment goals?\n•What must happen for the investment to increase in value?\n•What are the risks?\n•Where can I get more information?\nFinally, it’s always a good idea to write down everything your\ninvestment professional tells you. Accurate notes will come in \nhandy if ever there’s a problem.\nSome investments make money. Others lose money. That’s', metadata={'source': '/content/Data/sec-guide-to-savings-and-investing.pdf', 'page': 28}), Document(page_content='n\nDomestic stocks.  You own part of a U.S. \ncompany.\nnMutual funds.  Instead of investing directly in \nstocks, bonds, or real estate, for example, you can use mutual funds. These pool your money with money of other shareholders and invest it for you. A stock mutual fund, for example, would invest in stocks on behalf of all the fund’s shareholders. This makes it easier to invest and to diversify your money.Choosing where to put \nyour money\nHow do you decide where to put your money?', metadata={'source': '/content/Data/savings-fitness.pdf', 'page': 15}), Document(page_content='earns. Over time, even a small amount saved can add up to big money.\nIf you are willing to watch what you spend and look for \nlittle ways to save on a regular schedule, you can make money \ngrow. Y ou just did it with one cup of coffee.\nIf a small cup of coffee can make such a huge difference, start \nlooking at how you could make your money grow if you de -\ncided to spend less on other things and save those extra dollars.\nIf you buy on impulse, make a rule that you’ll always wait', metadata={'source': '/content/Data/sec-guide-to-savings-and-investing.pdf', 'page': 9}), Document(page_content='too late if you don’t start at all.\nnSock it away. Pump everything you can into your tax-sheltered retirement plans and personal savings. Try to put away at least 20 percent of your income.\nnReduce expenses. Funnel the savings into your nest egg.\nnTake a second job or work extra hours.', metadata={'source': '/content/Data/savings-fitness.pdf', 'page': 10}), Document(page_content='SAVINGS FITNESS: A GUIDE TO YOUR MONEY AND YOUR FINANCIAL FUTURE9BOOST YOUR FINANCIAL \nPERFORMANCE\n“Spend” for Retirement\nNow comes the tough part. You have a rough idea of \nhow much you need to save each month to reach your retirement goal. But how do you find that money? Where does it come from?\nThere’s one simple trick for saving for any goal:', metadata={'source': '/content/Data/savings-fitness.pdf', 'page': 11})]
+CPU times: user 19.3 s, sys: 690 ms, total: 20 s
+Wall time: 20 s
+"""
+Here we can see that the hybrid embedding search gives a better response
+Process user query2
+%%time
+query = "What are the steps to make a financial planning?"
+response = qa_with_sources_chain({"query":query})
+print(f"Response generated : \n {response['result']}")
+print(f"Source Documents : \n {response['source_documents']}")
+"""
+OUTPUT
+Response generated :
+
+To make a financial plan, follow these steps:
+1. Determine your financial goals: Write down your short-term and long-term financial goals, such as paying off debt, saving for a vacation, buying a house, or retiring comfortably.
+2. Calculate your current financial situation: Determine your current income, expenses, assets, and liabilities. This will give you an idea of where you stand financially and help you identify areas where you need to improve.
+3. Set a timeline: Estimate how long it will take you to achieve each of your financial goals, based on your current financial situation and your expected income and expenses in the future.
+4. Create a budget: Based on your estimated income and expenses, create a budget that helps you allocate funds towards your financial goals. This should include both discretionary and non-discretionary spending.
+5. Choose investment strategies: Determine the types of investments that align with your financial goals and risk tolerance. This could include stocks, bonds, mutual funds, real estate, or other investment vehicles.
+6. Review and adjust your plan regularly: Periodically review your financial plan and make adjustments as needed based on changes in your financial situation, market conditions, and your progress towards your goals.
+Remember, making a financial plan is an ongoing process, and it's important to stay flexible and adaptable as your financial needs and goals change over time.
+Source Documents :
+[Document(page_content='Make your own list and then think about which goals are the \nmost important to you. List your most important goals first. \nDecide how many years you have to meet each specific goal, \nbecause when you save or invest you’ll need to find a savings or \nYOUR FINANCIAL GOALS\nIf you don’t know where you are going, you may end up somewhere you don’t want \nto be. To end up where you want to be, you’ll need a roadmap, a financial plan.\nWhat do you want to save or invest for? By when?', metadata={'source': '/content/Data/sec-guide-to-savings-and-investing.pdf', 'page': 5}), Document(page_content='SAVINGS FITNESS: A GUIDE TO YOUR MONEY AND YOUR FINANCIAL FUTURE23FINANCIAL FITNESS FOR \nTHE SELF-EMPLOYED\nWhat To Do If You Can’t Join an \nEmployer-Based Plan\nYou may not be able to join an employer-based \nretirement plan because you are not eligible or because the employer doesn’t offer one.\nFortunately, there are steps you can still take to \nbuild your retirement strength.\nTake a job with a plan\nIf two jobs offer similar pay and working', metadata={'source': '/content/Data/savings-fitness.pdf', 'page': 25}), Document(page_content='U.S. DEPARTMENT OF LABOR24You also may want to seek the help of \na professional financial planner. Go to \nLetsMakeAPlan.org  for tips on choosing a \nfinancial planner who is required to act in your best interest when providing financial planning advice. \nWhat To Do If You Are \nSelf-Employed\nMany people today work for themselves, either \nfull time or in addition to their regular job. They have several tax-deferred options from which to choose.\nSEP\nThis is the same type of SEP described earlier', metadata={'source': '/content/Data/savings-fitness.pdf', 'page': 26}), Document(page_content='How do you manage all these financial \nchallenges and at the same time try to “buy” a secure retirement? How do you turn your dreams into reality?\nStart by writing down each of your goals in \nWorksheet 1 – Goals and Priorities in the back of this booklet. You may want to have family members come up with ideas. Don’t leave something out at this stage because you don’t think you can afford it. This is your “wish list.”\nOrganize them into goals you want to accomplish', metadata={'source': '/content/Data/savings-fitness.pdf', 'page': 5}), Document(page_content='and a comfortable retirement. If they can do it, so can you!\nKEYS  TO FINANCIAL SUCCESS\n1 . Make a financial plan.\n2. Pay off any high interest debts.\n3.  Start saving and investing as soon as you’ve paid off your debts.', metadata={'source': '/content/Data/sec-guide-to-savings-and-investing.pdf', 'page': 4}), Document(page_content='What savings do I already have \nfor retirement?\nYou’ll need to build a nest egg sufficient to make \nup the gap between the total amount of income you will need each year and the amount provided annually by Social Security and any retirement income. This nest egg will come from your retirement plan accounts at work, IRAs, annuities, and personal savings.\nWhat adjustments must be made \nfor inflation?\nThe cost of retirement will likely go up every', metadata={'source': '/content/Data/savings-fitness.pdf', 'page': 9}), Document(page_content='Plan and complete the last two columns to help you track your progress.\nnPeriodically review your spending plan.\nnMonitor the performance of investments. \nMake adjustments if necessary.\nnMake sure you contribute more toward your retirement as you earn more.\nnUpdate your various insurance safety nets to reflect changes in income or personal circumstances.\nnKeep your finances in order .\nWhere To Go From Here', metadata={'source': '/content/Data/savings-fitness.pdf', 'page': 34}), Document(page_content='What will my investments return?\nAny calculation must take into account what \nannual rate of return you expect to earn on the savings you’ve already accumulated and on the savings you intend to make in the future. You also need to determine the rate of return on your savings after you retire. These rates of return will depend in part on whether the money is inside or outside a tax-deferred account.\nIt’s important to choose realistic annual returns', metadata={'source': '/content/Data/savings-fitness.pdf', 'page': 9}), Document(page_content='Let’s start with a “spending plan” – a guide for \nhow we want to spend our money. Some people call this a budget, but since we’re thinking of retirement as something to buy, a spending plan seems more appropriate.\nA spending plan is simple to set up. Consider \nthe following steps as a guide as you fill in the information in Worksheet 5 – Cash Flow \nSpending Plan in the back of this booklet.\nIncome\nAdd up your monthly income: wages, average', metadata={'source': '/content/Data/savings-fitness.pdf', 'page': 11}), Document(page_content='For more information, visit their website or call \n1-800-772-1213 .\nWill you have other sources of income?\nFor instance, will you receive retirement benefits \nthat provide a specific amount of retirement income each month? Is the benefit adjusted for inflation?\nWhat savings do I already have \nfor retirement?\nYou’ll need to build a nest egg sufficient to make', metadata={'source': '/content/Data/savings-fitness.pdf', 'page': 9})]
+CPU times: user 28.7 s, sys: 946 ms, total: 29.7 s
+Wall time: 29.6 s
+"""
+Process user query3
+%%time
+query = "Please explain in detail the steps to make a financial planning."
+response = qa_with_sources_chain({"query":query})
+print(f"Response generated : \n {response['result']}")
+print(f"Source Documents : \n {response['source_documents']}")
+print(f"Number of of Documents returned : {len(response['source_documents'])}")
+"""
+OUTPUT
+Financial planning is a process of setting goals, analyzing your current financial situation, developing strategies, and implementing actions to achieve those goals. Here are some general steps to consider:
+1. Set clear, realistic goals: Determine what you want to achieve financially, both short-term and long-term. Make sure your goals are specific, measurable, attainable, relevant, and timely (SMART).
+2. Assess your current financial situation: Gather information about your income, expenses, assets, liabilities, and net worth. This will help you understand where you stand financially and identify areas for improvement.
+3. Develop a spending plan: Create a budget that outlines your expected income and expenses. Allocate funds towards your goals while ensuring you have enough for necessities and emergencies.
+4. Analyze your risk tolerance and investment options: Understand how much risk you're comfortable taking on and research various investment vehicles, such as stocks, bonds, mutual funds, and real estate. Consider factors like potential returns, volatility, and fees.
+5. Create an investment strategy: Based on your risk tolerance and goals, determine the optimal allocation of your investments across different asset classes. Regularly review and adjust your strategy as needed.
+6. Implement actions and monitor progress: Take concrete steps to achieve your goals, such as saving regularly, reducing debt, and investing according to your plan. Track your progress regularly and make adjustments as necessary.
+7. Review and update your plan periodically: As your financial situation and goals change, revisit your plan and update it accordingly. This will help ensure you remain on track to achieving your objectives.
+Remember, financial planning is a continuous process, and it's essential to stay informed and adapt your plan as needed. Consult with a financial advisor or planner if you need guidance or support in creating a comprehensive financial plan.
+Source Documents :
+[Document(page_content='Let’s start with a “spending plan” – a guide for \nhow we want to spend our money. Some people call this a budget, but since we’re thinking of retirement as something to buy, a spending plan seems more appropriate.\nA spending plan is simple to set up. Consider \nthe following steps as a guide as you fill in the information in Worksheet 5 – Cash Flow \nSpending Plan in the back of this booklet.\nIncome\nAdd up your monthly income: wages, average', metadata={'source': '/content/Data/savings-fitness.pdf', 'page': 11}), Document(page_content='secure retirement a reality: financial planning. It will help clarify your retirement goals as well as other financial goals you want to “buy” along the way. It will show you how to manage your money so you can afford today’s needs yet still fund tomorrow’s goals. It will help you make saving for retirement and other goals a habit. You’ll learn there is no such thing as starting to save too early or too late —  only not starting at all! You’ll learn how to save your money to make it work for', metadata={'source': '/content/Data/savings-fitness.pdf', 'page': 4}), Document(page_content='How do you manage all these financial \nchallenges and at the same time try to “buy” a secure retirement? How do you turn your dreams into reality?\nStart by writing down each of your goals in \nWorksheet 1 – Goals and Priorities in the back of this booklet. You may want to have family members come up with ideas. Don’t leave something out at this stage because you don’t think you can afford it. This is your “wish list.”\nOrganize them into goals you want to accomplish', metadata={'source': '/content/Data/savings-fitness.pdf', 'page': 5}), Document(page_content='CFP Board also has a keen interest in helping \nAmericans meet their personal and financial goals. A nonprofit, certifying and standards-setting organization, CFP Board’s mission is to benefit the public by granting the CFP\n® \ncertification and upholding it as the recognized standard of excellence for competent and ethical personal financial planning. To this end, CFP Board authorizes individuals who meet its competency, ethics and professional standards to use its trademarks CFP\n®, CERTIFIED', metadata={'source': '/content/Data/savings-fitness.pdf', 'page': 4}), Document(page_content='Make your own list and then think about which goals are the \nmost important to you. List your most important goals first. \nDecide how many years you have to meet each specific goal, \nbecause when you save or invest you’ll need to find a savings or \nYOUR FINANCIAL GOALS\nIf you don’t know where you are going, you may end up somewhere you don’t want \nto be. To end up where you want to be, you’ll need a roadmap, a financial plan.\nWhat do you want to save or invest for? By when?', metadata={'source': '/content/Data/sec-guide-to-savings-and-investing.pdf', 'page': 5}), Document(page_content='28  |  SAVING AND INVESTINGKeep in T ouch With Us\nWe hope that you’ve found this brochure helpful. Please let us \nknow how it can be improved. \nWe’ve only covered the basics, and there’s a lot more to learn \nabout saving and investing. But you’ll be learning as you go and over your lifetime. \nAs we said at the beginning, the most important thing is to \nget started. And remember to ask questions as you make your investment decisions. \nBe sure to find out if the person is licensed to sell invest -', metadata={'source': '/content/Data/sec-guide-to-savings-and-investing.pdf', 'page': 29}), Document(page_content='Yet like many people you may wonder how you can achieve that dream when so many other financial issues have priority.\nWrite down on Worksheet 1 what you need to \ndo to accomplish each goal: When do you want to accomplish it, what will it cost (we’ll tell you more about that later), what money have you set aside already, and what you are willing to do to reach the goal.\nLook again at the order of priority. How hard', metadata={'source': '/content/Data/savings-fitness.pdf', 'page': 5}), Document(page_content='No one can guarantee that you’ll make money from \ninvestments you make. But if you get the facts about sav -\ning and investing and follow through with an intelligent plan, you should be able to gain financial security over the years and enjoy the benefits of managing your money.\nPlease feel free to contact us with any of your ques -\ntions or concerns about investing. It always pays to learn before you invest. And congratulations on taking your first step on the road to financial security!', metadata={'source': '/content/Data/sec-guide-to-savings-and-investing.pdf', 'page': 2}), Document(page_content='Some financial planners and investment advisers offer a \ncomplete financial plan, assessing every aspect of your financial \nlife and developing a detailed strategy for meeting your finan -\ncial goals. They may charge you a fee for the plan, a percentage \nof your assets that they manage, or receive commissions from \nthe companies whose products you buy, or a combination of \nthese. Y ou should know exactly what services you are getting \nand how much they will cost.', metadata={'source': '/content/Data/sec-guide-to-savings-and-investing.pdf', 'page': 20})]
+Number of of Documents returned : 9
+CPU times: user 37.8 s, sys: 1.24 s, total: 39 s
+Wall time: 38.9 s
+"""
+Process user query4
+%%time
+query = "What are the steps to make a financial planning?"
+response = qa_with_sources_chain({"query":query})
+print(f"Response generated : \n {response['result']}")
+print(f"Source Documents : \n {response['source_documents']}")
+"""
+OUTPUT
+Response generated :
+
+To make a financial plan, follow these steps:
+1. Determine your financial goals: Write down your short-term and long-term financial goals, such as paying off debt, saving for a vacation, buying a house, or retiring comfortably.
+2. Calculate your current financial situation: Determine your current income, expenses, assets, and liabilities. This will give you an idea of where you stand financially and help you identify areas where you need to improve.
+3. Set a timeline: Estimate how long it will take you to achieve each of your financial goals, based on your current financial situation and your expected income and expenses in the future.
+4. Create a budget: Based on your estimated income and expenses, create a budget that helps you allocate funds towards your financial goals. This should include both discretionary and non-discretionary spending.
+5. Choose investment strategies: Determine the types of investments that align with your financial goals and risk tolerance. This could include stocks, bonds, mutual funds, real estate, or other investment vehicles.
+6. Review and adjust your plan regularly: Periodically review your financial plan and make adjustments as needed based on changes in your financial situation, market conditions, and your progress towards your goals.
+Remember, making a financial plan is an ongoing process, and it's important to stay flexible and adaptable as your financial needs and goals change over time.
+Source Documents :
+[Document(page_content='Make your own list and then think about which goals are the \nmost important to you. List your most important goals first. \nDecide how many years you have to meet each specific goal, \nbecause when you save or invest you’ll need to find a savings or \nYOUR FINANCIAL GOALS\nIf you don’t know where you are going, you may end up somewhere you don’t want \nto be. To end up where you want to be, you’ll need a roadmap, a financial plan.\nWhat do you want to save or invest for? By when?', metadata={'source': '/content/Data/sec-guide-to-savings-and-investing.pdf', 'page': 5}), Document(page_content='SAVINGS FITNESS: A GUIDE TO YOUR MONEY AND YOUR FINANCIAL FUTURE23FINANCIAL FITNESS FOR \nTHE SELF-EMPLOYED\nWhat To Do If You Can’t Join an \nEmployer-Based Plan\nYou may not be able to join an employer-based \nretirement plan because you are not eligible or because the employer doesn’t offer one.\nFortunately, there are steps you can still take to \nbuild your retirement strength.\nTake a job with a plan\nIf two jobs offer similar pay and working', metadata={'source': '/content/Data/savings-fitness.pdf', 'page': 25}), Document(page_content='U.S. DEPARTMENT OF LABOR24You also may want to seek the help of \na professional financial planner. Go to \nLetsMakeAPlan.org  for tips on choosing a \nfinancial planner who is required to act in your best interest when providing financial planning advice. \nWhat To Do If You Are \nSelf-Employed\nMany people today work for themselves, either \nfull time or in addition to their regular job. They have several tax-deferred options from which to choose.\nSEP\nThis is the same type of SEP described earlier', metadata={'source': '/content/Data/savings-fitness.pdf', 'page': 26}), Document(page_content='How do you manage all these financial \nchallenges and at the same time try to “buy” a secure retirement? How do you turn your dreams into reality?\nStart by writing down each of your goals in \nWorksheet 1 – Goals and Priorities in the back of this booklet. You may want to have family members come up with ideas. Don’t leave something out at this stage because you don’t think you can afford it. This is your “wish list.”\nOrganize them into goals you want to accomplish', metadata={'source': '/content/Data/savings-fitness.pdf', 'page': 5}), Document(page_content='and a comfortable retirement. If they can do it, so can you!\nKEYS  TO FINANCIAL SUCCESS\n1 . Make a financial plan.\n2. Pay off any high interest debts.\n3.  Start saving and investing as soon as you’ve paid off your debts.', metadata={'source': '/content/Data/sec-guide-to-savings-and-investing.pdf', 'page': 4}), Document(page_content='What savings do I already have \nfor retirement?\nYou’ll need to build a nest egg sufficient to make \nup the gap between the total amount of income you will need each year and the amount provided annually by Social Security and any retirement income. This nest egg will come from your retirement plan accounts at work, IRAs, annuities, and personal savings.\nWhat adjustments must be made \nfor inflation?\nThe cost of retirement will likely go up every', metadata={'source': '/content/Data/savings-fitness.pdf', 'page': 9}), Document(page_content='Plan and complete the last two columns to help you track your progress.\nnPeriodically review your spending plan.\nnMonitor the performance of investments. \nMake adjustments if necessary.\nnMake sure you contribute more toward your retirement as you earn more.\nnUpdate your various insurance safety nets to reflect changes in income or personal circumstances.\nnKeep your finances in order .\nWhere To Go From Here', metadata={'source': '/content/Data/savings-fitness.pdf', 'page': 34}), Document(page_content='What will my investments return?\nAny calculation must take into account what \nannual rate of return you expect to earn on the savings you’ve already accumulated and on the savings you intend to make in the future. You also need to determine the rate of return on your savings after you retire. These rates of return will depend in part on whether the money is inside or outside a tax-deferred account.\nIt’s important to choose realistic annual returns', metadata={'source': '/content/Data/savings-fitness.pdf', 'page': 9}), Document(page_content='Let’s start with a “spending plan” – a guide for \nhow we want to spend our money. Some people call this a budget, but since we’re thinking of retirement as something to buy, a spending plan seems more appropriate.\nA spending plan is simple to set up. Consider \nthe following steps as a guide as you fill in the information in Worksheet 5 – Cash Flow \nSpending Plan in the back of this booklet.\nIncome\nAdd up your monthly income: wages, average', metadata={'source': '/content/Data/savings-fitness.pdf', 'page': 11}), Document(page_content='For more information, visit their website or call \n1-800-772-1213 .\nWill you have other sources of income?\nFor instance, will you receive retirement benefits \nthat provide a specific amount of retirement income each month? Is the benefit adjusted for inflation?\nWhat savings do I already have \nfor retirement?\nYou’ll need to build a nest egg sufficient to make', metadata={'source': '/content/Data/savings-fitness.pdf', 'page': 9})]
+CPU times: user 51.2 ms, sys: 0 ns, total: 51.2 ms
+Wall time: 50.9 ms
+"""
+In the example below Caching is applied. Here since the query has been asked earlier, the response is served from the cache.There is a reduction in response time(50.9 milliseconds when compared to 29.6 seconds in the first run)
+Process user query5
+%%time
+query = "How money works for us ?"
+response = qa_with_sources_chain({"query":query})
+print(f"Response generated : \n {response['result']}")
+print(f"Source Documents : \n {response['source_documents']}")
+"""
+OUTPUT
+Response generated :
+
+There are two main ways to make money: working for it or having it work for you. The latter involves saving or investing your money, which can earn interest or dividends over time. It's important to diversify your investments to minimize risk and maximize potential returns. Additionally, it's crucial to have an emergency fund to cover unexpected expenses before diving into long-term investments.
+Source Documents :
+[Document(page_content='10  |  SAVING AND INVESTINGMaking Money Grow\nTHE TWO WAYS TO MAKE MONEY\nThere are basically two ways to make money.\n1. You work for money.\n  Someone pays you to work for them or you have your own \nbusiness.\n2. Your money works for you.\n Y ou take your money and you save or invest it.\nYOUR MONEY CAN WORK FOR YOU IN TWO WAYS\nYour money earns money.  When your money goes to work, \nit may earn a steady paycheck. Someone pays you to use your \nmoney for a period of time. When you get your money back,', metadata={'source': '/content/Data/sec-guide-to-savings-and-investing.pdf', 'page': 11}), Document(page_content='certificates of deposit. Some deposits in these products may be \ninsured by the Federal Deposit  Insurance Corporation or the \nNational Credit Union Administration. But there’s a tradeoff \nfor security and ready availability. Y our money is paid a low \nwage as it works for you.\nAfter paying off credit cards or other high interest debt, \nmost smart investors put enough money in a savings product to \ncover an emergency, like sudden unemployment. Some make', metadata={'source': '/content/Data/sec-guide-to-savings-and-investing.pdf', 'page': 12}), Document(page_content='you a portion of its earnings on a regular basis. Y our money can \nmake an “income,” just like you. Y ou can make more money \nwhen you and your money work. \nYou buy something with your money that could in -\ncrease in value. Y ou become an owner of something that you \nhope increases in value over time. When you need your money \nback, you sell it, hoping someone else will pay you more for it. For \ninstance, you buy a piece of land thinking it will increase in value', metadata={'source': '/content/Data/sec-guide-to-savings-and-investing.pdf', 'page': 11}), Document(page_content='Your money earns money.  When your money goes to work, \nit may earn a steady paycheck. Someone pays you to use your \nmoney for a period of time. When you get your money back, \nyou get it back plus “interest.” Or, if you buy stock in a compa -\nny that pays “dividends” to shareholders, the company may pay \nyou a portion of its earnings on a regular basis. Y our money can \nmake an “income,” just like you. Y ou can make more money \nwhen you and your money work.', metadata={'source': '/content/Data/sec-guide-to-savings-and-investing.pdf', 'page': 11}), Document(page_content='At the same time, call or write to us and let us know what \nthe problem was. Investor complaints are very important to the SEC. Y ou may think you’re the only one experiencing a prob -\nlem, but typically, you’re not alone. Sometimes it takes only one investor’s complaint to trigger an investigation that exposes a bad broker or an illegal scheme. Complaints can be filed online with us by going to www.sec.gov/complaint.shtml.', metadata={'source': '/content/Data/sec-guide-to-savings-and-investing.pdf', 'page': 28}), Document(page_content='vestment professional doesn’t resolve the problem, talk to the firm’s manager, and write a letter to confirm your conversa -\ntion. If that doesn’t lead to a resolution, you may have to initi -\nate private legal action. Y ou may need to take action quickly because legal time limits for doing so vary. Y our local bar as-sociation can provide referrals for attorneys who specialize in securities law. \nAt the same time, call or write to us and let us know what', metadata={'source': '/content/Data/sec-guide-to-savings-and-investing.pdf', 'page': 28}), Document(page_content='These are sometimes referred \nto as cash or cash equivalents because you can \nget to them quickly and there’s little risk of losing the money you put in.\nn\nDomestic bonds . You loan money to a U.S. \ncompany or a government body in return for its promise to pay back what you loaned, with interest.\nn\nDomestic stocks.  You own part of a U.S. \ncompany.\nnMutual funds.  Instead of investing directly in', metadata={'source': '/content/Data/savings-fitness.pdf', 'page': 15}), Document(page_content='Marriage\nGetting married creates new financial demands \nthat compete for retirement dollars, such as changing life insurance needs and saving to buy a home. But it’s usually less expensive for two people to live together, thus freeing up dollars. Also, you probably still have time on your side. A spending plan is essential. Remember, every little bit helps.Raising children\nThe U.S. Department of Agriculture estimates', metadata={'source': '/content/Data/savings-fitness.pdf', 'page': 29}), Document(page_content='SAVINGS FITNESS: A GUIDE TO YOUR MONEY AND YOUR FINANCIAL FUTURE1A FINANCIAL WARMUP\nMost of us know it is smart to save money for those \nbig-ticket items we really want to buy – a new television or car or home. Yet you may not realize that probably the most expensive thing you will ever buy in your lifetime is your … retirement.\nPerhaps you’ve never thought of “buying” your', metadata={'source': '/content/Data/savings-fitness.pdf', 'page': 3})]
+CPU times: user 8.01 s, sys: 291 ms, total: 8.3 s
+Wall time: 8.27 s
+"""
+Process user query6
+%%time
+query ="What is the document about?"
+response = qa_with_sources_chain({"query":query})
+print(f"Response generated : \n {response['result']}")
+print(f"Source Documents : \n {response['source_documents']}")
+print(f"Number of Documents returned : {len(response['source_documents'])}")
+"""
+OUPUT
+Response generated :
+
+The document is a guide to financial fitness and helps individuals assess their financial situation and plan for their future. It includes information on various financial topics such as budgeting, saving, investing, taxes, and insurance. The guide provides checklists and worksheets to help individuals gather necessary documents and make informed decisions about their financial future.
+Source Documents :
+[Document(page_content='❏Other\n❏Copy of recent credit report\nInsurance Documents and Statements\n❏Health, disability, and long term care insurance policies\n❏Homeowners, renters, auto, and umbrella insurance policies \n❏Life insurance policies \n❏Other', metadata={'source': '/content/Data/savings-fitness.pdf', 'page': 39}), Document(page_content='14  |  SAVING AND INVESTINGWhat are investments all about?\nWhen you make an investment, you are giving your money \nto a company or enterprise, hoping that it will be successful \nand pay you back with even more money.\nStocks and Bonds\nMany companies offer investors the opportunity to buy either \nstocks or bonds. The example below shows you how stocks and \nbonds differ. \nLet’s say you believe that a company that makes automo -\nbiles may be a good investment. Everyone you know is buying', metadata={'source': '/content/Data/sec-guide-to-savings-and-investing.pdf', 'page': 15}), Document(page_content='What savings do I already have \nfor retirement?\nYou’ll need to build a nest egg sufficient to make \nup the gap between the total amount of income you will need each year and the amount provided annually by Social Security and any retirement income. This nest egg will come from your retirement plan accounts at work, IRAs, annuities, and personal savings.\nWhat adjustments must be made \nfor inflation?\nThe cost of retirement will likely go up every', metadata={'source': '/content/Data/savings-fitness.pdf', 'page': 9}), Document(page_content='Retirement Planning Documents and Statements\n❏Workplace retirement plan(s), including the Summary Plan Description(s) and benefit statement(s)\n❏Individual IRA account(s) \n❏Retirement benefits information from current or former spouse\n❏Annuity policies \n❏Social Security retirement benefits estimate\nTax Planning Documents\n❏Income tax returns for last year (federal, state and local)\n❏Recent pay stub with cumulative year-to-date information\nFinancial Documents and Statements', metadata={'source': '/content/Data/savings-fitness.pdf', 'page': 39}), Document(page_content='Tax Planning Documents\n❏Income tax returns for last year (federal, state and local)\n❏Recent pay stub with cumulative year-to-date information\nFinancial Documents and Statements\nInvestment-Related Documents and Statements\n❏Bank accounts (savings accounts, CDs)\n❏Mutual funds\n❏Brokerage accounts\n❏Stocks held outside of mutual funds or brokerage accounts \n❏Bonds held outside of mutual funds or brokerage accounts \n❏Partnership or other business agreements\n❏Other', metadata={'source': '/content/Data/savings-fitness.pdf', 'page': 39}), Document(page_content='Here are some questions you should ask when choosing an \ninvestment professional or someone to help you:\n•  What training and experience do you have? How long \nhave you been in business?\n•  What is your investment philosophy? Do you take a lot of risks \nor are you more concerned about the safety of my money?\n•  Describe your typical client. Can you provide me with ref -\nerences, the names of people who have invested with you \nfor a long time?', metadata={'source': '/content/Data/sec-guide-to-savings-and-investing.pdf', 'page': 24}), Document(page_content='SAVINGS FITNESS: A GUIDE TO YOUR MONEY AND YOUR FINANCIAL FUTURE372Financial \nDocuments \n ChecklistDate: \nTo help you fill out the worksheets that follow, \ngather together recent copies of the documents and statements listed below. You can get many \nof these documents from your employer, financial institutions, and insurance companies.  You can get your \nSocial Security Statement  with an estimate of your retirement benefits. To get a free credit report every 12 months, visit', metadata={'source': '/content/Data/savings-fitness.pdf', 'page': 39}), Document(page_content='Benefits through Qualified Domestic Relations Orders (for example, divorce orders). Also visit the Social Security Administration’s website to order their \nbooklet What Every Woman Should \nKnow.', metadata={'source': '/content/Data/savings-fitness.pdf', 'page': 31}), Document(page_content='❏Brokerage accounts\n❏Stocks held outside of mutual funds or brokerage accounts \n❏Bonds held outside of mutual funds or brokerage accounts \n❏Partnership or other business agreements\n❏Other\nLoan Documents, Statements, and Credit Reports\n❏Student Loans\n❏Mortgage(s)\n❏Car(s)\n❏Credit cards\n❏Other\n❏Copy of recent credit report\nInsurance Documents and Statements\n❏Health, disability, and long term care insurance policies\n❏Homeowners, renters, auto, and umbrella insurance policies', metadata={'source': '/content/Data/savings-fitness.pdf', 'page': 39}), Document(page_content='What will my investments return?\nAny calculation must take into account what \nannual rate of return you expect to earn on the savings you’ve already accumulated and on the savings you intend to make in the future. You also need to determine the rate of return on your savings after you retire. These rates of return will depend in part on whether the money is inside or outside a tax-deferred account.\nIt’s important to choose realistic annual returns', metadata={'source': '/content/Data/savings-fitness.pdf', 'page': 9})]
+Number of Documents returned : 10
+CPU times: user 6.7 s, sys: 267 ms, total: 6.97 s
+Wall time: 6.94 s
+"""
+Conclusion:
+We can see that hybrid search using EnsembleRetriver provides better context to the Generative AI Model which results in a better response being formulated. Also Caching the response and query reduces the inference time and reduces the computation cost. Also caching the query embedding helps to avoid needing to recompute them.
+Referrences:
+https://python.langchain.com/docs/modules/data_connection/text_embedding/caching_embeddings
+https://python.langchain.com/docs/integrations/llms/llm_caching
+https://python.langchain.com/docs/modules/data_connection/retrievers
+https://python.langchain.com/docs/modules/data_connection/retrievers/ensemble
+connect with me
+Hugging Face
+Mistral Ai
+Langchain
+Bm25
+Semantic Search
+--
+--
+6
+Follow
+Written by
+Plaban Nayak
+1K Followers
+·
+Editor for
+AI Planet
+Machine Learning and Deep Learning enthusiast
+Follow
+Help
+Status
+About
+Careers
+Blog
+Privacy
+Terms
+Text to speech
+Teams
+```code
+store = LocalFileStore("./cache/")
+```
+```code
+store = InMemoryStore()
+```
+```code
+!pip install -q git+https://github.com/huggingface/transformers
+!pip install -qU langchain Faiss-gpu tiktoken sentence-transformers
+!pip install -qU trl Py7zr auto-gptq optimum
+!pip install -q rank_bm25
+!pip install -q PyPdf
+```
+```code
+import langchain
+from langchain.embeddings import CacheBackedEmbeddings,HuggingFaceEmbeddings
+from langchain.vectorstores import FAISS
+from langchain.storage import LocalFileStore
+from langchain.retrievers import BM25Retriever,EnsembleRetriever
+from langchain.document_loaders import PyPDFLoader,DirectoryLoader
+from langchain.llms import HuggingFacePipeline
+from langchain.cache import InMemoryCache
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain.schema import prompt
+from langchain.chains import RetrievalQA
+from langchain.callbacks import StdOutCallbackHandler
+from langchain import PromptTemplate
+#
+from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
+```
+```code
+dir_loader = DirectoryLoader("/content/Data",
+glob="*.pdf",
+loader_cls=PyPDFLoader)
+docs = dir_loader.load()
+#
+print(f"len of documents in :{len(docs)}")
+"""
+len of documents in :85
+"""
+```
+```code
+#
+text_splitter = RecursiveCharacterTextSplitter(chunk_size=500,
+chunk_overlap=200,)
+#
+esops_documents = text_splitter.transform_documents(docs)
+print(f"number of chunks in barbie documents : {len(esops_documents)}")
+"""
+number of chunks in barbie documents : 429
+"""
+```
+```code
+store = LocalFileStore("./cache/")
+embed_model_id = 'BAAI/bge-small-en-v1.5'
+core_embeddings_model = HuggingFaceEmbeddings(model_name=embed_model_id)
+embedder = CacheBackedEmbeddings.from_bytes_store(core_embeddings_model,
+store,
+namespace=embed_model_id)
+# Create VectorStore
+vectorstore = FAISS.from_documents(esops_documents,embedder)
+```
+```code
+bm25_retriever = BM25Retriever.from_documents(esops_documents)
+bm25_retriever.k=5
+```
+```code
+query = "Ho to save my excess money?"
+embedding_vector = core_embeddings_model.embed_query(query)
+print(len(embedding_vector))
+#
+docs_resp = vectorstore.similarity_search_by_vector(embedding_vector,k=5)
+#
+for page in docs_resp:
+print(page.page_content)
+print("\n")
+"""
+looking at how you could make your money grow if you de -
+cided to spend less on other things and save those extra dollars.
+If you buy on impulse, make a rule that you’ll always wait
+24 hours to buy anything. Y ou may lose your desire to buy it
+after a day. And try emptying your pockets and wallet of spare
+change at the end of each day.  Y ou’ll be surprised how quickly
+those nickels and dimes add up!
+PAY OFF CREDIT CARD OR OTHER HIGH
+INTEREST DEBT
+keep pace with an 18 percent interest charge. That’s why you’re
+better off eliminating all credit card debt before investing savings.
+Once you’ve paid off your credit cards, you can budget your
+money and begin to save and invest. Here are some tips for
+avoiding credit card debt:
+Put Away the Plastic
+Don’t use a credit card unless your debt is at a manageable level and
+you know you’ll have the money to pay the bill when it arrives.
+Know What You Owe
+Add up your total retirement savings, both at
+first pay down the card that charges the highest rate. Pay as much
+as you can toward that debt each month until your balance is once
+again zero, while still paying the minimum on your other cards.
+The same advice goes for any other high interest debt (about 8% or
+above) which does not offer the tax advantages of, for example, a mortgage.
+Now, once you have paid off those credit cards and begun to
+set aside some money to save and invest, what are your choices?
+earns. Over time, even a small amount saved can add up to big money.
+If you are willing to watch what you spend and look for
+little ways to save on a regular schedule, you can make money
+grow. Y ou just did it with one cup of coffee.
+If a small cup of coffee can make such a huge difference, start
+looking at how you could make your money grow if you de -
+cided to spend less on other things and save those extra dollars.
+If you buy on impulse, make a rule that you’ll always wait
+"""
+```
+```code
+%%timeit -n 1 -r 1
+query = "How to save my excess money?"
+#
+embedding_vector = core_embeddings_model.embed_query(query)
+docs_resp = vectorstore.similarity_search_by_vector(embedding_vector,k=5)
+"""
+21.1 ms ± 0 ns per loop (mean ± std. dev. of 1 run, 1 loop each)
+"""
+```
+```code
+faiss_retriever = vectorstore.as_retriever(search_kwargs={"k":5})
+ensemble_retriever = EnsembleRetriever(retrievers=[bm25_retriever,faiss_retriever],
+weights=[0.5,0.5])
+```
+```code
+from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
+model_name_or_path = "TheBloke/Mistral-7B-Instruct-v0.1-GPTQ"
+# To use a different branch, change revision
+# For example: revision="gptq-4bit-32g-actorder_True"
+model = AutoModelForCausalLM.from_pretrained(model_name_or_path,
+device_map="auto",
+trust_remote_code=False,
+revision="gptq-8bit-32g-actorder_True")
+#
+tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, use_fast=True)
+```
+```code
+pipe = pipeline(
+"text-generation",
+model=model,
+tokenizer=tokenizer,
+max_new_tokens=512,
+do_sample=True,
+temperature=0.1,
+top_p=0.95,
+top_k=40,
+repetition_penalty=1.1
+)
+```
+```code
+from langchain.llms import HuggingFacePipeline
+llm = HuggingFacePipeline(pipeline=pipe)
+```
+```code
+langchain.llm_cache = InMemoryCache()
+```
+```code
+PROMPT_TEMPLATE = '''
+You are my financial advisor. You are great at providing tips on investments, savings and on financial markets with your knowledge in finances.
+With the information being provided try to answer the question.
+If you cant answer the question based on the information either say you cant find an answer or unable to find an answer.
+So try to understand in depth about the context and answer only based on the information provided. Dont generate irrelevant answers
+Context: {context}
+Question: {question}
+Do provide only helpful answers
+Helpful answer:
+'''
+#
+input_variables = ['context', 'question']
+#
+custom_prompt = PromptTemplate(template=PROMPT_TEMPLATE,
+input_variables=input_variables)
+```
+```code
+handler = StdOutCallbackHandler()
+#
+qa_with_sources_chain = RetrievalQA.from_chain_type(
+llm=llm,
+chain_type="stuff",
+retriever = vectorstore.as_retriever(search_kwargs={"k":5}),
+verbose=True,
+callbacks=[handler],
+chain_type_kwargs={"prompt": custom_prompt},
+return_source_documents=True
+)
+```
+```code
+%%time
+query = "How to save my excess money?"
+response = qa_with_sources_chain({"query":query})
+print(f"Response generated : \n {response['result']}")
+print(f"Source Documents : \n {response['source_documents']}")
+"""
+OUTPUT
+Response generated :
+
+To save your excess money, you can consider the following steps:
+1. Set a budget: Determine how much money you can afford to save each month and stick to it.
+2. Automate your savings: Set up automatic transfers from your checking account to your savings account.
+3. Pay off high-interest debt: Interest payments can eat away at your savings over time, so it's important to pay off any high-interest debt as soon as possible.
+4. Invest in low-cost index funds: Index funds are a simple and cost-effective way to invest in the stock market.
+5. Increase your income: Consider taking on a part-time job or negotiating a raise at your current job to increase your income.
+6. Reduce expenses: Look for ways to cut back on discretionary spending, such as dining out or buying new clothes.
+7. Use cashback rewards: Utilize cashback rewards from credit cards or shopping websites to earn additional income.
+8. Monitor your progress: Regularly review your savings progress and adjust your budget and investment strategy as needed.
+Source Documents :
+[Document(page_content='looking at how you could make your money grow if you de -\ncided to spend less on other things and save those extra dollars.\nIf you buy on impulse, make a rule that you’ll always wait \n24 hours to buy anything. Y ou may lose your desire to buy it \nafter a day. And try emptying your pockets and wallet of spare \nchange at the end of each day.  Y ou’ll be surprised how quickly \nthose nickels and dimes add up!\nPAY OFF CREDIT CARD OR OTHER HIGH  \nINTEREST DEBT', metadata={'source': '/content/Data/sec-guide-to-savings-and-investing.pdf', 'page': 9}), Document(page_content='and increase income, you may still have trouble saving enough for retirement and your other goals. Here are some tips.\nnPay yourself first. Put away first \nthe money you want to set aside for goals. Have money automatically withdrawn from your checking account and put into savings or an investment. Join a retirement plan at work that deducts money from your paycheck. Or deposit your retirement savings yourself, the first thing. What you don’t see, you don’t miss.', metadata={'source': '/content/Data/savings-fitness.pdf', 'page': 12}), Document(page_content='keep pace with an 18 percent interest charge. That’s why you’re \nbetter off eliminating all credit card debt before investing savings. \nOnce you’ve paid off your credit cards, you can budget your \nmoney and begin to save and invest. Here are some tips for \navoiding credit card debt:\nPut Away the Plastic\n Don’t use a credit card unless your debt is at a manageable level and \nyou know you’ll have the money to pay the bill when it arrives.\nKnow What You Owe', metadata={'source': '/content/Data/sec-guide-to-savings-and-investing.pdf', 'page': 10}), Document(page_content='earns. Over time, even a small amount saved can add up to big money.\nIf you are willing to watch what you spend and look for \nlittle ways to save on a regular schedule, you can make money \ngrow. Y ou just did it with one cup of coffee.\nIf a small cup of coffee can make such a huge difference, start \nlooking at how you could make your money grow if you de -\ncided to spend less on other things and save those extra dollars.\nIf you buy on impulse, make a rule that you’ll always wait', metadata={'source': '/content/Data/sec-guide-to-savings-and-investing.pdf', 'page': 9}), Document(page_content='too late if you don’t start at all.\nnSock it away. Pump everything you can into your tax-sheltered retirement plans and personal savings. Try to put away at least 20 percent of your income.\nnReduce expenses. Funnel the savings into your nest egg.\nnTake a second job or work extra hours.', metadata={'source': '/content/Data/savings-fitness.pdf', 'page': 10})]
+CPU times: user 23.1 s, sys: 480 ms, total: 23.6 s
+Wall time: 23.9 s
+"""
+```
+```code
+%%time
+query = "What are the steps to make a financial planning?"
+response = qa_with_sources_chain({"query":query})
+print(f"Response generated : \n {response['result']}")
+print(f"Source Documents : \n {response['source_documents']}")
+"""
+OUTPUT
+Response generated :
+
+To make a financial plan, follow these steps:
+1. Determine your short-term and long-term financial goals.
+2. Calculate your current net worth.
+3. Identify your sources of income and expenses.
+4. Create a budget that includes all of your income and expenses.
+5. Set aside money for emergency funds and unexpected expenses.
+6. Determine how much you can realistically save and invest each month.
+7. Choose investment options that align with your financial goals and risk tolerance.
+8. Review and adjust your financial plan regularly to ensure that you are on track to meet your goals.
+Source Documents :
+[Document(page_content='Make your own list and then think about which goals are the \nmost important to you. List your most important goals first. \nDecide how many years you have to meet each specific goal, \nbecause when you save or invest you’ll need to find a savings or \nYOUR FINANCIAL GOALS\nIf you don’t know where you are going, you may end up somewhere you don’t want \nto be. To end up where you want to be, you’ll need a roadmap, a financial plan.\nWhat do you want to save or invest for? By when?', metadata={'source': '/content/Data/sec-guide-to-savings-and-investing.pdf', 'page': 5}), Document(page_content='How do you manage all these financial \nchallenges and at the same time try to “buy” a secure retirement? How do you turn your dreams into reality?\nStart by writing down each of your goals in \nWorksheet 1 – Goals and Priorities in the back of this booklet. You may want to have family members come up with ideas. Don’t leave something out at this stage because you don’t think you can afford it. This is your “wish list.”\nOrganize them into goals you want to accomplish', metadata={'source': '/content/Data/savings-fitness.pdf', 'page': 5}), Document(page_content='and a comfortable retirement. If they can do it, so can you!\nKEYS  TO FINANCIAL SUCCESS\n1 . Make a financial plan.\n2. Pay off any high interest debts.\n3.  Start saving and investing as soon as you’ve paid off your debts.', metadata={'source': '/content/Data/sec-guide-to-savings-and-investing.pdf', 'page': 4}), Document(page_content='Plan and complete the last two columns to help you track your progress.\nnPeriodically review your spending plan.\nnMonitor the performance of investments. \nMake adjustments if necessary.\nnMake sure you contribute more toward your retirement as you earn more.\nnUpdate your various insurance safety nets to reflect changes in income or personal circumstances.\nnKeep your finances in order .\nWhere To Go From Here', metadata={'source': '/content/Data/savings-fitness.pdf', 'page': 34}), Document(page_content='Let’s start with a “spending plan” – a guide for \nhow we want to spend our money. Some people call this a budget, but since we’re thinking of retirement as something to buy, a spending plan seems more appropriate.\nA spending plan is simple to set up. Consider \nthe following steps as a guide as you fill in the information in Worksheet 5 – Cash Flow \nSpending Plan in the back of this booklet.\nIncome\nAdd up your monthly income: wages, average', metadata={'source': '/content/Data/savings-fitness.pdf', 'page': 11})]
+CPU times: user 12.7 s, sys: 418 ms, total: 13.1 s
+Wall time: 13 s
+"""
+```
+```code
+%%time
+query = "Please explain in detail the steps to make a financial planning."
+response = qa_with_sources_chain({"query":query})
+print(f"Response generated : \n {response['result']}")
+print(f"Source Documents : \n {response['source_documents']}")
+print(f"Number of of Documents returned : {len(response['source_documents'])}")
+"""
+OUTPUT
+Response generated :
+
+Financial planning is a process of setting goals, analyzing your current financial situation, creating a plan to meet those goals, and implementing that plan. Here are the steps to create a financial plan:
+1. Set your goals: Start by identifying your short-term, medium-term, and long-term financial goals. These could include saving for a vacation, buying a house, paying off debt, funding education, or planning for retirement. Be sure to write down each goal in Worksheet 1 – Goals and Priorities in the back of this booklet.
+2. Assess your current financial situation: Determine your current income, expenses, assets, and liabilities. This will help you understand where you stand financially and identify areas where you may need to make changes.
+3. Create a spending plan: Develop a spending plan that aligns with your goals and takes into account your income and expenses. This plan should help you allocate funds towards your goals while also ensuring that you have enough money for necessities and emergencies.
+4. Determine your savings and investment needs: Based on your goals, determine how much you need to save and invest to meet them. This may involve calculating how much you need to contribute to a retirement account, how much you need to pay off debt, or how much you need to save for a down payment on a home.
+5. Develop a strategy: Once you have determined your savings and investment needs, develop a strategy for achieving those goals. This may involve investing in stocks, bonds, mutual funds, real estate, or other assets. It may also involve making lifestyle changes, such as reducing expenses or increasing income.
+6. Implement the plan: With your strategy in place, implement the plan by taking action. This may involve opening a retirement account, contributing to it regularly, or making changes to your spending habits.
+7. Monitor and adjust: Regularly monitor your progress towards your goals and adjust your plan as needed. This may involve reevaluating your spending plan, adjusting your investments, or making changes to your lifestyle.
+It's important to note that financial planning can be a complex process, and there are many factors to consider. If you feel overwhelmed or unsure about how to proceed, consider working with a financial planner or investment adviser who can provide guidance and support.
+Source Documents :
+[Document(page_content='How do you manage all these financial \nchallenges and at the same time try to “buy” a secure retirement? How do you turn your dreams into reality?\nStart by writing down each of your goals in \nWorksheet 1 – Goals and Priorities in the back of this booklet. You may want to have family members come up with ideas. Don’t leave something out at this stage because you don’t think you can afford it. This is your “wish list.”\nOrganize them into goals you want to accomplish', metadata={'source': '/content/Data/savings-fitness.pdf', 'page': 5}), Document(page_content='Let’s start with a “spending plan” – a guide for \nhow we want to spend our money. Some people call this a budget, but since we’re thinking of retirement as something to buy, a spending plan seems more appropriate.\nA spending plan is simple to set up. Consider \nthe following steps as a guide as you fill in the information in Worksheet 5 – Cash Flow \nSpending Plan in the back of this booklet.\nIncome\nAdd up your monthly income: wages, average', metadata={'source': '/content/Data/savings-fitness.pdf', 'page': 11}), Document(page_content='Make your own list and then think about which goals are the \nmost important to you. List your most important goals first. \nDecide how many years you have to meet each specific goal, \nbecause when you save or invest you’ll need to find a savings or \nYOUR FINANCIAL GOALS\nIf you don’t know where you are going, you may end up somewhere you don’t want \nto be. To end up where you want to be, you’ll need a roadmap, a financial plan.\nWhat do you want to save or invest for? By when?', metadata={'source': '/content/Data/sec-guide-to-savings-and-investing.pdf', 'page': 5}), Document(page_content='Yet like many people you may wonder how you can achieve that dream when so many other financial issues have priority.\nWrite down on Worksheet 1 what you need to \ndo to accomplish each goal: When do you want to accomplish it, what will it cost (we’ll tell you more about that later), what money have you set aside already, and what you are willing to do to reach the goal.\nLook again at the order of priority. How hard', metadata={'source': '/content/Data/savings-fitness.pdf', 'page': 5}), Document(page_content='Some financial planners and investment advisers offer a \ncomplete financial plan, assessing every aspect of your financial \nlife and developing a detailed strategy for meeting your finan -\ncial goals. They may charge you a fee for the plan, a percentage \nof your assets that they manage, or receive commissions from \nthe companies whose products you buy, or a combination of \nthese. Y ou should know exactly what services you are getting \nand how much they will cost.', metadata={'source': '/content/Data/sec-guide-to-savings-and-investing.pdf', 'page': 20})]
+Number of of Documents returned : 5
+CPU times: user 45.6 s, sys: 1.23 s, total: 46.9 s
+Wall time: 46.7 s
+"""
+```
+```code
+%%time
+query ="How to plan for retirement while still young?"
+response = qa_with_sources_chain({"query":query})
+print(f"Response generated : \n {response['result']}")
+print(f"Source Documents : \n {response['source_documents']}")
+print(f"Number of Documents returned : {len(response['source_documents'])}")
+"""
+OUTPUT
+Response generated :
+
+To plan for retirement while still young, it's important to start early and make regular contributions to a retirement plan. This can help ensure that you have enough savings to support your desired lifestyle during retirement. Additionally, it's important to consider factors such as inflation and potential changes in market conditions when planning for retirement. It may also be helpful to consult with a financial advisor to develop a personalized retirement plan that takes into account your individual financial situation and goals.
+Source Documents :
+[Document(page_content='Fortunately, there are steps you can still take to \nbuild your retirement strength.\nTake a job with a plan\nIf two jobs offer similar pay and working \nconditions, the job that offers retirement benefits may be the better choice.\nStart your own plan\nIf you can’t join a company plan, you can save \non your own. You can’t put away as much as on a tax-deferred basis and you won’t have an employer match. Still, you can build a healthy nest egg if you work at it.\nOpen an IRA', metadata={'source': '/content/Data/savings-fitness.pdf', 'page': 25}), Document(page_content='and increase income, you may still have trouble saving enough for retirement and your other goals. Here are some tips.\nnPay yourself first. Put away first \nthe money you want to set aside for goals. Have money automatically withdrawn from your checking account and put into savings or an investment. Join a retirement plan at work that deducts money from your paycheck. Or deposit your retirement savings yourself, the first thing. What you don’t see, you don’t miss.', metadata={'source': '/content/Data/savings-fitness.pdf', 'page': 12}), Document(page_content='SAVINGS FITNESS: A GUIDE TO YOUR MONEY AND YOUR FINANCIAL FUTURE5\nPLANNING FOR RETIREMENT \nWHILE YOU ARE STILL YOUNG\nRetirement probably seems vague and \nfar off at this stage of your life. Besides, you have other things to buy right now. Yet there are some crucial reasons to start preparing now for retirement.\nYou’ll probably have to pay for more \nof your own retirement than earlier generations. The sooner you get started, the better.\nYou have one huge ally – time. Let’s say', metadata={'source': '/content/Data/savings-fitness.pdf', 'page': 7}), Document(page_content='On line 1, enter your current retirement savings.  Make sure you include all of the savings and assets \nyou have for retirement.  Next, enter the number of years until you plan to retire – use the same number you used in Step 1.  Multiply your current savings by the projected value factor (from the box below the Step 3 worksheet) that you choose based on the number of years until retirement.  The result is what your current savings will be worth at retirement.\nStep 3 \n1. Current savings', metadata={'source': '/content/Data/savings-fitness.pdf', 'page': 44}), Document(page_content='Start by entering the number of years until you plan to retire from Step 1 on line 1.  Next, enter the \nestimated savings needed at retirement from Step 2. From Step 3, write down the value of your current savings at retirement on line 3. Subtract line 3 from line 2 and enter it on line 4 – this is the additional retirement savings you need.\nEnter your current annual salary on line 5. Multiply it by the projected saving rate factor (in the box', metadata={'source': '/content/Data/savings-fitness.pdf', 'page': 45})]
+Number of Documents returned : 5
+CPU times: user 9.19 s, sys: 284 ms, total: 9.48 s
+Wall time: 9.44 s
+"""
+```
+```code
+#
+handler = StdOutCallbackHandler()
+#
+qa_with_sources_chain = RetrievalQA.from_chain_type(
+llm=llm,
+chain_type="stuff",
+retriever = ensemble_retriever,
+callbacks=[handler],
+chain_type_kwargs={"prompt": custom_prompt},
+return_source_documents=True
+)
+```
+```code
+%%time
+query = "How to save my excess money?"
+response = qa_with_sources_chain({"query":query})
+print(f"Response generated : \n {response['result']}")
+print(f"Source Documents : \n {response['source_documents']}")
+"""
+OUTPUT
+Response generated :
+
+The best way to save money is to automate the process. Set up automatic transfers from your checking account to your savings account. This ensures that you consistently save money without having to think about it. Additionally, consider setting up automatic contributions to your retirement accounts. This will ensure that you consistently contribute towards your retirement goals without having to remember to make payments.
+Another helpful tip is to create a budget and stick to it. By tracking your expenses and identifying areas where you can cut back, you can free up additional funds to save. It's also important to prioritize your spending and focus on needs rather than wants. By doing so, you can reduce unnecessary expenses and allocate more funds towards your savings goals.
+Lastly, consider finding ways to earn more money. This could include taking on a side hustle, negotiating a raise at work, or investing in passive income streams. By increasing your income, you can save more money and reach your financial goals faster.
+Source Documents :
+[Document(page_content='or are you more concerned about the safety of my money?\n•  Describe your typical client. Can you provide me with ref -\nerences, the names of people who have invested with you \nfor a long time?\n•  How do you get paid? By commission? Based on a per -\ncentage of assets you manage? Another method? Do you \nget paid more for selling your own firm’s products?\n•  How much will it cost me in total to do business with you?\nY our investment professional should understand your invest -', metadata={'source': '/content/Data/sec-guide-to-savings-and-investing.pdf', 'page': 24}), Document(page_content='looking at how you could make your money grow if you de -\ncided to spend less on other things and save those extra dollars.\nIf you buy on impulse, make a rule that you’ll always wait \n24 hours to buy anything. Y ou may lose your desire to buy it \nafter a day. And try emptying your pockets and wallet of spare \nchange at the end of each day.  Y ou’ll be surprised how quickly \nthose nickels and dimes add up!\nPAY OFF CREDIT CARD OR OTHER HIGH  \nINTEREST DEBT', metadata={'source': '/content/Data/sec-guide-to-savings-and-investing.pdf', 'page': 9}), Document(page_content='Here are some questions you should ask when choosing an \ninvestment professional or someone to help you:\n•  What training and experience do you have? How long \nhave you been in business?\n•  What is your investment philosophy? Do you take a lot of risks \nor are you more concerned about the safety of my money?\n•  Describe your typical client. Can you provide me with ref -\nerences, the names of people who have invested with you \nfor a long time?', metadata={'source': '/content/Data/sec-guide-to-savings-and-investing.pdf', 'page': 24}), Document(page_content='and increase income, you may still have trouble saving enough for retirement and your other goals. Here are some tips.\nnPay yourself first. Put away first \nthe money you want to set aside for goals. Have money automatically withdrawn from your checking account and put into savings or an investment. Join a retirement plan at work that deducts money from your paycheck. Or deposit your retirement savings yourself, the first thing. What you don’t see, you don’t miss.', metadata={'source': '/content/Data/savings-fitness.pdf', 'page': 12}), Document(page_content='keep pace with an 18 percent interest charge. That’s why you’re \nbetter off eliminating all credit card debt before investing savings. \nOnce you’ve paid off your credit cards, you can budget your \nmoney and begin to save and invest. Here are some tips for \navoiding credit card debt:\nPut Away the Plastic\n Don’t use a credit card unless your debt is at a manageable level and \nyou know you’ll have the money to pay the bill when it arrives.\nKnow What You Owe', metadata={'source': '/content/Data/sec-guide-to-savings-and-investing.pdf', 'page': 10}), Document(page_content='A ROADMAP TO YOUR JOURNEY TO FINANCIAL SECURITY  |  27•How will the investment make money?\n•How is this investment consistent with my investment goals?\n•What must happen for the investment to increase in value?\n•What are the risks?\n•Where can I get more information?\nFinally, it’s always a good idea to write down everything your\ninvestment professional tells you. Accurate notes will come in \nhandy if ever there’s a problem.\nSome investments make money. Others lose money. That’s', metadata={'source': '/content/Data/sec-guide-to-savings-and-investing.pdf', 'page': 28}), Document(page_content='n\nDomestic stocks.  You own part of a U.S. \ncompany.\nnMutual funds.  Instead of investing directly in \nstocks, bonds, or real estate, for example, you can use mutual funds. These pool your money with money of other shareholders and invest it for you. A stock mutual fund, for example, would invest in stocks on behalf of all the fund’s shareholders. This makes it easier to invest and to diversify your money.Choosing where to put \nyour money\nHow do you decide where to put your money?', metadata={'source': '/content/Data/savings-fitness.pdf', 'page': 15}), Document(page_content='earns. Over time, even a small amount saved can add up to big money.\nIf you are willing to watch what you spend and look for \nlittle ways to save on a regular schedule, you can make money \ngrow. Y ou just did it with one cup of coffee.\nIf a small cup of coffee can make such a huge difference, start \nlooking at how you could make your money grow if you de -\ncided to spend less on other things and save those extra dollars.\nIf you buy on impulse, make a rule that you’ll always wait', metadata={'source': '/content/Data/sec-guide-to-savings-and-investing.pdf', 'page': 9}), Document(page_content='too late if you don’t start at all.\nnSock it away. Pump everything you can into your tax-sheltered retirement plans and personal savings. Try to put away at least 20 percent of your income.\nnReduce expenses. Funnel the savings into your nest egg.\nnTake a second job or work extra hours.', metadata={'source': '/content/Data/savings-fitness.pdf', 'page': 10}), Document(page_content='SAVINGS FITNESS: A GUIDE TO YOUR MONEY AND YOUR FINANCIAL FUTURE9BOOST YOUR FINANCIAL \nPERFORMANCE\n“Spend” for Retirement\nNow comes the tough part. You have a rough idea of \nhow much you need to save each month to reach your retirement goal. But how do you find that money? Where does it come from?\nThere’s one simple trick for saving for any goal:', metadata={'source': '/content/Data/savings-fitness.pdf', 'page': 11})]
+CPU times: user 19.3 s, sys: 690 ms, total: 20 s
+Wall time: 20 s
+"""
+```
+```code
+%%time
+query = "What are the steps to make a financial planning?"
+response = qa_with_sources_chain({"query":query})
+print(f"Response generated : \n {response['result']}")
+print(f"Source Documents : \n {response['source_documents']}")
+"""
+OUTPUT
+Response generated :
+
+To make a financial plan, follow these steps:
+1. Determine your financial goals: Write down your short-term and long-term financial goals, such as paying off debt, saving for a vacation, buying a house, or retiring comfortably.
+2. Calculate your current financial situation: Determine your current income, expenses, assets, and liabilities. This will give you an idea of where you stand financially and help you identify areas where you need to improve.
+3. Set a timeline: Estimate how long it will take you to achieve each of your financial goals, based on your current financial situation and your expected income and expenses in the future.
+4. Create a budget: Based on your estimated income and expenses, create a budget that helps you allocate funds towards your financial goals. This should include both discretionary and non-discretionary spending.
+5. Choose investment strategies: Determine the types of investments that align with your financial goals and risk tolerance. This could include stocks, bonds, mutual funds, real estate, or other investment vehicles.
+6. Review and adjust your plan regularly: Periodically review your financial plan and make adjustments as needed based on changes in your financial situation, market conditions, and your progress towards your goals.
+Remember, making a financial plan is an ongoing process, and it's important to stay flexible and adaptable as your financial needs and goals change over time.
+Source Documents :
+[Document(page_content='Make your own list and then think about which goals are the \nmost important to you. List your most important goals first. \nDecide how many years you have to meet each specific goal, \nbecause when you save or invest you’ll need to find a savings or \nYOUR FINANCIAL GOALS\nIf you don’t know where you are going, you may end up somewhere you don’t want \nto be. To end up where you want to be, you’ll need a roadmap, a financial plan.\nWhat do you want to save or invest for? By when?', metadata={'source': '/content/Data/sec-guide-to-savings-and-investing.pdf', 'page': 5}), Document(page_content='SAVINGS FITNESS: A GUIDE TO YOUR MONEY AND YOUR FINANCIAL FUTURE23FINANCIAL FITNESS FOR \nTHE SELF-EMPLOYED\nWhat To Do If You Can’t Join an \nEmployer-Based Plan\nYou may not be able to join an employer-based \nretirement plan because you are not eligible or because the employer doesn’t offer one.\nFortunately, there are steps you can still take to \nbuild your retirement strength.\nTake a job with a plan\nIf two jobs offer similar pay and working', metadata={'source': '/content/Data/savings-fitness.pdf', 'page': 25}), Document(page_content='U.S. DEPARTMENT OF LABOR24You also may want to seek the help of \na professional financial planner. Go to \nLetsMakeAPlan.org  for tips on choosing a \nfinancial planner who is required to act in your best interest when providing financial planning advice. \nWhat To Do If You Are \nSelf-Employed\nMany people today work for themselves, either \nfull time or in addition to their regular job. They have several tax-deferred options from which to choose.\nSEP\nThis is the same type of SEP described earlier', metadata={'source': '/content/Data/savings-fitness.pdf', 'page': 26}), Document(page_content='How do you manage all these financial \nchallenges and at the same time try to “buy” a secure retirement? How do you turn your dreams into reality?\nStart by writing down each of your goals in \nWorksheet 1 – Goals and Priorities in the back of this booklet. You may want to have family members come up with ideas. Don’t leave something out at this stage because you don’t think you can afford it. This is your “wish list.”\nOrganize them into goals you want to accomplish', metadata={'source': '/content/Data/savings-fitness.pdf', 'page': 5}), Document(page_content='and a comfortable retirement. If they can do it, so can you!\nKEYS  TO FINANCIAL SUCCESS\n1 . Make a financial plan.\n2. Pay off any high interest debts.\n3.  Start saving and investing as soon as you’ve paid off your debts.', metadata={'source': '/content/Data/sec-guide-to-savings-and-investing.pdf', 'page': 4}), Document(page_content='What savings do I already have \nfor retirement?\nYou’ll need to build a nest egg sufficient to make \nup the gap between the total amount of income you will need each year and the amount provided annually by Social Security and any retirement income. This nest egg will come from your retirement plan accounts at work, IRAs, annuities, and personal savings.\nWhat adjustments must be made \nfor inflation?\nThe cost of retirement will likely go up every', metadata={'source': '/content/Data/savings-fitness.pdf', 'page': 9}), Document(page_content='Plan and complete the last two columns to help you track your progress.\nnPeriodically review your spending plan.\nnMonitor the performance of investments. \nMake adjustments if necessary.\nnMake sure you contribute more toward your retirement as you earn more.\nnUpdate your various insurance safety nets to reflect changes in income or personal circumstances.\nnKeep your finances in order .\nWhere To Go From Here', metadata={'source': '/content/Data/savings-fitness.pdf', 'page': 34}), Document(page_content='What will my investments return?\nAny calculation must take into account what \nannual rate of return you expect to earn on the savings you’ve already accumulated and on the savings you intend to make in the future. You also need to determine the rate of return on your savings after you retire. These rates of return will depend in part on whether the money is inside or outside a tax-deferred account.\nIt’s important to choose realistic annual returns', metadata={'source': '/content/Data/savings-fitness.pdf', 'page': 9}), Document(page_content='Let’s start with a “spending plan” – a guide for \nhow we want to spend our money. Some people call this a budget, but since we’re thinking of retirement as something to buy, a spending plan seems more appropriate.\nA spending plan is simple to set up. Consider \nthe following steps as a guide as you fill in the information in Worksheet 5 – Cash Flow \nSpending Plan in the back of this booklet.\nIncome\nAdd up your monthly income: wages, average', metadata={'source': '/content/Data/savings-fitness.pdf', 'page': 11}), Document(page_content='For more information, visit their website or call \n1-800-772-1213 .\nWill you have other sources of income?\nFor instance, will you receive retirement benefits \nthat provide a specific amount of retirement income each month? Is the benefit adjusted for inflation?\nWhat savings do I already have \nfor retirement?\nYou’ll need to build a nest egg sufficient to make', metadata={'source': '/content/Data/savings-fitness.pdf', 'page': 9})]
+CPU times: user 28.7 s, sys: 946 ms, total: 29.7 s
+Wall time: 29.6 s
+"""
+```
+```code
+%%time
+query = "Please explain in detail the steps to make a financial planning."
+response = qa_with_sources_chain({"query":query})
+print(f"Response generated : \n {response['result']}")
+print(f"Source Documents : \n {response['source_documents']}")
+print(f"Number of of Documents returned : {len(response['source_documents'])}")
+"""
+OUTPUT
+Financial planning is a process of setting goals, analyzing your current financial situation, developing strategies, and implementing actions to achieve those goals. Here are some general steps to consider:
+1. Set clear, realistic goals: Determine what you want to achieve financially, both short-term and long-term. Make sure your goals are specific, measurable, attainable, relevant, and timely (SMART).
+2. Assess your current financial situation: Gather information about your income, expenses, assets, liabilities, and net worth. This will help you understand where you stand financially and identify areas for improvement.
+3. Develop a spending plan: Create a budget that outlines your expected income and expenses. Allocate funds towards your goals while ensuring you have enough for necessities and emergencies.
+4. Analyze your risk tolerance and investment options: Understand how much risk you're comfortable taking on and research various investment vehicles, such as stocks, bonds, mutual funds, and real estate. Consider factors like potential returns, volatility, and fees.
+5. Create an investment strategy: Based on your risk tolerance and goals, determine the optimal allocation of your investments across different asset classes. Regularly review and adjust your strategy as needed.
+6. Implement actions and monitor progress: Take concrete steps to achieve your goals, such as saving regularly, reducing debt, and investing according to your plan. Track your progress regularly and make adjustments as necessary.
+7. Review and update your plan periodically: As your financial situation and goals change, revisit your plan and update it accordingly. This will help ensure you remain on track to achieving your objectives.
+Remember, financial planning is a continuous process, and it's essential to stay informed and adapt your plan as needed. Consult with a financial advisor or planner if you need guidance or support in creating a comprehensive financial plan.
+Source Documents :
+[Document(page_content='Let’s start with a “spending plan” – a guide for \nhow we want to spend our money. Some people call this a budget, but since we’re thinking of retirement as something to buy, a spending plan seems more appropriate.\nA spending plan is simple to set up. Consider \nthe following steps as a guide as you fill in the information in Worksheet 5 – Cash Flow \nSpending Plan in the back of this booklet.\nIncome\nAdd up your monthly income: wages, average', metadata={'source': '/content/Data/savings-fitness.pdf', 'page': 11}), Document(page_content='secure retirement a reality: financial planning. It will help clarify your retirement goals as well as other financial goals you want to “buy” along the way. It will show you how to manage your money so you can afford today’s needs yet still fund tomorrow’s goals. It will help you make saving for retirement and other goals a habit. You’ll learn there is no such thing as starting to save too early or too late —  only not starting at all! You’ll learn how to save your money to make it work for', metadata={'source': '/content/Data/savings-fitness.pdf', 'page': 4}), Document(page_content='How do you manage all these financial \nchallenges and at the same time try to “buy” a secure retirement? How do you turn your dreams into reality?\nStart by writing down each of your goals in \nWorksheet 1 – Goals and Priorities in the back of this booklet. You may want to have family members come up with ideas. Don’t leave something out at this stage because you don’t think you can afford it. This is your “wish list.”\nOrganize them into goals you want to accomplish', metadata={'source': '/content/Data/savings-fitness.pdf', 'page': 5}), Document(page_content='CFP Board also has a keen interest in helping \nAmericans meet their personal and financial goals. A nonprofit, certifying and standards-setting organization, CFP Board’s mission is to benefit the public by granting the CFP\n® \ncertification and upholding it as the recognized standard of excellence for competent and ethical personal financial planning. To this end, CFP Board authorizes individuals who meet its competency, ethics and professional standards to use its trademarks CFP\n®, CERTIFIED', metadata={'source': '/content/Data/savings-fitness.pdf', 'page': 4}), Document(page_content='Make your own list and then think about which goals are the \nmost important to you. List your most important goals first. \nDecide how many years you have to meet each specific goal, \nbecause when you save or invest you’ll need to find a savings or \nYOUR FINANCIAL GOALS\nIf you don’t know where you are going, you may end up somewhere you don’t want \nto be. To end up where you want to be, you’ll need a roadmap, a financial plan.\nWhat do you want to save or invest for? By when?', metadata={'source': '/content/Data/sec-guide-to-savings-and-investing.pdf', 'page': 5}), Document(page_content='28  |  SAVING AND INVESTINGKeep in T ouch With Us\nWe hope that you’ve found this brochure helpful. Please let us \nknow how it can be improved. \nWe’ve only covered the basics, and there’s a lot more to learn \nabout saving and investing. But you’ll be learning as you go and over your lifetime. \nAs we said at the beginning, the most important thing is to \nget started. And remember to ask questions as you make your investment decisions. \nBe sure to find out if the person is licensed to sell invest -', metadata={'source': '/content/Data/sec-guide-to-savings-and-investing.pdf', 'page': 29}), Document(page_content='Yet like many people you may wonder how you can achieve that dream when so many other financial issues have priority.\nWrite down on Worksheet 1 what you need to \ndo to accomplish each goal: When do you want to accomplish it, what will it cost (we’ll tell you more about that later), what money have you set aside already, and what you are willing to do to reach the goal.\nLook again at the order of priority. How hard', metadata={'source': '/content/Data/savings-fitness.pdf', 'page': 5}), Document(page_content='No one can guarantee that you’ll make money from \ninvestments you make. But if you get the facts about sav -\ning and investing and follow through with an intelligent plan, you should be able to gain financial security over the years and enjoy the benefits of managing your money.\nPlease feel free to contact us with any of your ques -\ntions or concerns about investing. It always pays to learn before you invest. And congratulations on taking your first step on the road to financial security!', metadata={'source': '/content/Data/sec-guide-to-savings-and-investing.pdf', 'page': 2}), Document(page_content='Some financial planners and investment advisers offer a \ncomplete financial plan, assessing every aspect of your financial \nlife and developing a detailed strategy for meeting your finan -\ncial goals. They may charge you a fee for the plan, a percentage \nof your assets that they manage, or receive commissions from \nthe companies whose products you buy, or a combination of \nthese. Y ou should know exactly what services you are getting \nand how much they will cost.', metadata={'source': '/content/Data/sec-guide-to-savings-and-investing.pdf', 'page': 20})]
+Number of of Documents returned : 9
+CPU times: user 37.8 s, sys: 1.24 s, total: 39 s
+Wall time: 38.9 s
+"""
+```
+```code
+%%time
+query = "What are the steps to make a financial planning?"
+response = qa_with_sources_chain({"query":query})
+print(f"Response generated : \n {response['result']}")
+print(f"Source Documents : \n {response['source_documents']}")
+"""
+OUTPUT
+Response generated :
+
+To make a financial plan, follow these steps:
+1. Determine your financial goals: Write down your short-term and long-term financial goals, such as paying off debt, saving for a vacation, buying a house, or retiring comfortably.
+2. Calculate your current financial situation: Determine your current income, expenses, assets, and liabilities. This will give you an idea of where you stand financially and help you identify areas where you need to improve.
+3. Set a timeline: Estimate how long it will take you to achieve each of your financial goals, based on your current financial situation and your expected income and expenses in the future.
+4. Create a budget: Based on your estimated income and expenses, create a budget that helps you allocate funds towards your financial goals. This should include both discretionary and non-discretionary spending.
+5. Choose investment strategies: Determine the types of investments that align with your financial goals and risk tolerance. This could include stocks, bonds, mutual funds, real estate, or other investment vehicles.
+6. Review and adjust your plan regularly: Periodically review your financial plan and make adjustments as needed based on changes in your financial situation, market conditions, and your progress towards your goals.
+Remember, making a financial plan is an ongoing process, and it's important to stay flexible and adaptable as your financial needs and goals change over time.
+Source Documents :
+[Document(page_content='Make your own list and then think about which goals are the \nmost important to you. List your most important goals first. \nDecide how many years you have to meet each specific goal, \nbecause when you save or invest you’ll need to find a savings or \nYOUR FINANCIAL GOALS\nIf you don’t know where you are going, you may end up somewhere you don’t want \nto be. To end up where you want to be, you’ll need a roadmap, a financial plan.\nWhat do you want to save or invest for? By when?', metadata={'source': '/content/Data/sec-guide-to-savings-and-investing.pdf', 'page': 5}), Document(page_content='SAVINGS FITNESS: A GUIDE TO YOUR MONEY AND YOUR FINANCIAL FUTURE23FINANCIAL FITNESS FOR \nTHE SELF-EMPLOYED\nWhat To Do If You Can’t Join an \nEmployer-Based Plan\nYou may not be able to join an employer-based \nretirement plan because you are not eligible or because the employer doesn’t offer one.\nFortunately, there are steps you can still take to \nbuild your retirement strength.\nTake a job with a plan\nIf two jobs offer similar pay and working', metadata={'source': '/content/Data/savings-fitness.pdf', 'page': 25}), Document(page_content='U.S. DEPARTMENT OF LABOR24You also may want to seek the help of \na professional financial planner. Go to \nLetsMakeAPlan.org  for tips on choosing a \nfinancial planner who is required to act in your best interest when providing financial planning advice. \nWhat To Do If You Are \nSelf-Employed\nMany people today work for themselves, either \nfull time or in addition to their regular job. They have several tax-deferred options from which to choose.\nSEP\nThis is the same type of SEP described earlier', metadata={'source': '/content/Data/savings-fitness.pdf', 'page': 26}), Document(page_content='How do you manage all these financial \nchallenges and at the same time try to “buy” a secure retirement? How do you turn your dreams into reality?\nStart by writing down each of your goals in \nWorksheet 1 – Goals and Priorities in the back of this booklet. You may want to have family members come up with ideas. Don’t leave something out at this stage because you don’t think you can afford it. This is your “wish list.”\nOrganize them into goals you want to accomplish', metadata={'source': '/content/Data/savings-fitness.pdf', 'page': 5}), Document(page_content='and a comfortable retirement. If they can do it, so can you!\nKEYS  TO FINANCIAL SUCCESS\n1 . Make a financial plan.\n2. Pay off any high interest debts.\n3.  Start saving and investing as soon as you’ve paid off your debts.', metadata={'source': '/content/Data/sec-guide-to-savings-and-investing.pdf', 'page': 4}), Document(page_content='What savings do I already have \nfor retirement?\nYou’ll need to build a nest egg sufficient to make \nup the gap between the total amount of income you will need each year and the amount provided annually by Social Security and any retirement income. This nest egg will come from your retirement plan accounts at work, IRAs, annuities, and personal savings.\nWhat adjustments must be made \nfor inflation?\nThe cost of retirement will likely go up every', metadata={'source': '/content/Data/savings-fitness.pdf', 'page': 9}), Document(page_content='Plan and complete the last two columns to help you track your progress.\nnPeriodically review your spending plan.\nnMonitor the performance of investments. \nMake adjustments if necessary.\nnMake sure you contribute more toward your retirement as you earn more.\nnUpdate your various insurance safety nets to reflect changes in income or personal circumstances.\nnKeep your finances in order .\nWhere To Go From Here', metadata={'source': '/content/Data/savings-fitness.pdf', 'page': 34}), Document(page_content='What will my investments return?\nAny calculation must take into account what \nannual rate of return you expect to earn on the savings you’ve already accumulated and on the savings you intend to make in the future. You also need to determine the rate of return on your savings after you retire. These rates of return will depend in part on whether the money is inside or outside a tax-deferred account.\nIt’s important to choose realistic annual returns', metadata={'source': '/content/Data/savings-fitness.pdf', 'page': 9}), Document(page_content='Let’s start with a “spending plan” – a guide for \nhow we want to spend our money. Some people call this a budget, but since we’re thinking of retirement as something to buy, a spending plan seems more appropriate.\nA spending plan is simple to set up. Consider \nthe following steps as a guide as you fill in the information in Worksheet 5 – Cash Flow \nSpending Plan in the back of this booklet.\nIncome\nAdd up your monthly income: wages, average', metadata={'source': '/content/Data/savings-fitness.pdf', 'page': 11}), Document(page_content='For more information, visit their website or call \n1-800-772-1213 .\nWill you have other sources of income?\nFor instance, will you receive retirement benefits \nthat provide a specific amount of retirement income each month? Is the benefit adjusted for inflation?\nWhat savings do I already have \nfor retirement?\nYou’ll need to build a nest egg sufficient to make', metadata={'source': '/content/Data/savings-fitness.pdf', 'page': 9})]
+CPU times: user 51.2 ms, sys: 0 ns, total: 51.2 ms
+Wall time: 50.9 ms
+"""
+```
+```code
+%%time
+query = "How money works for us ?"
+response = qa_with_sources_chain({"query":query})
+print(f"Response generated : \n {response['result']}")
+print(f"Source Documents : \n {response['source_documents']}")
+"""
+OUTPUT
+Response generated :
+
+There are two main ways to make money: working for it or having it work for you. The latter involves saving or investing your money, which can earn interest or dividends over time. It's important to diversify your investments to minimize risk and maximize potential returns. Additionally, it's crucial to have an emergency fund to cover unexpected expenses before diving into long-term investments.
+Source Documents :
+[Document(page_content='10  |  SAVING AND INVESTINGMaking Money Grow\nTHE TWO WAYS TO MAKE MONEY\nThere are basically two ways to make money.\n1. You work for money.\n  Someone pays you to work for them or you have your own \nbusiness.\n2. Your money works for you.\n Y ou take your money and you save or invest it.\nYOUR MONEY CAN WORK FOR YOU IN TWO WAYS\nYour money earns money.  When your money goes to work, \nit may earn a steady paycheck. Someone pays you to use your \nmoney for a period of time. When you get your money back,', metadata={'source': '/content/Data/sec-guide-to-savings-and-investing.pdf', 'page': 11}), Document(page_content='certificates of deposit. Some deposits in these products may be \ninsured by the Federal Deposit  Insurance Corporation or the \nNational Credit Union Administration. But there’s a tradeoff \nfor security and ready availability. Y our money is paid a low \nwage as it works for you.\nAfter paying off credit cards or other high interest debt, \nmost smart investors put enough money in a savings product to \ncover an emergency, like sudden unemployment. Some make', metadata={'source': '/content/Data/sec-guide-to-savings-and-investing.pdf', 'page': 12}), Document(page_content='you a portion of its earnings on a regular basis. Y our money can \nmake an “income,” just like you. Y ou can make more money \nwhen you and your money work. \nYou buy something with your money that could in -\ncrease in value. Y ou become an owner of something that you \nhope increases in value over time. When you need your money \nback, you sell it, hoping someone else will pay you more for it. For \ninstance, you buy a piece of land thinking it will increase in value', metadata={'source': '/content/Data/sec-guide-to-savings-and-investing.pdf', 'page': 11}), Document(page_content='Your money earns money.  When your money goes to work, \nit may earn a steady paycheck. Someone pays you to use your \nmoney for a period of time. When you get your money back, \nyou get it back plus “interest.” Or, if you buy stock in a compa -\nny that pays “dividends” to shareholders, the company may pay \nyou a portion of its earnings on a regular basis. Y our money can \nmake an “income,” just like you. Y ou can make more money \nwhen you and your money work.', metadata={'source': '/content/Data/sec-guide-to-savings-and-investing.pdf', 'page': 11}), Document(page_content='At the same time, call or write to us and let us know what \nthe problem was. Investor complaints are very important to the SEC. Y ou may think you’re the only one experiencing a prob -\nlem, but typically, you’re not alone. Sometimes it takes only one investor’s complaint to trigger an investigation that exposes a bad broker or an illegal scheme. Complaints can be filed online with us by going to www.sec.gov/complaint.shtml.', metadata={'source': '/content/Data/sec-guide-to-savings-and-investing.pdf', 'page': 28}), Document(page_content='vestment professional doesn’t resolve the problem, talk to the firm’s manager, and write a letter to confirm your conversa -\ntion. If that doesn’t lead to a resolution, you may have to initi -\nate private legal action. Y ou may need to take action quickly because legal time limits for doing so vary. Y our local bar as-sociation can provide referrals for attorneys who specialize in securities law. \nAt the same time, call or write to us and let us know what', metadata={'source': '/content/Data/sec-guide-to-savings-and-investing.pdf', 'page': 28}), Document(page_content='These are sometimes referred \nto as cash or cash equivalents because you can \nget to them quickly and there’s little risk of losing the money you put in.\nn\nDomestic bonds . You loan money to a U.S. \ncompany or a government body in return for its promise to pay back what you loaned, with interest.\nn\nDomestic stocks.  You own part of a U.S. \ncompany.\nnMutual funds.  Instead of investing directly in', metadata={'source': '/content/Data/savings-fitness.pdf', 'page': 15}), Document(page_content='Marriage\nGetting married creates new financial demands \nthat compete for retirement dollars, such as changing life insurance needs and saving to buy a home. But it’s usually less expensive for two people to live together, thus freeing up dollars. Also, you probably still have time on your side. A spending plan is essential. Remember, every little bit helps.Raising children\nThe U.S. Department of Agriculture estimates', metadata={'source': '/content/Data/savings-fitness.pdf', 'page': 29}), Document(page_content='SAVINGS FITNESS: A GUIDE TO YOUR MONEY AND YOUR FINANCIAL FUTURE1A FINANCIAL WARMUP\nMost of us know it is smart to save money for those \nbig-ticket items we really want to buy – a new television or car or home. Yet you may not realize that probably the most expensive thing you will ever buy in your lifetime is your … retirement.\nPerhaps you’ve never thought of “buying” your', metadata={'source': '/content/Data/savings-fitness.pdf', 'page': 3})]
+CPU times: user 8.01 s, sys: 291 ms, total: 8.3 s
+Wall time: 8.27 s
+"""
+```
+```code
+%%time
+query ="What is the document about?"
+response = qa_with_sources_chain({"query":query})
+print(f"Response generated : \n {response['result']}")
+print(f"Source Documents : \n {response['source_documents']}")
+print(f"Number of Documents returned : {len(response['source_documents'])}")
+"""
+OUPUT
+Response generated :
+
+The document is a guide to financial fitness and helps individuals assess their financial situation and plan for their future. It includes information on various financial topics such as budgeting, saving, investing, taxes, and insurance. The guide provides checklists and worksheets to help individuals gather necessary documents and make informed decisions about their financial future.
+Source Documents :
+[Document(page_content='❏Other\n❏Copy of recent credit report\nInsurance Documents and Statements\n❏Health, disability, and long term care insurance policies\n❏Homeowners, renters, auto, and umbrella insurance policies \n❏Life insurance policies \n❏Other', metadata={'source': '/content/Data/savings-fitness.pdf', 'page': 39}), Document(page_content='14  |  SAVING AND INVESTINGWhat are investments all about?\nWhen you make an investment, you are giving your money \nto a company or enterprise, hoping that it will be successful \nand pay you back with even more money.\nStocks and Bonds\nMany companies offer investors the opportunity to buy either \nstocks or bonds. The example below shows you how stocks and \nbonds differ. \nLet’s say you believe that a company that makes automo -\nbiles may be a good investment. Everyone you know is buying', metadata={'source': '/content/Data/sec-guide-to-savings-and-investing.pdf', 'page': 15}), Document(page_content='What savings do I already have \nfor retirement?\nYou’ll need to build a nest egg sufficient to make \nup the gap between the total amount of income you will need each year and the amount provided annually by Social Security and any retirement income. This nest egg will come from your retirement plan accounts at work, IRAs, annuities, and personal savings.\nWhat adjustments must be made \nfor inflation?\nThe cost of retirement will likely go up every', metadata={'source': '/content/Data/savings-fitness.pdf', 'page': 9}), Document(page_content='Retirement Planning Documents and Statements\n❏Workplace retirement plan(s), including the Summary Plan Description(s) and benefit statement(s)\n❏Individual IRA account(s) \n❏Retirement benefits information from current or former spouse\n❏Annuity policies \n❏Social Security retirement benefits estimate\nTax Planning Documents\n❏Income tax returns for last year (federal, state and local)\n❏Recent pay stub with cumulative year-to-date information\nFinancial Documents and Statements', metadata={'source': '/content/Data/savings-fitness.pdf', 'page': 39}), Document(page_content='Tax Planning Documents\n❏Income tax returns for last year (federal, state and local)\n❏Recent pay stub with cumulative year-to-date information\nFinancial Documents and Statements\nInvestment-Related Documents and Statements\n❏Bank accounts (savings accounts, CDs)\n❏Mutual funds\n❏Brokerage accounts\n❏Stocks held outside of mutual funds or brokerage accounts \n❏Bonds held outside of mutual funds or brokerage accounts \n❏Partnership or other business agreements\n❏Other', metadata={'source': '/content/Data/savings-fitness.pdf', 'page': 39}), Document(page_content='Here are some questions you should ask when choosing an \ninvestment professional or someone to help you:\n•  What training and experience do you have? How long \nhave you been in business?\n•  What is your investment philosophy? Do you take a lot of risks \nor are you more concerned about the safety of my money?\n•  Describe your typical client. Can you provide me with ref -\nerences, the names of people who have invested with you \nfor a long time?', metadata={'source': '/content/Data/sec-guide-to-savings-and-investing.pdf', 'page': 24}), Document(page_content='SAVINGS FITNESS: A GUIDE TO YOUR MONEY AND YOUR FINANCIAL FUTURE372Financial \nDocuments \n ChecklistDate: \nTo help you fill out the worksheets that follow, \ngather together recent copies of the documents and statements listed below. You can get many \nof these documents from your employer, financial institutions, and insurance companies.  You can get your \nSocial Security Statement  with an estimate of your retirement benefits. To get a free credit report every 12 months, visit', metadata={'source': '/content/Data/savings-fitness.pdf', 'page': 39}), Document(page_content='Benefits through Qualified Domestic Relations Orders (for example, divorce orders). Also visit the Social Security Administration’s website to order their \nbooklet What Every Woman Should \nKnow.', metadata={'source': '/content/Data/savings-fitness.pdf', 'page': 31}), Document(page_content='❏Brokerage accounts\n❏Stocks held outside of mutual funds or brokerage accounts \n❏Bonds held outside of mutual funds or brokerage accounts \n❏Partnership or other business agreements\n❏Other\nLoan Documents, Statements, and Credit Reports\n❏Student Loans\n❏Mortgage(s)\n❏Car(s)\n❏Credit cards\n❏Other\n❏Copy of recent credit report\nInsurance Documents and Statements\n❏Health, disability, and long term care insurance policies\n❏Homeowners, renters, auto, and umbrella insurance policies', metadata={'source': '/content/Data/savings-fitness.pdf', 'page': 39}), Document(page_content='What will my investments return?\nAny calculation must take into account what \nannual rate of return you expect to earn on the savings you’ve already accumulated and on the savings you intend to make in the future. You also need to determine the rate of return on your savings after you retire. These rates of return will depend in part on whether the money is inside or outside a tax-deferred account.\nIt’s important to choose realistic annual returns', metadata={'source': '/content/Data/savings-fitness.pdf', 'page': 9})]
+Number of Documents returned : 10
+CPU times: user 6.7 s, sys: 267 ms, total: 6.97 s
+Wall time: 6.94 s
+"""
+```
+ Links:
+ - ("https://rsci.app.link/?%24canonical_url=https%3A%2F%2Fmedium.com%2Fp%2Fce78fdae4ef6&%7Efeature=LoOpenInAppButton&%7Echannel=ShowPostUnderCollection&source=---two_column_layout_nav----------------------------------", "Open in app")
+ - ("https://medium.com/?source=---two_column_layout_nav----------------------------------", "")
+ - ("https://medium.com/search?source=---two_column_layout_nav----------------------------------", "")
+ - ("https://nayakpplaban.medium.com/?source=post_page-----ce78fdae4ef6--------------------------------", "")
+ - ("https://medium.aiplanet.com/?source=post_page-----ce78fdae4ef6--------------------------------", "")
+ - ("https://nayakpplaban.medium.com/?source=post_page-----ce78fdae4ef6--------------------------------", "Plaban Nayak")
+ - ("https://medium.aiplanet.com/?source=post_page-----ce78fdae4ef6--------------------------------", "AI Planet")
+ - ("https://python.langchain.com/docs/modules/data_connection/text_embedding/caching_embeddings", "https://python.langchain.com/docs/modules/data_connection/text_embedding/caching_embeddings")
+ - ("https://python.langchain.com/docs/integrations/llms/llm_caching", "https://python.langchain.com/docs/integrations/llms/llm_caching")
+ - ("https://python.langchain.com/docs/modules/data_connection/retrievers/", "https://python.langchain.com/docs/modules/data_connection/retrievers")
+ - ("https://python.langchain.com/docs/modules/data_connection/retrievers/ensemble", "https://python.langchain.com/docs/modules/data_connection/retrievers/ensemble")
+ - ("https://medium.com/tag/hugging-face?source=post_page-----ce78fdae4ef6---------------hugging_face-----------------", "Hugging Face")
+ - ("https://medium.com/tag/mistral-ai?source=post_page-----ce78fdae4ef6---------------mistral_ai-----------------", "Mistral Ai")
+ - ("https://medium.com/tag/langchain?source=post_page-----ce78fdae4ef6---------------langchain-----------------", "Langchain")
+ - ("https://medium.com/tag/bm25?source=post_page-----ce78fdae4ef6---------------bm25-----------------", "Bm25")
+ - ("https://medium.com/tag/semantic-search?source=post_page-----ce78fdae4ef6---------------semantic_search-----------------", "Semantic Search")
+ - ("https://nayakpplaban.medium.com/?source=post_page-----ce78fdae4ef6--------------------------------", "")
+ - ("https://medium.aiplanet.com/?source=post_page-----ce78fdae4ef6--------------------------------", "")
+ - ("https://nayakpplaban.medium.com/?source=post_page-----ce78fdae4ef6--------------------------------", "Written by\nPlaban Nayak")
+ - ("https://medium.aiplanet.com/?source=post_page-----ce78fdae4ef6--------------------------------", "AI Planet")
+ - ("https://medium.statuspage.io/?source=post_page-----ce78fdae4ef6--------------------------------", "Status")
+ - ("https://blog.medium.com/?source=post_page-----ce78fdae4ef6--------------------------------", "Blog")
+ - ("https://speechify.com/medium?source=post_page-----ce78fdae4ef6--------------------------------", "Text to speech")
+ - ("https://medium.com/business?source=post_page-----ce78fdae4ef6--------------------------------", "Teams")
