@@ -2,7 +2,7 @@
 
 julia_version = "1.10.0"
 manifest_format = "2.0"
-project_hash = "d4c3f3c6b95a2f42871fe7eb22d2158c029d10ee"
+project_hash = "b046ad321d8cac10fe225f07764b5fecb5e2cfda"
 
 [[deps.AbstractPlutoDingetjes]]
 deps = ["Pkg"]
@@ -275,6 +275,12 @@ version = "1.2.1"
 [[deps.NetworkOptions]]
 uuid = "ca575930-c2e3-43a9-ace4-1e988b2c1908"
 version = "1.2.0"
+
+[[deps.OpenAI]]
+deps = ["Dates", "HTTP", "JSON3"]
+git-tree-sha1 = "c66f597044ac6cd41cbf4b191d59abbaf2003d9f"
+uuid = "e9f21f70-7185-4079-aca2-91159181367c"
+version = "0.9.0"
 
 [[deps.OpenBLAS_jll]]
 deps = ["Artifacts", "CompilerSupportLibraries_jll", "Libdl"]
