@@ -41,7 +41,8 @@ const URL = "https://towardsdatascience.com/beyond-english-implementing-a-multil
 const TOPIC = "multilingual RAG consideration"
 
 # ╔═╡ 2f4ae40f-a1ab-470b-a1b7-a04fec353b0e
-const INSTRUCT_PROMPT = """Generate a comprehensive and detailed synthesis of the following excerpt (delimited by triple backticks) about $(TOPIC). As always, extract all the code snipets (if present) and apply indentation of 2 spaces (if required). Please ignore the web links for the reference as they will be handled differently later. Here is the excerpt:""";
+const INSTRUCT_PROMPT = """Generate a comprehensive and detailed synthesis of the following excerpt (delimited by triple backticks) about $(TOPIC).
+Please extract all the code snipets once (if present) and apply indentation of 2 spaces (if required). Please ignore the web links for the reference as they will be handled differently later. Here is the excerpt:""";
 
 # ╔═╡ ba4e4c0f-2835-4a76-a9d4-7d7ba02becb2
 println(INSTRUCT_PROMPT)
@@ -154,13 +155,6 @@ md"""
 )
 # # Elapsed time for call to `make_openai_request_chat`: 39207 milliseconds
 
-# ╔═╡ c4f7a724-fe95-45cb-94af-656cc5fbebb5
-# md"""
-# $(join(synthesis, "\n"))
-# """
-
-# Markdown.MD(join(synthesis, "\n"))
-
 # ╔═╡ 9b661918-23b6-46fb-9af1-53454d750d5f
 synthesis_links = string(
 	join(synthesis, "\n"),
@@ -176,6 +170,24 @@ save_text(
 	MD_FILEPATH,
 	synthesis_links  # join(synthesis_links, "\n") # |> s -> replace(s, "```markdown" => "", "```" => "")
 )
+
+# ╔═╡ cdb9c685-050a-430e-bde4-cd18c496f2a8
+md"""
+---
+"""
+
+# ╔═╡ be4996ad-0379-495b-bb00-2eb3c0847227
+md"""
+### Resulting synthesis
+"""
+
+# ╔═╡ c4f7a724-fe95-45cb-94af-656cc5fbebb5
+# Markdown.parse(join(synthesis, "\n"))
+
+# ╔═╡ fe39ac9a-88fc-4b35-9e91-e4d93b2187b3
+md"""
+---
+"""
 
 # ╔═╡ 322ecf98-5694-42a1-84f2-caf8a5fa58ad
 html"""
@@ -620,9 +632,12 @@ version = "17.4.0+2"
 # ╠═0df8719c-a91d-4449-8dac-337a832eb065
 # ╟─0883ae28-a94f-4bed-abce-39841605d29b
 # ╠═e2ffe835-65dc-4c85-aa9a-d98867da2ff5
-# ╠═c4f7a724-fe95-45cb-94af-656cc5fbebb5
 # ╠═9b661918-23b6-46fb-9af1-53454d750d5f
 # ╠═e4d711be-c885-404b-a51a-fda50c9d43c7
+# ╟─cdb9c685-050a-430e-bde4-cd18c496f2a8
+# ╟─be4996ad-0379-495b-bb00-2eb3c0847227
+# ╠═c4f7a724-fe95-45cb-94af-656cc5fbebb5
+# ╟─fe39ac9a-88fc-4b35-9e91-e4d93b2187b3
 # ╟─322ecf98-5694-42a1-84f2-caf8a5fa58ad
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002

@@ -7,124 +7,92 @@
 - **Reading Time**: 18 min read
 - **Link**: [Article URL](https://towardsdatascience.com/beyond-english-implementing-a-multilingual-rag-solution-12ccba0428b6)
 #### Introduction
-The article by Jesper Alkestrup, published in Towards Data Science, provides a comprehensive guide on implementing a non-English Retrieval Augmented Generation (RAG) system. It addresses the challenges and considerations unique to multilingual contexts and offers practical advice for each step of the process. The article is structured as a 6-step guide, focusing on the indexing phase of RAG systems, and assumes the reader has a basic understanding of embeddings, vectors, and tokens.
-#### Key Points and Considerations for Multilingual RAG Systems
-- **Data Loading**: It is crucial to maintain the syntactic structure during data loading for meaningful text segmentation. The article suggests using simple delimiters and rule-based text splitters for efficiency in multilingual contexts.
-- **Embedding Model Selection**: When choosing an embedding model, consider multilingual capabilities and asymmetric retrieval performance. Fine-tuning with a Large Language Model (LLM) may be necessary for accuracy.
-- **LLM-based Retrieval Evaluation**: Implementing an LLM-based retrieval evaluation benchmark is recommended for fine-tuning hyperparameters effectively.
-#### Detailed Steps for Implementing a Multilingual RAG System
-1. **Data Loader**: The article emphasizes the importance of preserving syntactic integrity during data loading, highlighting the limitations of machine learning-based segmentation tools for non-English languages. It provides examples of HTML and PDF data loaders, illustrating the potential loss of structural information with the latter.
-   - **HTML Data Loader Example**:
-     ```python
-     import requests
-     from bs4 import BeautifulSoup
-     url = "https://medium.com/llamaindex-blog/boosting-rag-picking-the-best-embedding-reranker-models-42d079022e83"
-     soup = BeautifulSoup(requests.get(url).text, 'html.parser')
-     filtered_tags = soup.find_all(['h1', 'h2', 'h3', 'h4', 'p'])
-     filtered_tags[:14]
-     ```
-2. **Data Formatting**: The article discusses the importance of formatting data to prepare it for text splitting, suggesting the use of basic delimiters to guide the text splitter. It provides a Python function example for formatting HTML content into a dictionary with title and text.
-   - **Data Formatting Function Example**:
-     ```python
-     def format_html(tags):
-       formatted_text = ""
-       title = ""
-     
-       for tag in tags:
-         if 'pw-post-title' in tag.get('class', []):
-           title = tag.get_text()
-         elif tag.name == 'p' and 'pw-post-body-paragraph' in tag.get('class', []):
-           formatted_text += "\n"+ tag.get_text()
-         elif tag.name in ['h1', 'h2', 'h3', 'h4']:
-           formatted_text += "\n\n" + tag.get_text()
-     
-       return {title: formatted_text}
-     formatted_document = format_html(filtered_tags)
-     ```
-3. **Text Splitting**: The article highlights the importance of splitting text into appropriately sized chunks, considering model constraints and retrieval effectiveness. It recommends starting with a simple rule-based splitter and provides an example using LangChain's recursive character text splitter.
-   - **Text Splitting Example**:
-     ```python
-     from langchain.text_splitter import RecursiveCharacterTextSplitter
-     from transformers import AutoTokenizer
-     tokenizer = AutoTokenizer.from_pretrained("intfloat/e5-base-v2")
-     def token_length_function(text_input):
-       return len(tokenizer.encode(text_input, add_special_tokens=False))
-     text_splitter = RecursiveCharacterTextSplitter(
-       chunk_size = 128,
-       chunk_overlap  = 0,
-       length_function = token_length_function,
-       separators = ["\n\n", "\n", ". ", "? ", "! "]
-     )
-     split_texts = text_splitter(formatted_document['Boosting RAG: Picking the Best Embedding & Reranker models'])
-     ```
-4. **Embedding Models**: The selection of the right embedding model is critical, with a focus on multilingual or language-specific models that excel in asymmetric retrieval. The article suggests using the top-performing multilingual model in the MTEB Retrieval benchmark and provides an example of embedding text using the Sentence Transformer library.
-   - **Embedding Example**:
-     ```python
-     from sentence_transformers import SentenceTransformer
-     model = SentenceTransformer('intfloat/e5-large')
-     prepended_split_texts = ["passage: " + text for text in split_texts]
-     embeddings = model.encode(prepended_split_texts, normalize_embeddings=True)
-     print(f'We now have {len(embeddings)} embeddings, each of size {len(embeddings[0])}')
-     ```
-5. **Vector Databases**: The article discusses the storage of vector embeddings for retrieval, noting that the choice of vector storage is generally unaffected by language. It recommends exploring resources for a comprehensive understanding of storage and search options.
-6. **The Generative Phase**: The generative phase is not covered in detail in this article, as the considerations are less language-dependent. The article suggests that guides for English retrieval optimization are generally applicable to other languages.
-#### Conclusion
-The article concludes by stressing the importance of creating a custom benchmark for evaluating different configurations of a RAG system, especially for multilingual datasets. It promises a follow-up post on creating a well-performing retrieval benchmark.
-#### References
-The article lists several references for further reading on topics such as chunk size evaluation, embedding fine-tuning, and improving retrieval performance in RAG systems.
+The article by Jesper Alkestrup, titled "Beyond English: Implementing a multilingual RAG solution," provides a comprehensive guide on the considerations and steps necessary for developing non-English Retrieval Augmented Generation (RAG) systems. It emphasizes the importance of maintaining syntactic structure during data loading, efficient text splitting, and the selection of an appropriate embedding model. The guide also suggests fine-tuning embedding models with a Large Language Model (LLM) and implementing an LLM-based retrieval evaluation benchmark.
+#### RAG Systems: A Brief Recap
+RAG systems consist of two core components: the indexing phase and the generative phase. The indexing phase involves data loading, formatting, splitting, vectorization through embedding techniques, and storage within a knowledge base. The generative phase uses a user's query to extract relevant information from the knowledge base and formulates a response using an LLM.
+#### Step-by-Step Guide for Non-English RAG Systems
+1. **Data Loader Considerations**
+   - The data loader should handle diverse formats and extract relevant content.
+   - For text-based inputs, preserving syntactic integrity is crucial for accurate information retrieval.
+   - The article compares the use of an HTML dataloader and a PDF dataloader, highlighting the importance of retaining structural information.
+2. **Data Formatting**
+   - The goal is to prepare data for text splitting by transforming complex structures into plain text with basic delimiters.
+   - The article provides a Python function to format HTML content into a dictionary with title and text.
+3. **Text Splitting**
+   - Splitting text into appropriately sized chunks is guided by model constraints and retrieval effectiveness.
+   - The article recommends starting with a simple rule-based splitter and provides an example using LangChain's RecursiveCharacterTextSplitter.
+4. **Embedding Models**
+   - The choice of embedding model is critical and should be multilingual or tailored to the specific language.
+   - The article discusses the importance of asymmetric retrieval and suggests using the E5-multilingual family or the cohere-embed-multilingual-v3.0 model.
+5. **Vector Databases**
+   - After embedding, the data is stored in vector databases for retrieval.
+   - The choice of vector storage is generally language-independent.
+6. **The Generative Phase**
+   - The generative phase involves embedding a user's query, performing a vector similarity search, and generating a response.
+   - The article does not cover this phase in detail, as the considerations are less language-dependent.
+#### Conclusion and Evaluation
+The article concludes by emphasizing the complexity of optimizing a RAG system for a specific problem and language. It suggests creating a custom benchmark to evaluate different configurations and mentions that a future post will cover the creation of a retrieval benchmark.
 #### Code Snippets
-The article includes several Python code snippets demonstrating the use of libraries such as BeautifulSoup, PyPDF2, LangChain, and Sentence Transformers for various steps in the RAG system implementation process.
-#### Acknowledgements
-The author, Jesper Alkestrup, encourages readers to provide feedback and acknowledges the reader's time spent on the article.
-### Code Snippets Delivered Verbatim
-#### HTML Data Loader Example
-```python
-import requests
-from bs4 import BeautifulSoup
-url = "https://medium.com/llamaindex-blog/boosting-rag-picking-the-best-embedding-reranker-models-42d079022e83"
-soup = BeautifulSoup(requests.get(url).text, 'html.parser')
-filtered_tags = soup.find_all(['h1', 'h2', 'h3', 'h4', 'p'])
-filtered_tags[:14]
-```
-#### Data Formatting Function Example
-```python
-def format_html(tags):
-  formatted_text = ""
-  title = ""
-  for tag in tags:
-    if 'pw-post-title' in tag.get('class', []):
-      title = tag.get_text()
-    elif tag.name == 'p' and 'pw-post-body-paragraph' in tag.get('class', []):
-      formatted_text += "\n"+ tag.get_text()
-    elif tag.name in ['h1', 'h2', 'h3', 'h4']:
-      formatted_text += "\n\n" + tag.get_text()
-  return {title: formatted_text}
-formatted_document = format_html(filtered_tags)
-```
-#### Text Splitting Example
-```python
-from langchain.text_splitter import RecursiveCharacterTextSplitter
-from transformers import AutoTokenizer
-tokenizer = AutoTokenizer.from_pretrained("intfloat/e5-base-v2")
-def token_length_function(text_input):
-  return len(tokenizer.encode(text_input, add_special_tokens=False))
-text_splitter = RecursiveCharacterTextSplitter(
-  chunk_size = 128,
-  chunk_overlap  = 0,
-  length_function = token_length_function,
-  separators = ["\n\n", "\n", ". ", "? ", "! "]
-)
-split_texts = text_splitter(formatted_document['Boosting RAG: Picking the Best Embedding & Reranker models'])
-```
-#### Embedding Example
-```python
-from sentence_transformers import SentenceTransformer
-model = SentenceTransformer('intfloat/e5-large')
-prepended_split_texts = ["passage: " + text for text in split_texts]
-embeddings = model.encode(prepended_split_texts, normalize_embeddings=True)
-print(f'We now have {len(embeddings)} embeddings, each of size {len(embeddings[0])}')
-```
-The synthesis captures the essence of the article, providing a structured and detailed overview of the considerations and steps involved in implementing a multilingual RAG system. It preserves the logical flow and technical details presented by the author, ensuring a comprehensive understanding of the subject matter.
+The article includes several Python code snippets demonstrating different aspects of the RAG system implementation:
+- HTML Dataloader using `requests` and `BeautifulSoup`:
+  ```python
+  import requests
+  from bs4 import BeautifulSoup
+  url = "https://medium.com/llamaindex-blog/boosting-rag-picking-the-best-embedding-reranker-models-42d079022e83"
+  soup = BeautifulSoup(requests.get(url).text, 'html.parser')
+  filtered_tags = soup.find_all(['h1', 'h2', 'h3', 'h4', 'p'])
+  filtered_tags[:14]
+  ```
+- PDF data loader using `PyPDF2`:
+  ```python
+  from PyPDF2 import PdfFileReader
+  pdf = PdfFileReader(open('data/Boosting_RAG_Picking_the_Best_Embedding_&_Reranker_models.pdf','rb'))
+  pdf.getPage(0).extractText()
+  ```
+- Function to format HTML content:
+  ```python
+  def format_html(tags):
+    formatted_text = ""
+    title = ""
+  
+    for tag in tags:
+      if 'pw-post-title' in tag.get('class', []):
+        title = tag.get_text()
+      elif tag.name == 'p' and 'pw-post-body-paragraph' in tag.get('class', []):
+        formatted_text += "\n"+ tag.get_text()
+      elif tag.name in ['h1', 'h2', 'h3', 'h4']:
+        formatted_text += "\n\n" + tag.get_text()
+  
+    return {title: formatted_text}
+  formatted_document = format_html(filtered_tags)
+  ```
+- Recursive character text splitter from LangChain:
+  ```python
+  from langchain.text_splitter import RecursiveCharacterTextSplitter
+  from transformers import AutoTokenizer
+  tokenizer = AutoTokenizer.from_pretrained("intfloat/e5-base-v2")
+  def token_length_function(text_input):
+    return len(tokenizer.encode(text_input, add_special_tokens=False))
+  text_splitter = RecursiveCharacterTextSplitter(
+    chunk_size = 128,
+    chunk_overlap  = 0,
+    length_function = token_length_function,
+    separators = ["\n\n", "\n", ". ", "? ", "! "]
+  )
+  split_texts = text_splitter(formatted_document['Boosting RAG: Picking the Best Embedding & Reranker models'])
+  ```
+- Embedding text chunks using Sentence Transformers:
+  ```python
+  from sentence_transformers import SentenceTransformer
+  model = SentenceTransformer('intfloat/e5-large')
+  prepended_split_texts = ["passage: " + text for text in split_texts]
+  embeddings = model.encode(prepended_split_texts, normalize_embeddings=True)
+  print(f'We now have {len(embeddings)} embeddings, each of size {len(embeddings[0])}')
+  ```
+#### References
+The article references several resources related to RAG systems, embedding models, and vector databases. These include the Massive Text Embedding Benchmark (MTEB), LlamaIndex guides, and articles on improving RAG system performance.
+### Final Remarks
+The article by Jesper Alkestrup is a valuable resource for anyone looking to implement a multilingual RAG system. It provides practical advice, code examples, and references to further resources, making it a comprehensive guide for this complex task.
 #### Links:
   - [Open in app](https://rsci.app.link/?%24canonical_url=https%3A%2F%2Fmedium.com%2Fp%2F12ccba0428b6&%7Efeature=LoOpenInAppButton&%7Echannel=ShowPostUnderCollection&source=---two_column_layout_nav----------------------------------)
   - [medium.com](https://medium.com/?source=---two_column_layout_nav----------------------------------)
