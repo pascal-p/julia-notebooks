@@ -14,7 +14,7 @@ begin
 	using OpenAI
 	# using AbstractTrees
 	# using Dates
-	
+
 	PlutoUI.TableOfContents(indent=true, depth=4, aside=true)
 end
 
@@ -153,7 +153,7 @@ md"""
 	 temperature=0.1,
 	 seed=117,
 )
-# # Elapsed time for call to `make_openai_request_chat`: 39207 milliseconds
+# Elapsed time for call to `make_openai_request_chat`: 39207 milliseconds
 
 # ╔═╡ 9b661918-23b6-46fb-9af1-53454d750d5f
 synthesis_links = string(

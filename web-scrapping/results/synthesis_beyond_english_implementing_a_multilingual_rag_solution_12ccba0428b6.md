@@ -95,9 +95,6 @@ The article references several resources related to RAG systems, embedding model
 The article by Jesper Alkestrup is a valuable resource for anyone looking to implement a multilingual RAG system. It provides practical advice, code examples, and references to further resources, making it a comprehensive guide for this complex task.
 #### Links:
   - [Open in app](https://rsci.app.link/?%24canonical_url=https%3A%2F%2Fmedium.com%2Fp%2F12ccba0428b6&%7Efeature=LoOpenInAppButton&%7Echannel=ShowPostUnderCollection&source=---two_column_layout_nav----------------------------------)
-  - [medium.com](https://medium.com/?source=---two_column_layout_nav----------------------------------)
-  - [medium.com](https://medium.com/search?source=---two_column_layout_nav----------------------------------)
-  - [medium.com](https://medium.com/@jalkestrup?source=post_page-----12ccba0428b6--------------------------------)
   - [Whisper v3](https://github.com/openai/whisper)
   - [Fleurs](https://huggingface.co/datasets/google/fleurs)
   - [medium article](https://blog.llamaindex.ai/boosting-rag-picking-the-best-embedding-reranker-models-42d079022e83)
