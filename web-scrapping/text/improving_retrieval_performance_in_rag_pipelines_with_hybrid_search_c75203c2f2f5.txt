@@ -244,7 +244,6 @@ attributes = [],           # The attributes to return in the results
 ```
  Links:
  - ("https://rsci.app.link/?%24canonical_url=https%3A%2F%2Fmedium.com%2Fp%2Fc75203c2f2f5&%7Efeature=LoOpenInAppButton&%7Echannel=ShowPostUnderCollection&source=---two_column_layout_nav----------------------------------", "Open in app")
- - ("https://medium.com/?source=---two_column_layout_nav----------------------------------", "")
  - ("https://medium.com/search?source=---two_column_layout_nav----------------------------------", "")
  - ("https://medium.com/@iamleonie?source=post_page-----c75203c2f2f5--------------------------------", "")
  - ("https://medium.com/@iamleonie?source=post_page-----c75203c2f2f5--------------------------------", "Leonie Monigatti")
@@ -272,6 +271,5 @@ attributes = [],           # The attributes to return in the results
  - ("https://medium.com/@iamleonie?source=post_page-----c75203c2f2f5--------------------------------", "Written by\nLeonie Monigatti")
  - ("http://linkedin.com/in/804250ab", "linkedin.com/in/804250ab")
  - ("https://medium.statuspage.io/?source=post_page-----c75203c2f2f5--------------------------------", "Status")
- - ("https://blog.medium.com/?source=post_page-----c75203c2f2f5--------------------------------", "Blog")
  - ("https://speechify.com/medium?source=post_page-----c75203c2f2f5--------------------------------", "Text to speech")
  - ("https://medium.com/business?source=post_page-----c75203c2f2f5--------------------------------", "Teams")

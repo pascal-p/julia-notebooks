@@ -7,33 +7,22 @@ using InteractiveUtils
 # ╔═╡ bf0e8d60-d704-4c66-ad3f-d372cb2963a2
 begin
 	using PlutoUI
+
+	using HTTP
+	using Gumbo
+	using Cascadia
+	using OpenAI
+	# using AbstractTrees
+	# using Dates
+
 	PlutoUI.TableOfContents(indent=true, depth=4, aside=true)
 end
 
-# ╔═╡ c8b1224e-d1f3-4aaa-8d5b-26a7362af6f5
-using HTTP
-
-# ╔═╡ f3b4e922-34fd-432e-b45a-66ec7a4bea87
-using Gumbo
-
-# ╔═╡ a9544425-661d-472a-a9b4-67626a88e2ea
-using AbstractTrees
-
-# ╔═╡ 9732f467-bd58-4420-81d9-0011fc3d2a4e
-using Cascadia
-
-# ╔═╡ 7dba565b-24af-4eaa-ae0e-07e4d33876eb
-using OpenAI
-
-# ╔═╡ eb167d46-4631-40b3-8537-bc138cd6bf7e
-using Dates
-
-# ╔═╡ a36fa736-120b-4192-9781-0a5d39e3d51a
-# include("../Summarize_Papers_with_GPT/support/api_module.jl")
-include("../../../NLP_LLM/Summarize_Papers_with_GPT/support/api_module.jl")
-
 # ╔═╡ 59d0b923-435a-4dc8-902f-02a9b5a177db
-include("./utils.jl")
+include("./support/utils.jl")
+
+# ╔═╡ b61d20de-c1dc-4f88-9266-1062dd9d5cd8
+include("./support/ws_extractors.jl")
 
 # ╔═╡ c94c972e-a75f-11ee-153c-771e07689f95
 md"""
@@ -52,7 +41,7 @@ const URL = "https://towardsdatascience.com/improving-retrieval-performance-in-r
 const TOPIC = "RAG pipeline with Hybrid Search"
 
 # ╔═╡ 2f4ae40f-a1ab-470b-a1b7-a04fec353b0e
-const INSTRUCT_PROMPT = """Generate a comprehensive and detailed synthesis of the following excerpt (delimited by triple backticks) about $(TOPIC). As always, extract all the code snipets (if present) and apply indentation of 2 spaces (if required). Please ignore the web links for the reference as they will be handled differently later. Here is the excerpt:""";
+const INSTRUCT_PROMPT = """Generate a comprehensive and detailed synthesis of the following excerpt (delimited by triple backticks) about $(TOPIC). Please extract all the code snipets once (if present) and apply indentation of 2 spaces (if required). Ignore the web links for the reference as they will be handled differently later. Here is the excerpt:""";
 
 # ╔═╡ ba4e4c0f-2835-4a76-a9d4-7d7ba02becb2
 println(INSTRUCT_PROMPT)
@@ -86,7 +75,7 @@ propertynames(req)
 req.status
 
 # ╔═╡ 2402d947-3e04-4495-9e92-1f59b171dcc8
-parsed_doc = parsehtml(String(req.body));
+parsed_doc = Gumbo.parsehtml(String(req.body));
 
 # ╔═╡ dc32f9b1-b270-40a5-9067-4dad5bed40fa
 md"""
@@ -97,94 +86,32 @@ md"""
 First we need to locate the node of interest...
 """
 
-# ╔═╡ 791fd5f9-513c-45a6-83b7-0afc2593ef97
-begin
-  _root = parsed_doc.root[2].children[1].children[1]
-  # println(parsed_doc.root[2].children[1].children)
-end
-
-# ╔═╡ e951a4d5-47ea-44b6-b3bc-1f4c9d7829b1
-for elem ∈ PreOrderDFS(_root.children[1])  # main
-    try
-        if tag(elem) == :p
-			# println(elem.children[1])
-        	println(AbstractTrees.children(elem)[1])
-			println("\t", AbstractTrees.children(elem)[2])
-		end		
-    catch
-        # Nothing needed here
-    end
-end
-
 # ╔═╡ 78389e7c-e6a5-4bd2-9274-d1a2c68a4920
 rroot = parsed_doc.root[2].children[1].children[1];
 
-# ╔═╡ ece5bc96-b302-4d8e-af5b-e093ab081ce3
-function structure_llm_settings(root, selector="p.pw-post-body-paragraph")
-	for (ix, element) ∈ enumerate(eachmatch(Selector(selector), rroot))
-		print("ix: $(ix)")
-		if hasproperty(element, :children)
-			println(" current element has $(length(element.children)) child(ren)")
-			
-			for child ∈ element.children
-				print("\t", propertynames(child))
-			end
-			println()
-		end
-	end
-end
-
 # ╔═╡ 8fdfb225-1475-483e-a81a-5a450b5b0dbd
-structure_llm_settings(rroot)
+traverse_article_structure(rroot)
 
 # ╔═╡ f1dd1b92-b841-414b-8cca-d3bcdda675dd
 md"""
-#### Get the text
+#### Get the content
+
+- article's content
+- code snipets
+- web links
 """
 
-# ╔═╡ b1309566-ded6-4f9f-a7b5-76e892991e65
-function extract_llm_settings(root; selectors = ["p.nx-mt-6"], detect_code=false, verbose=true)::String
-	fulltext = String[]
-	sel_vec = vcat(
-		(eachmatch(Selector(selector), rroot) for selector ∈ selectors)...
-	)
-	iscode = false
-	for (ix, element) ∈ enumerate(sel_vec)
-		verbose &&  println("$(ix) - [$(element)] /// [$(element.attributes["class"])]")
-
-		# TODO: link `!occursin("fz"...` to class selector fro more generality!
-		iscode = detect_code && hasproperty(element, :attributes) && 
-			!occursin("fz", element.attributes["class"])
-
-		if hasproperty(element, :children)
-			text = dft(element.children)
-			text = iscode ? string("```code\n", text, "\n```") : text
-			push!(fulltext, text)
-		end
-
-		iscode = false
-	end
-
-	join(
-		filter(
-			l -> length(strip(l)) > 0,
-			fulltext
-		),
-		"\n"
-	)
-end
-
 # ╔═╡ 8fe89775-2853-49e4-885a-f3bdb1e792db
-md_title = extract_llm_settings(rroot; selectors=[".pw-post-title"], verbose=false)  # Title
+md_title = extract_content(rroot; selectors=[".pw-post-title"], verbose=false)  # Title
 
 # ╔═╡ 72d4f892-2bd2-43af-b71e-5252a666ce0c
-md = extract_llm_settings(rroot; selectors=[".bm"], verbose=false)  # other metadata
+md = extract_content(rroot; selectors=[".bm"], verbose=false)  # other metadata
 
 # ╔═╡ 67fd72dc-5540-440d-a8f3-8324914553b8
-text = extract_llm_settings(
-	rroot; 
+text = extract_content(
+	rroot;
 	# "p.pw-post-body-paragraph"
-	selectors=["div.ch.bg.fw.fx.fy.fz", "pre.ba.bj"],  # "pre.ba.bj": for code snipet or "pre", did not work with (table extraction): "table.highlight" 
+	selectors=["div.ch.bg.fw.fx.fy.fz", "pre.ba.bj"],  # "pre.ba.bj": for code snipet or "pre", did not work with (table extraction): "table.highlight"
 	detect_code=true,
 	verbose=false
 )
@@ -196,8 +123,6 @@ links = extract_links(
 	verbose=false, 
 	restrict_to=["github", "LinkedIn", "huggingface", "arxiv", "medium", "edu", "llamaindex", "langchain", "wikipedia", "cohere"]
 )
-# "towardsdatascience", "medium",
-# https://docs.llamaindex.ai/en/stable/examples/retrievers/recursive_retriever_nodes.html
 
 # ╔═╡ 0110956d-424d-4c7c-87ef-eda4a2cfc291
 full_text = string(
@@ -227,11 +152,6 @@ md"""
 )
 # Elapsed time for call to `make_openai_request_chat`: 39207 milliseconds
 
-# ╔═╡ c4f7a724-fe95-45cb-94af-656cc5fbebb5
-md"""
-$(join(synthesis, "\n"))
-"""
-
 # ╔═╡ 9b661918-23b6-46fb-9af1-53454d750d5f
 synthesis_links = string(
 	join(synthesis, "\n"),
@@ -248,6 +168,24 @@ save_text(
 	synthesis_links  # join(synthesis_links, "\n") # |> s -> replace(s, "```markdown" => "", "```" => "")
 )
 
+# ╔═╡ cdb9c685-050a-430e-bde4-cd18c496f2a8
+md"""
+---
+"""
+
+# ╔═╡ be4996ad-0379-495b-bb00-2eb3c0847227
+md"""
+### Resulting synthesis
+"""
+
+# ╔═╡ c4f7a724-fe95-45cb-94af-656cc5fbebb5
+# Markdown.parse(join(synthesis, "\n"))
+
+# ╔═╡ fe39ac9a-88fc-4b35-9e91-e4d93b2187b3
+md"""
+---
+"""
+
 # ╔═╡ 322ecf98-5694-42a1-84f2-caf8a5fa58ad
 html"""
 <style>
@@ -260,16 +198,13 @@ html"""
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
 [deps]
-AbstractTrees = "1520ce14-60c1-5f80-bbc7-55ef81b5835c"
 Cascadia = "54eefc05-d75b-58de-a785-1a3403f0919f"
-Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
 Gumbo = "708ec375-b3d6-5a57-a7ce-8257bf98657a"
 HTTP = "cd3eb016-35fb-5094-929b-558a96fad6f3"
 OpenAI = "e9f21f70-7185-4079-aca2-91159181367c"
 PlutoUI = "7f904dfe-b85e-4ff6-b463-dae2292396a8"
 
 [compat]
-AbstractTrees = "~0.4.4"
 Cascadia = "~1.0.2"
 Gumbo = "~0.8.2"
 HTTP = "~1.10.1"
@@ -283,7 +218,7 @@ PLUTO_MANIFEST_TOML_CONTENTS = """
 
 julia_version = "1.10.0"
 manifest_format = "2.0"
-project_hash = "0a481d0eecee663aff8ea9fc7e22e4eb9f375300"
+project_hash = "362c25656f7bf23fff2103f2e87b5b440956ebf6"
 
 [[deps.AbstractPlutoDingetjes]]
 deps = ["Pkg"]
@@ -666,16 +601,10 @@ version = "17.4.0+2"
 """
 
 # ╔═╡ Cell order:
-# ╠═c94c972e-a75f-11ee-153c-771e07689f95
+# ╟─c94c972e-a75f-11ee-153c-771e07689f95
 # ╠═bf0e8d60-d704-4c66-ad3f-d372cb2963a2
-# ╠═c8b1224e-d1f3-4aaa-8d5b-26a7362af6f5
-# ╠═f3b4e922-34fd-432e-b45a-66ec7a4bea87
-# ╠═a9544425-661d-472a-a9b4-67626a88e2ea
-# ╠═9732f467-bd58-4420-81d9-0011fc3d2a4e
-# ╠═7dba565b-24af-4eaa-ae0e-07e4d33876eb
-# ╠═eb167d46-4631-40b3-8537-bc138cd6bf7e
-# ╠═a36fa736-120b-4192-9781-0a5d39e3d51a
 # ╠═59d0b923-435a-4dc8-902f-02a9b5a177db
+# ╠═b61d20de-c1dc-4f88-9266-1062dd9d5cd8
 # ╠═f4c27df9-bbc1-4498-b7a0-42da0d049199
 # ╠═797e6deb-e014-4609-b0d4-7f3ec670cb1c
 # ╠═2f4ae40f-a1ab-470b-a1b7-a04fec353b0e
@@ -689,13 +618,9 @@ version = "17.4.0+2"
 # ╠═4c25bfae-6f3f-4389-b4bf-adc706e64bc8
 # ╠═2402d947-3e04-4495-9e92-1f59b171dcc8
 # ╟─dc32f9b1-b270-40a5-9067-4dad5bed40fa
-# ╠═791fd5f9-513c-45a6-83b7-0afc2593ef97
-# ╠═ece5bc96-b302-4d8e-af5b-e093ab081ce3
-# ╠═e951a4d5-47ea-44b6-b3bc-1f4c9d7829b1
 # ╠═78389e7c-e6a5-4bd2-9274-d1a2c68a4920
 # ╠═8fdfb225-1475-483e-a81a-5a450b5b0dbd
 # ╟─f1dd1b92-b841-414b-8cca-d3bcdda675dd
-# ╠═b1309566-ded6-4f9f-a7b5-76e892991e65
 # ╠═8fe89775-2853-49e4-885a-f3bdb1e792db
 # ╠═72d4f892-2bd2-43af-b71e-5252a666ce0c
 # ╠═67fd72dc-5540-440d-a8f3-8324914553b8
@@ -704,9 +629,12 @@ version = "17.4.0+2"
 # ╠═0df8719c-a91d-4449-8dac-337a832eb065
 # ╟─0883ae28-a94f-4bed-abce-39841605d29b
 # ╠═e2ffe835-65dc-4c85-aa9a-d98867da2ff5
-# ╟─c4f7a724-fe95-45cb-94af-656cc5fbebb5
 # ╠═9b661918-23b6-46fb-9af1-53454d750d5f
 # ╠═e4d711be-c885-404b-a51a-fda50c9d43c7
+# ╟─cdb9c685-050a-430e-bde4-cd18c496f2a8
+# ╟─be4996ad-0379-495b-bb00-2eb3c0847227
+# ╠═c4f7a724-fe95-45cb-94af-656cc5fbebb5
+# ╟─fe39ac9a-88fc-4b35-9e91-e4d93b2187b3
 # ╟─322ecf98-5694-42a1-84f2-caf8a5fa58ad
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
