@@ -73,7 +73,7 @@ function extract_links(
   root;
   selectors=["a"], verbose=true,
   restrict_to=["github", "LinkedIn"],
-  excluding_regex=r"signin\?|policy\.medium\.com|followers\?|help\.medium|work\-at\-medium|com/about"i,
+  excluding_regex=r"signin\?|policy\.medium\.com|followers\?|help\.medium|medium.com/(?:\?source|search\?|@)|work\-at\-medium|com/about"i,
 )::Vector{Tuple{String, String}}
 
   links = Tuple{String, String}[]

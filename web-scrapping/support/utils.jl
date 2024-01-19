@@ -45,9 +45,9 @@ function tag_link(tupl::Tuple{String, String})::String
   tag
 end
 
-function handle_duplicate_tag(links::Vector{Tuple{String, String}})::Vector{Tuple{String, String}}
+function handle_duplicate_tag(links::Vector{Tuple{String, String}}; tag_lim=50)::Vector{Tuple{String, String}}
   """
-  add tag to a link
+  add tag to a link, and normalize tag
   """
   tags = Dict{String, Int}()
   nlinks = Vector{Tuple{String, String}}()
@@ -64,9 +64,16 @@ function handle_duplicate_tag(links::Vector{Tuple{String, String}})::Vector{Tupl
   for (link, tag) ∈ links
     (link ∈ processed_links) && continue
     push!(processed_links, link)
+
     tags[tag] > 1 && (tag = tag_link((link, tag)))
+    # limit length of tag (avoid kilometric! tag)
+    tag = join(split(tag, "\n"), " ") # some tag contains "\n"
+    n_tag = length(tag)
+    tag = tag[1:min(tag_lim, n_tag)]
+
     push!(nlinks, (link, tag))
   end
+
   nlinks
 end
 
