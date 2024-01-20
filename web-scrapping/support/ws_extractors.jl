@@ -33,7 +33,7 @@ end
 
 function extract_content(
   root;
-  selectors = ["p.nx-mt-6"],
+  selectors=["p.nx-mt-6"],
   detect_code=false,
   verbose=true
 )::String
@@ -41,12 +41,14 @@ function extract_content(
   fulltext = String[]
   sel_vec = _get_selectors(root, selectors)
   iscode = false
+  pattern = split(selectors[1], ".")[end]
+
   for (ix, element) ∈ enumerate(sel_vec)
     verbose &&  println("$(ix) - [$(element)] /// [$(element.attributes["class"])]")
 
-    # TODO: link `!occursin("fz"...` to class selector for more generality!
+    # selectors[1] == "div.ch.bg.fw.fx.fy.fz" => `!occursin("fz", ...)`
     iscode = detect_code && hasproperty(element, :attributes) &&
-      !occursin("fz", element.attributes["class"])
+      !occursin(pattern, element.attributes["class"])
 
     if hasproperty(element, :children)
       text = dft(element.children)

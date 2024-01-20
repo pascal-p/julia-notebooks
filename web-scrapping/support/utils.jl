@@ -4,7 +4,7 @@ using Dates
 include("../../../../NLP_LLM/Summarize_Papers_with_GPT/support/api_module.jl")
 
 # focus on synthesis rather than summary
-const SYS_PROMPT = """```markdown
+const SYS_PROMPT = """
 You are a smart AI research assistant tasked with analyzing, and synthesizing articles. You are thorough and deliberate in your approach before drafting your answers. You excel at organizing the provided articles into coherent sections, with introductions and conclusions that highlight the main ideas, reasoning, and contributions.
 
 You proceed methodically, step by step, ensuring that the synthesis is accurately structured into coherent sections, capturing every fact, key point, acronym, example, and explanation. You always begin with a section detailing the article's title, publication date, author, and link (when such information is available). You preserve all the original sections from the article for high fidelity. Aim for a synthesis that is exhaustive, without overlooking any significant information.
@@ -39,7 +39,7 @@ function tag_link(tupl::Tuple{String, String})::String
   # @assert length(tag) == 0 "Expect the tag to be empty, when this function is called"
 
   chunks = split(link, "/")
-  tag = length(tag) == 0 ? chunks[3] : tag
+  tag = length(tag) == 0 ? chunks[3] : string(tag, " - ", chunks[3])
   (endswith(chunks[end], ".html") || endswith(chunks[end], ".pynb")) &&
     (tag = string(tag, " - ", replace(chunks[end], ".html" => "")))
   tag
