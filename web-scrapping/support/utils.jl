@@ -37,13 +37,33 @@ end
 function tag_link(tupl::Tuple{String, String})::String
   link, tag = tupl
   # @assert length(tag) == 0 "Expect the tag to be empty, when this function is called"
-
   chunks = split(link, "/")
-  tag = length(tag) == 0 ? chunks[3] : string(tag, " - ", chunks[3])
-  (endswith(chunks[end], ".html") || endswith(chunks[end], ".pynb")) &&
+
+  tag = if length(tag) == 0
+    chunks[3]
+
+  elseif lowercase(tag) == "here"
+    join(chunks[2:end], " ")
+
+  elseif length(split(tag, r"\s+")) == 1
+    # one word => extend
+    string(tag, "+", join(chunks[2:end], " ") |> strip)
+
+  else
+    string(tag, " - ", chunks[3])
+  end
+  (endswith(chunks[end], ".html") || endswith(chunks[end], ".ipynb")) &&
     (tag = string(tag, " - ", replace(chunks[end], ".html" => "")))
-  tag
+
+  tag |> strip
 end
+
+# [
+#   ("https://python.langchain.com/docs/expression_language/how_to/routing?ref=blog.langchain.dev", "here"),
+#   ("https://github.com/langchain-ai/langchain/blob/master/cookbook/multi_modal_RAG_chroma.ipynb?ref=blog.langchain.dev", "cookbook"),
+#   ("https://github.com/langchain-ai/langchain/tree/master/templates/sql-pgvector?ref=blog.langchain.dev", "template"),
+#   ("https://github.com/langchain-ai/langchain/tree/master/templates/neo4j-advanced-rag?ref=blog.langchain.dev", "here")
+# ]
 
 function handle_duplicate_tag(links::Vector{Tuple{String, String}}; tag_lim=50)::Vector{Tuple{String, String}}
   """
@@ -65,7 +85,8 @@ function handle_duplicate_tag(links::Vector{Tuple{String, String}}; tag_lim=50):
     (link ∈ processed_links) && continue
     push!(processed_links, link)
 
-    tags[tag] > 1 && (tag = tag_link((link, tag)))
+    tags[tag] ≥ 1 && (tag = tag_link((link, tag)))
+
     # limit length of tag (avoid kilometric! tag)
     tag = join(split(tag, "\n"), " ") # some tag contains "\n"
     n_tag = length(tag)

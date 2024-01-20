@@ -42,7 +42,9 @@ const TOPIC = "multilingual RAG consideration"
 
 # ╔═╡ 2f4ae40f-a1ab-470b-a1b7-a04fec353b0e
 const INSTRUCT_PROMPT = """Generate a comprehensive and detailed synthesis of the following excerpt (delimited by triple backticks) about $(TOPIC).
-Please extract all the code snipets once (if present) and apply indentation of 2 spaces (if required). Please ignore the web links for the reference as they will be handled differently later. Here is the excerpt:""";
+Please extract all the code snipets once (if present) and apply indentation of 2 spaces (if required). Here is the excerpt:""";
+
+# Please ignore the web links for the reference as they will be handled differently later
 
 # ╔═╡ ba4e4c0f-2835-4a76-a9d4-7d7ba02becb2
 println(INSTRUCT_PROMPT)
@@ -181,7 +183,8 @@ synthesis_links = string(
 # ╔═╡ e4d711be-c885-404b-a51a-fda50c9d43c7
 save_text(
 	MD_FILEPATH,
-	synthesis_links  # join(synthesis_links, "\n") # |> s -> replace(s, "```markdown" => "", "```" => "")
+	synthesis_links  # with links
+	# join(synthesis, "\n")  # without links
 )
 
 # ╔═╡ cdb9c685-050a-430e-bde4-cd18c496f2a8
@@ -195,7 +198,7 @@ md"""
 """
 
 # ╔═╡ c4f7a724-fe95-45cb-94af-656cc5fbebb5
-Markdown.parse(join(synthesis, "\n"))
+# Markdown.parse(join(synthesis, "\n"))
 
 # ╔═╡ fe39ac9a-88fc-4b35-9e91-e4d93b2187b3
 md"""
