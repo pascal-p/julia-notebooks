@@ -1,0 +1,236 @@
+- Title: LlamaIndex Update — 20/09/2023
+- Author and date: Ravi Theja
+·
+Follow
+Published in
+LlamaIndex Blog
+·
+4 min read
+·
+Sep 21, 2023
+- Link: https://blog.llamaindex.ai/llamaindex-update-20-09-2023-86ed66f78bac
+Main:
+LlamaIndex Update — 20/09/2023
+Ravi Theja
+·
+Follow
+Published in
+LlamaIndex Blog
+·
+4 min read
+·
+Sep 21, 2023
+--
+1
+Listen
+Share
+Hello LlamaIndex Enthusiasts!
+Welcome to the fifth edition of our LlamaIndex Update series.
+Most Important Takeaways:
+We’ve open-sourced
+SECInsights.ai
+— your gateway to the production RAG framework.
+Replit templates — kickstart your projects with zero environment setup hassles.
+Build RAG from scratch and get hands-on with our processes.
+But wait, there’s more!
+Feature Releases and Enhancements
+Fine-Tuning Guides
+Retrieval Tips for RAG
+Building RAG from Scratch Guides
+Tutorials
+Integration with External Platforms
+Events
+Webinars
+So, let’s embark on this journey together. Dive in and explore the offerings of the fifth edition of the LlamaIndex Update series!
+Feature Releases and Enhancements
+Open-Sourced RAG Platform
+: LlamaIndex open-sourced
+http://secinsights.ai
+, accelerating RAG app development with chat-based Q&A features.
+Tweet
+Linear Adapter Fine-Tuning
+: LlamaIndex enables efficient fine-tuning of linear adapters on any embedding without re-embedding, enhancing retrieval/RAG across various models.
+Tweet
+,
+Docs
+,
+BlogPost
+Hierarchical Agents
+: By structuring LLM agents in a parent-child hierarchy, we enhance complex search and retrieval tasks across diverse data, offering more reliability than a standalone agent.
+Tweet
+SummaryIndex
+: We’ve renamed ListIndex to SummaryIndex to make it clearer what its main functionality is. Backward compatibility is maintained for existing code using ListIndex.
+Tweet
+Evaluation:
+LlamaIndex’s new RAG evaluation toolkit offers async capabilities, diverse assessment criteria, and a centralized BaseEvaluator for easier developer integrations.
+Tweet
+,
+Docs
+.
+Hybrid Search for Postgres/pgvector
+: LlamaIndex introduces a hybrid search for Postgres/pgvector.
+Tweet
+,
+Docs
+.
+Replit Templates:
+LlamaIndex partners with Replit for easy LLM app templates, including ready-to-use Streamlit apps and full Typescript templates.
+Tweet
+,
+Replit Templates
+.
+LlamaIndex.TS:
+Launches with MongoDBReader and type-safe metadata.
+Tweet
+.
+Launches with chat history, enhanced keyword index, and Notion DB support.
+Tweet
+.
+Fine-Tuning Guides:
+OpenAI Fine-Tuning:
+LlamaIndex unveils a fresh guide on harnessing OpenAI fine-tuning to embed knowledge from any text corpus. In short: generate QA pairs with GPT-4, format them into a training dataset, and proceed to fine-tuning.
+Tweet
+,
+Docs
+.
+Embedding Fine-Tuning:
+LlamaIndex has a more advanced embedding fine-tuning feature, enabling complex NN query transformations on any embedding, including custom ones, and offering the ability to save intermediate checkpoints for enhanced model control.
+Tweet
+,
+Docs
+.
+Retrieval Tips For RAG:
+Use references (smaller chunks or summaries) instead of embedding full text.
+Results in 10–20 % improvement.
+Embeddings decoupled from main text chunks.
+Smaller references allow efficient LLM synthesis.
+Deduplication applied for repetitive references.
+Evaluated using synthetic dataset; 20–25% MRR boost.
+Tweet
+Building RAG from Scratch Guides:
+Build Data Ingestion from scratch.
+Docs
+.
+Build Retrieval from scratch.
+Docs
+.
+Build Vector Store from scratch.
+Docs
+.
+Build Response Synthesis from scratch.
+Docs
+.
+Build Router from scratch.
+Docs
+.
+Build Evaluation from scratch.
+Docs
+.
+Tutorials:
+Wenqi Glantz
+tutorial
+on Fine-Tuning GPT-3.5 RAG Pipeline with GPT-4 Training Data with LlamaIndex fine-tuning abstractions.
+Wenqi Glantz
+tutorial
+on Fine-Tuning Your Embedding Model to Maximize Relevance Retrieval in RAG Pipeline with LlamaIndex.
+Tutorials from the LlamaIndex Team.
+Sourabh
+tutorial
+on SEC Insights, End-to-End Guide on
+secinsights.ai
+Adam’s
+tutorial
+on Custom Tools for Data Agents.
+Logan
+tutorial
+on retrieval/reranking, covering Node Parsing, AutoMergingRetriever, HierarchicalNodeParser, node post-processors, and the setup of a RouterQueryEngine.
+Integrations with External Platforms
+Integration with PortkeyAI
+: LlamaIndex integrates with PortkeyAI, boosting LLM providers like OpenAI with features like auto fallbacks and load balancing.
+Tweet,
+Documentation
+Collaboration with Anyscale
+: LlamaIndex collaborates with anyscalecompute, enabling easy tuning of open-source LLMs using Ray Serve/Train.
+Tweet,
+Documentation
+Integration with Elastic
+: LlamaIndex integrates with Elastic, enhancing capabilities such as vector search, text search, hybrid search models, enhanced metadata handling, and es_filters.
+Tweet,
+Documentation
+Integration with MultiOn
+: LlamaIndex integrates with MultiOn, enabling data agents to navigate the web and handle tasks via an LLM-designed browser.
+Tweet,
+Documentation
+Integration with Vectara
+: LlamaIndex collaborates with Vectara to streamline RAG processes from loaders to databases.
+Tweet,
+Blog Post
+Integration with LiteLLM
+: LlamaIndex integrates with LiteLLM, offering access to over 100 LLM APIs and features like chat, streaming, and async operations.
+Tweet,
+Documentation
+Integration with MonsterAPI
+: LlamaIndex integrates with MonsterAPI, allowing users to query data using LLMs like Llama 2 and Falcon.
+Tweet,
+Blog Post
+Events:
+Jerry Liu
+spoke on
+Production Ready LLM Applications
+at the Arize AI event.
+Ravi Theja
+conducted a
+workshop
+at LlamaIndex + Replit Pune Generative AI meetup.
+Jerry Liu
+session
+on Building a Lending Criteria Chatbot in Production with Stelios from MQube.
+Webinars
+:
+Webinar
+on How to Win an LLM Hackathon by Alex Reibman, Rahul Parundekar, Caroline Frasca, and Yi Ding.
+Webinar
+on LLM Challenges in Production with Mayo Oshin, AI Jason, and Dylan.
+Llamaindex
+Llm
+OpenAI
+AI
+NLP
+--
+--
+1
+Follow
+Written by
+Ravi Theja
+624 Followers
+·
+Writer for
+LlamaIndex Blog
+Open Source at Llama Index
+Follow
+Help
+Status
+About
+Careers
+Blog
+Privacy
+Terms
+Text to speech
+Teams
+ Links:
+ - ("https://rsci.app.link/?%24canonical_url=https%3A%2F%2Fmedium.com%2Fp%2F86ed66f78bac&%7Efeature=LoOpenInAppButton&%7Echannel=ShowPostUnderCollection&source=---two_column_layout_nav----------------------------------", "Open in app")
+ - ("https://blog.llamaindex.ai/?source=post_page-----86ed66f78bac--------------------------------", "")
+ - ("https://blog.llamaindex.ai/?source=post_page-----86ed66f78bac--------------------------------", "LlamaIndex Blog")
+ - ("https://medium.com/llamaindex-blog/fine-tuning-a-linear-adapter-for-any-embedding-model-8dd0a142d383", "BlogPost")
+ - ("https://replit.com/@LlamaIndex", "Replit Templates")
+ - ("https://medium.com/llamaindex-blog/llamaindex-vectara-7a3889cd34cb", "Blog Post")
+ - ("https://medium.com/tag/llamaindex?source=post_page-----86ed66f78bac---------------llamaindex-----------------", "Llamaindex")
+ - ("https://medium.com/tag/llm?source=post_page-----86ed66f78bac---------------llm-----------------", "Llm")
+ - ("https://medium.com/tag/openai?source=post_page-----86ed66f78bac---------------openai-----------------", "OpenAI")
+ - ("https://medium.com/tag/ai?source=post_page-----86ed66f78bac---------------ai-----------------", "AI")
+ - ("https://medium.com/tag/nlp?source=post_page-----86ed66f78bac---------------nlp-----------------", "NLP")
+ - ("https://blog.llamaindex.ai/?source=post_page-----86ed66f78bac--------------------------------", "")
+ - ("https://blog.llamaindex.ai/?source=post_page-----86ed66f78bac--------------------------------", "LlamaIndex Blog")
+ - ("https://medium.statuspage.io/?source=post_page-----86ed66f78bac--------------------------------", "Status")
+ - ("https://speechify.com/medium?source=post_page-----86ed66f78bac--------------------------------", "Text to speech")
+ - ("https://medium.com/business?source=post_page-----86ed66f78bac--------------------------------", "Teams")
