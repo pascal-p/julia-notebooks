@@ -1,0 +1,84 @@
+- Title: Query Understanding: An Introduction
+- Author and date: Daniel Tunkelang
+·
+Follow
+Published in
+Query Understanding
+·
+3 min read
+·
+Oct 28, 2016
+- Link: https://queryunderstanding.com/introduction-c98740502103
+Main:
+Query Understanding: An Introduction
+Daniel Tunkelang
+·
+Follow
+Published in
+Query Understanding
+·
+3 min read
+·
+Oct 28, 2016
+--
+Listen
+Share
+Search engines are so core to our digital experience that we take them for granted. Most of us cannot remember the web without Google to search its contents. Or online shopping without Amazon’s search engine to find what we want to buy. Search engines are how we navigate the digital world.
+But what is a search engine?
+To most people — including most software engineers — a search engine is a system that accepts a text query as input and returns a list of results, ranked by their purported relevance to the query. Most work on search engines focuses on improving that ranking, with the help of increasingly sophisticated machine learning systems.
+Query understanding focuses on the beginning of the search process: the query.
+Query understanding
+is about what happens before the search engine scores and ranks results — namely, the searcher’s process of expressing an intent as a query, and the search engine’s process of determining that intent. In other words, query understanding is about the communication channel between the searcher and the search engine.
+Query understanding treats the query as first-class.
+It makes queries the focal point of the search process. Much of query understanding takes place before retrieving a single result, although it’s possible to perform post-retrieval analysis for validation. But query understanding isn’t about determining the relevance of each result to the query. Rather, it establishes the interpretation of the query, against which results are judged.
+Query understanding plays a key role in the search user interface.
+Because query understanding is the first step in the search process, it is the part of the process the user interacts with most intensely. Query understanding is core to basic search interface features like autocomplete, spellcheck, and query refinement. More broadly, query understanding pervades every interaction the searcher has with the search engine.
+In particular, query understanding is at the heart of search suggestions.
+The most important kinds of suggestions are autocomplete suggestions, especially as autocomplete is becoming the primary surface for the search experience. More broadly, query formulation is itself a search problem — a search through the space of possible queries rather than through the space of results. And in a mobile-first world, it’s especially important to support query formulation and refinement, saving searchers from the delay and frustration of submitting ineffective search queries.
+Finally, focusing on query understanding creates a different mindset for search engine developers.
+This focus shifts the emphasis from scoring and ranking to a goal of determining the searcher’s intent. Instead of striving to create the optimal ranking algorithm, search engine developers aspire to create the optimal query interpretation mechanism. The driving success metric is query performance — an end-to-end measure of the quality of the communication channel between the searcher and the search engine.
+Over the next months, this publication will take us through the journey from characters to words to phrases, and ultimately to meaning.
+We’ll start at the bottom of the query understanding stack with character-level techniques like normalization and tokenization. We’ll look at stemming, lemmatization, and dictionary-based canonicalization. We’ll continue on to higher-order operations like query relaxation, query segmentation, and entity recognition. Along the way, we’ll explore semantic resources like synonyms, hypernyms, taxonomies, ontologies, and knowledge graphs.
+We’ll then look at ways that we can rewrite queries through automatic phrasing, field restriction, and query expansion. We’ll pay particular attention to autocomplete, from indexing prefix completions to providing structured autocomplete suggestions to weighing query probabilities against query performance.
+Moving outside the search box, we’ll explore context — particularly session, geographical, and temporal contexts. We’ll then look at personalization, both explicit and implicit, and we’ll explore the differences between personalization and relevance.
+We’ll then see how query understanding helps us establish search as a conversation between the searcher and the search engine. We’ll look at interaction patterns like clarification dialogs, faceted search, and relevance feedback. We’ll also explore results presentation, particularly snippets and clustering. Finally, we’ll look at natural-language search interfaces: question answering, voice interfaces, and chatbots.
+As you join me along this journey, I hope you’ll come to appreciate the key role that query understanding plays in the search process.
+If you’re a software engineer, data scientist, or product manager working on a search engine, I encourage you to use what you learn to improve your searchers’ experience.
+Next:
+Language Identification
+Search
+Search Engines
+Information Retrieval
+Query
+Query Understanding
+--
+--
+Follow
+Written by
+Daniel Tunkelang
+6.3K Followers
+·
+Editor for
+Query Understanding
+High-Class Consultant.
+Follow
+Help
+Status
+About
+Careers
+Blog
+Privacy
+Terms
+Text to speech
+Teams
+ Links:
+ - ("https://rsci.app.link/?%24canonical_url=https%3A%2F%2Fmedium.com%2Fp%2Fc98740502103&%7Efeature=LoOpenInAppButton&%7Echannel=ShowPostUnderCollection&source=---two_column_layout_nav----------------------------------", "Open in app")
+ - ("https://en.wikipedia.org/wiki/Query_understanding", "Query understanding")
+ - ("https://medium.com/tag/search?source=post_page-----c98740502103---------------search-----------------", "Search")
+ - ("https://medium.com/tag/search-engines?source=post_page-----c98740502103---------------search_engines-----------------", "Search Engines")
+ - ("https://medium.com/tag/information-retrieval?source=post_page-----c98740502103---------------information_retrieval-----------------", "Information Retrieval")
+ - ("https://medium.com/tag/query?source=post_page-----c98740502103---------------query-----------------", "Query")
+ - ("https://medium.com/tag/query-understanding?source=post_page-----c98740502103---------------query_understanding-----------------", "Query Understanding")
+ - ("https://medium.statuspage.io/?source=post_page-----c98740502103--------------------------------", "Status")
+ - ("https://speechify.com/medium?source=post_page-----c98740502103--------------------------------", "Text to speech")
+ - ("https://medium.com/business?source=post_page-----c98740502103--------------------------------", "Teams")
