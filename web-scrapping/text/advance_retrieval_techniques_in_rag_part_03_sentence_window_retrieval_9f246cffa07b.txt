@@ -1,0 +1,1415 @@
+- Title: Advance Retrieval Techniques In RAG | Part 03 | Sentence Window Retrieval
+- Author and date: Prince Krampah
+·
+Follow
+Published in
+AI Advances
+·
+19 min read
+·
+Jan 2
+- Link: https://ai.gopubby.com/advance-retrieval-techniques-in-rag-part-03-sentence-window-retrieval-9f246cffa07b
+Main:
+Advance Retrieval Techniques In RAG | Part 03 | Sentence Window Retrieval
+Prince Krampah
+·
+Follow
+Published in
+AI Advances
+·
+19 min read
+·
+Jan 2
+--
+Listen
+Share
+Hello there, welcome back. In this third article on advanced retrieval techniques, we’ll dive into Sentence Window Retrieval Technique, one of my post favorite techniques in advanced RAG pipelines. I’ll go over how to set it up and use TruEval to measure its performance and compare its performance with other techniques we covered in the previous articles. Let’s get into it.
+Just before we proceed, if you haven’t checked the initial techniques we discussed in the last two articles, mainly parent document retrieval and basic RAG pipeline. It will be great if you do so, as the knowledge builds upon the knowledge from the previous articles.
+Sentence Window Retrieval
+In sentence window retrieval, we perform retrieval of pieces of document then return a number of sentences surrounding the relevant sentence we retrieved, synthesis of the LLM is then generated from this relevant sentence and the window of sentences above and below it. Take a look at this diagram
+Image By Code With Prince
+From the image above, the relevant sentence is the one colored in RED, the window of sentences above and below are then passed along with the relevant sentence in the middle to the LLM to perform its response(Generative part of RAG). We can control the size of the window of sentences that can be taken around the relevant sentence. So why are we doing this?
+Well this draws back to the idea I mentioned earlier on in the first article. Embedding based retrieval works best with smaller sized sentences. So, basically with sentence based retrieval, we decouple the chunk being used to search for relevant chunks and the final document being passed to the LLM for synthesis. Let’s implement a sentence window retriever…
+Fun Image By DALL-E
+Image By DALL-E
+Loading Document
+The first step we’ll need to perform is to load in the document. Again we’ll be using the
+state of the union address speech
+we have used in other past articles. Below is how we can load in the document:
+from llama_index import (
+SimpleDirectoryReader,
+)
+# load document
+documents = SimpleDirectoryReader(
+input_dir="../dataFiles/"
+).load_data(show_progress=True)
+print(len(documents))
+Running this piece of code, here is a screenshot of the output:
+Image By Code With Prince
+From the image above, we can see we have only one single page or document as the length of the document is one. In cases of you using a document such as a PDF file with multiple pages, it helps to merge all the pages into a single document as it helps with the accuracy of splitting your document into chunks or
+“Nodes’”
+as they are called in LlamaIndex.
+Here is how you can merge multiple documents (Pages) into one:
+from llama_index import (
+SimpleDirectoryReader,
+Document
+)
+# load document
+documents = SimpleDirectoryReader(
+input_dir="../dataFiles/"
+).load_data(show_progress=True)
+# merge pages into one
+document = Document(text="\n\n".join([doc.text for doc in documents]))
+print(document)
+In our case this won’t be necessary, but for the sake of knowing or for those using PDF documents with multiple pages.
+Sentence Window Retriever Setup
+First, think of how to set up a
+SentenceWindowNodeParser
+that breaks down a document into individual sentences, then able to augment or add to the surrounding sentences within the allowed window to each individual sentence to create a larger context. That may be confusing to understand. Here, hear me out with this example:
+from llama_index.node_parser import SentenceWindowNodeParser
+# create the sentence window node parser
+node_parser = SentenceWindowNodeParser.from_defaults(
+window_size=2,
+window_metadata_key="window",
+original_text_metadata_key="original_text",
+)
+# Toy example to play around with
+text = "I love programming. Python is my most favorite language. I love LLMs. I love LlamaIndex."
+# Get nodes
+nodes = node_parser.get_nodes_from_documents([Document(text=text)])
+# Print out individual nodes
+print([x.text for x in nodes])
+# Print out the window around the second node
+print(nodes[1].metadata["window"])
+Here is the output of the code from a Jupyter-notebook:
+Image By Code With Prince
+You can see that the window is
+2
+on both sides of the original sentence (
+“Python is my most favorite language”
+), we have one sentence before it and one sentence after it. Be explanation below is from the LlamaIndex official docs:
+By default, the sentence window is 5 sentences on either side of the original sentence.
+In this case, chunk size settings are not used, in favor of following the window settings.
+Building Indexes
+Let’s move onto building the indexes, we’ll need two things for this, the first one being the an LLM, we’ll use OpenAI
+gpt-3.5-turbo
+from there we’ll then need a service context to specify the embedding model, LLM and the node parser (sentence window we created above).
+For the embedding model, I’ll use the
+OpenAIEmbedding
+model provided in LlamaIndex, you can use any other embedding model you wish to use.
+# creating OpenAI gpt-3.5-turbo LLM and OpenAIEmbedding model
+llm = OpenAI(model="gpt-3.5-turbo", temperature=0.1)
+embed_model = OpenAIEmbedding()
+# creating the service context
+sentence_context = ServiceContext.from_defaults(
+llm=llm,
+embed_model=embed_model,
+node_parser=node_parser,
+)
+Don’t worry about the code above, I’ll provide you with the code we’ll use in just a second. I just placed it here to explain to you something.
+Since we passed in the
+node_parser
+as the
+SentenceWindowNodeParser
+what this will do in the background is, get each sentence, augment it with the surrounding sentence and create embeddings that we’ll store in a vector store. Take a look at the image below, basically, what I am saying is that, the embeddings will be created for each of the text in the image below (An example). Where the red colored text is the original sentence and the white text around it is the augmented text. An embedding will be created for them and this will be repeated for each sentence, taking a different window each time.
+Image By Code With Prince
+We’ll also need to set up a vector store index and make it persistent, meaning the created embeddings will be stored in the vector store to avoid repetition and cost associated with creating new embeddings each time we run the application. For this we’ll have to check if the stored index exists inf memory; if not, we create one else and load the existing one. All this is in the code so, don’t worry.
+Make sure that you have added your OpenAI-API key to the environment variables, this is code in the code and if you have been following along from the first article, you should set it to go. Here is the code:
+import os
+from llama_index import (
+SimpleDirectoryReader,
+Document,
+StorageContext,
+load_index_from_storage
+)
+from llama_index.node_parser import SentenceWindowNodeParser
+from llama_index.llms import OpenAI
+from llama_index.embeddings import OpenAIEmbedding
+from llama_index import ServiceContext
+from llama_index import VectorStoreIndex
+from decouple import config
+# set env variables
+os.environ["OPENAI_API_KEY"] = config("OPENAI_API_KEY")
+# load document
+documents = SimpleDirectoryReader(
+input_dir="../dataFiles/"
+).load_data(show_progress=True)
+# merge pages into one
+document = Document(text="\n\n".join([doc.text for doc in documents]))
+node_parser = SentenceWindowNodeParser.from_defaults(
+window_size=3,
+window_metadata_key="window",
+original_text_metadata_key="original_text",
+)
+# creating OpenAI gpt-3.5-turbo LLM and OpenAIEmbedding model
+llm = OpenAI(model="gpt-3.5-turbo", temperature=0.1)
+embed_model = OpenAIEmbedding()
+# creating the service context
+sentence_context = ServiceContext.from_defaults(
+llm=llm,
+embed_model=embed_model,
+node_parser=node_parser,
+)
+if not os.path.exists("./storage"):
+# creating the vector store index
+index = VectorStoreIndex.from_documents(
+[document], service_context=sentence_context
+)
+# make vector store persistant
+index.storage_context.persist(persist_dir="./storage")
+else:
+# load vector store indexed if they exist
+index = load_index_from_storage(
+StorageContext.from_defaults(persist_dir="./storage"),
+service_context=sentence_context
+)
+Run this code and make sure it works without an error. This will create a new folder in your project directory where your Python folder is located. This folder should be named
+storage
+.
+Creating Meta Data Replacement Post Processor
+The
+MetaDataReplacementPostProcessor
+comes into use after we have performed retrieval of the relevant chunk. This replaces the meta data around the retrieved node with the actual surrounding text that lies within the sentence window. Basically the meta data replacement post processor will produce something like this:
+Where the red colored text is the relevant and retrieved text. The white colored text is the surrounding text that lies within the context window that has been placed by the meta data replacement post processor. I hope this clarifies things for you. If not, let’s take a look at the code below:
+Image By Code With Prince
+You can see from the image above, in cell 44 we have retrieved the original sentence “Python is my most favorite language”. In cells 45 and 46, we have applied the meta data post processor and how we have the full surrounding sentences being augmented to the original sentence. Does it make sense now? Take a bit of time to think about it.
+Adding A Re-ranker
+What a reranker does is as the name suggests, basically reranks sentences based on their relevance. We’ll be using the
+BAAI/bge-reranker-base
+to perform a reranking. This model can be found on
+hugging face
+.
+So why do we need to rerank? Take a look at this image:
+Image By Code With Prince
+The image of cell 48 is not so clear by here’s the code in that cell:
+from llama_index import QueryBundle
+from llama_index.schema import TextNode, NodeWithScore
+query = QueryBundle("I love Python programming")
+scored_nodes = [
+NodeWithScore(node=TextNode(text="Programming can be boring, bugs all day"), score=0.6),
+NodeWithScore(node=TextNode(text="Python is my most favorite programming language"), score=0.4),
+]
+You can see the original query is
+“I love Python Programming” a
+nd we have 2 score nodes which we have assigned scores manually:
+score=0.6
+and
+score=0.4
+respectively. Using human judgment, you can tell that the second sentence is more relevant to the user query, but has a higher manually assigned score. With reranking, the model can help address this by basically changing the ranking scores. From your human judgment, which of the sentences do you think will end up having a higher ranking after the two have been reranked based on the query input? Sentence two right?
+Yes, the second sentence is more relevant than the second one hence should have a higher score. You can see this is what the reranking model has done to the exact (refer to the Jupyter-notebook image above).
+Basically we use reranking to match the query against the existing nodes to find the most relevant node.
+Here’s the code to add the meta data replacement post processor and the reranking to the pipeline:
+import os
+from llama_index import (
+SimpleDirectoryReader,
+Document,
+StorageContext,
+load_index_from_storage
+)
+from llama_index.node_parser import SentenceWindowNodeParser
+from llama_index.llms import OpenAI
+from llama_index.embeddings import OpenAIEmbedding
+from llama_index import ServiceContext
+from llama_index import VectorStoreIndex
+from llama_index.indices.postprocessor import MetadataReplacementPostProcessor
+from llama_index.indices.postprocessor import SentenceTransformerRerank
+from decouple import config
+# set env variables
+os.environ["OPENAI_API_KEY"] = config("OPENAI_API_KEY")
+# load document
+documents = SimpleDirectoryReader(
+input_dir="../dataFiles/"
+).load_data(show_progress=True)
+# merge pages into one
+document = Document(text="\n\n".join([doc.text for doc in documents]))
+node_parser = SentenceWindowNodeParser.from_defaults(
+window_size=3,
+window_metadata_key="window",
+original_text_metadata_key="original_text",
+)
+# creating OpenAI gpt-3.5-turbo LLM and OpenAIEmbedding model
+llm = OpenAI(model="gpt-3.5-turbo", temperature=0.1)
+embed_model = OpenAIEmbedding()
+# creating the service context
+sentence_context = ServiceContext.from_defaults(
+llm=llm,
+embed_model=embed_model,
+node_parser=node_parser,
+)
+if not os.path.exists("./storage"):
+# creating the vector store index
+index = VectorStoreIndex.from_documents(
+[document], service_context=sentence_context
+)
+# make vector store persistant
+index.storage_context.persist(persist_dir="./storage")
+else:
+# load vector store indexed if they exist
+index = load_index_from_storage(
+StorageContext.from_defaults(persist_dir="./storage"),
+service_context=sentence_context
+)
+# add meta data replacement post processor
+postproc = MetadataReplacementPostProcessor(
+target_metadata_key="window"
+)
+# link: https://huggingface.co/BAAI/bge-reranker-base
+rerank = SentenceTransformerRerank(
+top_n=2, model="BAAI/bge-reranker-base"
+)
+Running this code will give you some errors related to missing libraries make sure you go ahead and install all the missing libraries needed
+Image By Code With Prince
+You can see from the image, we need to install
+pip install torch sentence-transformers
+. Once you have that installed, you’ll also need to rerun the code again, this time some libraries will be installed automatically and can take some time to get done depending on your internet speed. Here’s my download in progress.
+Image By Code With Prince
+Once it’s done downloading, we can add the query engine and test it how, here is the final code:
+import os
+from llama_index import (
+SimpleDirectoryReader,
+Document,
+StorageContext,
+load_index_from_storage
+)
+from llama_index.node_parser import SentenceWindowNodeParser
+from llama_index.llms import OpenAI
+from llama_index.embeddings import OpenAIEmbedding
+from llama_index import ServiceContext
+from llama_index import VectorStoreIndex
+from llama_index.indices.postprocessor import MetadataReplacementPostProcessor
+from llama_index.indices.postprocessor import SentenceTransformerRerank
+from decouple import config
+# set env variables
+os.environ["OPENAI_API_KEY"] = config("OPENAI_API_KEY")
+# load document
+documents = SimpleDirectoryReader(
+input_dir="../dataFiles/"
+).load_data(show_progress=True)
+# merge pages into one
+document = Document(text="\n\n".join([doc.text for doc in documents]))
+node_parser = SentenceWindowNodeParser.from_defaults(
+window_size=3,
+window_metadata_key="window",
+original_text_metadata_key="original_text",
+)
+# creating OpenAI gpt-3.5-turbo LLM and OpenAIEmbedding model
+llm = OpenAI(model="gpt-3.5-turbo", temperature=0.1)
+embed_model = OpenAIEmbedding()
+# creating the service context
+sentence_context = ServiceContext.from_defaults(
+llm=llm,
+embed_model=embed_model,
+node_parser=node_parser,
+)
+if not os.path.exists("./storage"):
+# creating the vector store index
+index = VectorStoreIndex.from_documents(
+[document], service_context=sentence_context
+)
+# make vector store persistant
+index.storage_context.persist(persist_dir="./storage")
+else:
+# load vector store indexed if they exist
+index = load_index_from_storage(
+StorageContext.from_defaults(persist_dir="./storage"),
+service_context=sentence_context
+)
+# add meta data replacement post processor
+postproc = MetadataReplacementPostProcessor(
+target_metadata_key="window"
+)
+# link: https://huggingface.co/BAAI/bge-reranker-base
+rerank = SentenceTransformerRerank(
+top_n=2, model="BAAI/bge-reranker-base"
+)
+# query engine
+sentence_window_engine = index.as_query_engine(
+similarity_top_k=5, node_postprocessors=[postproc, rerank]
+)
+# test it out
+response = sentence_window_engine.query(
+"What did the president say about covid-19?"
+)
+print(response)
+Image By Code With Prince
+Phew! That was quite a lot to take. Good part, you are now able to build a sentence window retriever, an advanced RAG technique. Now let’s move ahead into evaluating the model, what is the best sentence window size to use? How does it affect relevancy and groundedness? How does sentence window affect cost? How does sentence window perform in relation to the basic RAG pipeline and Parent document retrieval technique? Let’s start finding answers to this questions
+Evaluation
+In the evaluation phase, there are a couple of questions I would love to find answers to.
+What is the best sentence window size to use?
+Trade off between sentence window size and groundedness or responses (Hallucination).
+Relation between sentence window size and relevance of response
+Relationship between context relevance and groundedness
+Relationship between cost and sentence window size
+Trade off between sentence window size and groundedness or responses (Hallucination)
+As the sentence window increases, the groundedness will increase as well up to a certain point. This is because the LLM has more context to base its response on rather than hallucinate or training data. Okay, then why did I say sentence window size and groundedness are directly proportional to a certain point? Let me explain.
+When the sentence window is small, the responses the LLM will generate will have lower groundedness as the context does not provide enough information to the LLM to base it’s answers one hence, it begins to use it’s existing knowledge it gained from training data it was trained on, what we call hallucination.
+Conversely, if the window size is too large, the groundedness will reduce as the LLM is presented with a lot of information to base it’s final response on hence, it ends up deviating from the provided information as it’s too large for it to compose a response with all these information within it.
+Take a look at this diagram, it’s just a sketch of what I explained above, it’s not based on any data.
+Image By Code With Prince
+Relation between sentence window size and relevance of response
+As sentence window size increases, relevance of the responses generated will also likely increase up to a certain point. Why
+Well, with more context the more relevant the answers will be no? With too much of a context the LLM may or may not get distracted and fall back on its own training data and begin to hallucinate. Too little of a context, the LLM begins to hallucinate and the relevance drops so as the groundedness. In some cases, the relevance can be high, but the groundedness will drop. Just maybe the training data has some information that can be used to answer the user specific question, just maybe.
+Increase in reliance will also mean an increase in groundedness up to a certain point, at which the relevance will begin to either flatten or drop in relation to the amount of context window (sentence window).
+Image By Code With Prince
+Relationship between cost and sentence window size
+As sentence window size increases, so does the price as more tokens are used to make requests and get back responses. The bigger the sentence window size the more tokens the more costly it is.
+Image By Code With Prince
+Okay having this said, let’s actually test it out. For this I’ll convert what we have so far from the perfection of the code into a bunch of functions that we can call and pass in different parameters for testing and fine tuning. Let’s convert the code to two major functions, one to create the indexes and another for the query engine. Here is the code once we do this:
+import os
+from llama_index import (
+SimpleDirectoryReader,
+Document,
+StorageContext,
+load_index_from_storage
+)
+from llama_index.node_parser import SentenceWindowNodeParser
+from llama_index.llms import OpenAI
+from llama_index.embeddings import OpenAIEmbedding
+from llama_index import ServiceContext
+from llama_index import VectorStoreIndex
+from llama_index.indices.postprocessor import MetadataReplacementPostProcessor
+from llama_index.indices.postprocessor import SentenceTransformerRerank
+from decouple import config
+# set env variables
+os.environ["OPENAI_API_KEY"] = config("OPENAI_API_KEY")
+# load document
+documents = SimpleDirectoryReader(
+input_dir="../dataFiles/"
+).load_data(show_progress=True)
+# merge pages into one
+document = Document(text="\n\n".join([doc.text for doc in documents]))
+def create_indexes(
+documents: Document,
+index_save_dir: str,
+window_size: int = 4,
+llm_model: str = "gpt-3.5-turbo",
+temperature: float = 0.1
+):
+node_parser = SentenceWindowNodeParser.from_defaults(
+window_size=window_size,
+window_metadata_key="window",
+original_text_metadata_key="original_text",
+)
+# creating OpenAI gpt-3.5-turbo LLM and OpenAIEmbedding model
+llm = OpenAI(model=llm_model, temperature=temperature)
+embed_model = OpenAIEmbedding()
+# creating the service context
+sentence_context = ServiceContext.from_defaults(
+llm=llm,
+embed_model=embed_model,
+node_parser=node_parser,
+)
+if not os.path.exists(index_save_dir):
+# creating the vector store index
+index = VectorStoreIndex.from_documents(
+[document], service_context=sentence_context
+)
+# make vector store persistant
+index.storage_context.persist(persist_dir=index_save_dir)
+else:
+# load vector store indexed if they exist
+index = load_index_from_storage(
+StorageContext.from_defaults(persist_dir=index_save_dir),
+service_context=sentence_context
+)
+return index
+def create_query_engine(
+sentence_index: VectorStoreIndex,
+similarity_top_k: int = 6,
+rerank_top_n: int = 5,
+rerank_model: str = "BAAI/bge-reranker-base",
+):
+# add meta data replacement post processor
+postproc = MetadataReplacementPostProcessor(
+target_metadata_key="window"
+)
+# link: https://huggingface.co/BAAI/bge-reranker-base
+rerank = SentenceTransformerRerank(
+top_n=rerank_top_n,
+model=rerank_model
+)
+sentence_window_engine = sentence_index.as_query_engine(
+similarity_top_k=similarity_top_k,
+node_postprocessors=[postproc, rerank]
+)
+return sentence_window_engine
+# create index
+index = create_indexes(
+documents=documents,
+index_save_dir="./storage",
+window_size=3,
+llm_model="gpt-3.5-turbo",
+temperature=0.1
+)
+# create query engine
+sentence_window_engine = create_query_engine(
+sentence_index=index,
+similarity_top_k=5,
+rerank_top_n=2,
+)
+response = sentence_window_engine.query(
+"What did the president say about covid-19?"
+)
+print(response)
+Now that we have this, let’s move ahead into evaluating. The first thing we need for evaluation is a collection of questions, here we can use this list of questions:
+What measures did the speaker announce to support Ukraine in the conflict mentioned?
+How does the speaker propose to address the challenges faced by the United States in the face of global conflicts, specifically mentioning Russia’s actions?
+What is the speaker’s plan to combat inflation and its impact on American families?
+How does the speaker suggest the United States will support the Ukrainian people beyond just military assistance?
+What is the significance of the speaker’s reference to the NATO alliance in the context of recent global events?
+Can you detail the economic sanctions mentioned by the speaker that are being enforced against Russia?
+What actions have been taken by the U.S. Department of Justice in response to the crimes of Russian oligarchs as mentioned in the speech?
+How does the speaker describe the American response to COVID-19 and the current state of the pandemic in the country?
+What are the four common-sense steps the speaker mentions for moving forward safely in the context of COVID-19?
+How does the speaker address the economic issues such as job creation, infrastructure, and the manufacturing sector in the United States?
+Copy paste this questions in a text file called
+eval_questions.txt
+Image By Code With Prince
+We’ll read these questions and use a for loop to pass them to TruLens to get an evaluation. If you have been following long in these series of articles, make into the
+ParentDocumentRetrieval
+folder and copy over the default.sqlite database and move it into the
+SentenceWindowRetrieval
+folder, this database has the records from all the existing techniques we have done so far, this will enable as to keep track of experimentations.
+Image By Code With Prince
+Okay, great! If you haven’t been following along, just ignore the step of copying over the database. You can also download the database from my
+GitHub Repository
+. Once you have downloaded the database, you can then refer to it like this:
+tru = Tru(database_file="<path_to_data_base>/default.sqlite")
+Setting Up TruLens
+Let’s get into setting up TruLens for evaluation, you can do this in another file if you want to, which is the best approach, but in this case to keep things simple, I’ll have everything in the same file, the
+main.py
+file.
+Sentence Window Size 3
+Here is the code to evaluate for sentence window size 3:
+import os
+from typing import List
+from llama_index import (
+SimpleDirectoryReader,
+Document,
+StorageContext,
+load_index_from_storage
+)
+from llama_index.node_parser import SentenceWindowNodeParser
+from llama_index.llms import OpenAI
+from llama_index.embeddings import OpenAIEmbedding
+from llama_index import ServiceContext
+from llama_index import VectorStoreIndex
+from llama_index.indices.postprocessor import MetadataReplacementPostProcessor
+from llama_index.indices.postprocessor import SentenceTransformerRerank
+from llama_index.llms import OpenAI
+# for loading environment variables
+from decouple import config
+from trulens_eval import Feedback, Tru, TruLlama
+from trulens_eval.feedback import Groundedness
+from trulens_eval.feedback.provider.openai import OpenAI as OpenAITruLens
+import numpy as np
+# set env variables
+os.environ["OPENAI_API_KEY"] = config("OPENAI_API_KEY")
+# load document
+documents = SimpleDirectoryReader(
+input_dir="../dataFiles/"
+).load_data(show_progress=True)
+# merge pages into one
+document = Document(text="\n\n".join([doc.text for doc in documents]))
+def create_indexes(
+documents: Document,
+index_save_dir: str,
+window_size: int = 4,
+llm_model: str = "gpt-3.5-turbo",
+temperature: float = 0.1
+):
+node_parser = SentenceWindowNodeParser.from_defaults(
+window_size=window_size,
+window_metadata_key="window",
+original_text_metadata_key="original_text",
+)
+# creating OpenAI gpt-3.5-turbo LLM and OpenAIEmbedding model
+llm = OpenAI(model=llm_model, temperature=temperature)
+embed_model = OpenAIEmbedding()
+# creating the service context
+sentence_context = ServiceContext.from_defaults(
+llm=llm,
+embed_model=embed_model,
+node_parser=node_parser,
+)
+if not os.path.exists(index_save_dir):
+# creating the vector store index
+index = VectorStoreIndex.from_documents(
+[document], service_context=sentence_context
+)
+# make vector store persistant
+index.storage_context.persist(persist_dir=index_save_dir)
+else:
+# load vector store indexed if they exist
+index = load_index_from_storage(
+StorageContext.from_defaults(persist_dir=index_save_dir),
+service_context=sentence_context
+)
+return index
+def create_query_engine(
+sentence_index: VectorStoreIndex,
+similarity_top_k: int = 6,
+rerank_top_n: int = 5,
+rerank_model: str = "BAAI/bge-reranker-base",
+):
+# add meta data replacement post processor
+postproc = MetadataReplacementPostProcessor(
+target_metadata_key="window"
+)
+# link: https://huggingface.co/BAAI/bge-reranker-base
+rerank = SentenceTransformerRerank(
+top_n=rerank_top_n,
+model=rerank_model
+)
+sentence_window_engine = sentence_index.as_query_engine(
+similarity_top_k=similarity_top_k,
+node_postprocessors=[postproc, rerank]
+)
+return sentence_window_engine
+# create index
+index = create_indexes(
+documents=documents,
+index_save_dir="./storage",
+window_size=3,
+llm_model="gpt-3.5-turbo",
+temperature=0.1
+)
+# create query engine
+sentence_window_engine = create_query_engine(
+sentence_index=index,
+similarity_top_k=5,
+rerank_top_n=2,
+)
+# RAG pipeline evals
+tru = Tru()
+openai = OpenAITruLens()
+grounded = Groundedness(groundedness_provider=OpenAITruLens())
+# Define a groundedness feedback function
+f_groundedness = Feedback(grounded.groundedness_measure_with_cot_reasons).on(
+TruLlama.select_source_nodes().node.text
+).on_output(
+).aggregate(grounded.grounded_statements_aggregator)
+# Question/answer relevance between overall question and answer.
+f_qa_relevance = Feedback(openai.relevance).on_input_output()
+# Question/statement relevance between question and each context chunk.
+f_qs_relevance = Feedback(openai.qs_relevance).on_input().on(
+TruLlama.select_source_nodes().node.text
+).aggregate(np.mean)
+tru_query_engine_recorder = TruLlama(sentence_window_engine,
+app_id='sentence_window_size_3',
+feedbacks=[f_groundedness, f_qa_relevance, f_qs_relevance])
+eval_questions = []
+with open("./eval_questions.txt", "r") as eval_qn:
+for qn in eval_qn:
+qn_stripped = qn.strip()
+eval_questions.append(qn_stripped)
+def run_eval(eval_questions: List[str]):
+for qn in eval_questions:
+# eval using context window
+with tru_query_engine_recorder as recording:
+sentence_window_engine.query(qn)
+run_eval(eval_questions=eval_questions)
+# run dashboard
+tru.run_dashboard()
+Sentence Window Size 6
+How let’s change the window size to 6. Note I have changed the
+app_id
+in
+TruLlama
+to
+sentence_window_size_6.
+I have also changed the
+save_dir
+to
+sentence_window_size_6_index.
+import os
+from typing import List
+from llama_index import (
+SimpleDirectoryReader,
+Document,
+StorageContext,
+load_index_from_storage
+)
+from llama_index.node_parser import SentenceWindowNodeParser
+from llama_index.llms import OpenAI
+from llama_index.embeddings import OpenAIEmbedding
+from llama_index import ServiceContext
+from llama_index import VectorStoreIndex
+from llama_index.indices.postprocessor import MetadataReplacementPostProcessor
+from llama_index.indices.postprocessor import SentenceTransformerRerank
+from llama_index.llms import OpenAI
+# for loading environment variables
+from decouple import config
+from trulens_eval import Feedback, Tru, TruLlama
+from trulens_eval.feedback import Groundedness
+from trulens_eval.feedback.provider.openai import OpenAI as OpenAITruLens
+import numpy as np
+# set env variables
+os.environ["OPENAI_API_KEY"] = config("OPENAI_API_KEY")
+# load document
+documents = SimpleDirectoryReader(
+input_dir="../dataFiles/"
+).load_data(show_progress=True)
+# merge pages into one
+document = Document(text="\n\n".join([doc.text for doc in documents]))
+def create_indexes(
+documents: Document,
+index_save_dir: str,
+window_size: int = 4,
+llm_model: str = "gpt-3.5-turbo",
+temperature: float = 0.1
+):
+node_parser = SentenceWindowNodeParser.from_defaults(
+window_size=window_size,
+window_metadata_key="window",
+original_text_metadata_key="original_text",
+)
+# creating OpenAI gpt-3.5-turbo LLM and OpenAIEmbedding model
+llm = OpenAI(model=llm_model, temperature=temperature)
+embed_model = OpenAIEmbedding()
+# creating the service context
+sentence_context = ServiceContext.from_defaults(
+llm=llm,
+embed_model=embed_model,
+node_parser=node_parser,
+)
+if not os.path.exists(index_save_dir):
+# creating the vector store index
+index = VectorStoreIndex.from_documents(
+[document], service_context=sentence_context
+)
+# make vector store persistant
+index.storage_context.persist(persist_dir=index_save_dir)
+else:
+# load vector store indexed if they exist
+index = load_index_from_storage(
+StorageContext.from_defaults(persist_dir=index_save_dir),
+service_context=sentence_context
+)
+return index
+def create_query_engine(
+sentence_index: VectorStoreIndex,
+similarity_top_k: int = 6,
+rerank_top_n: int = 5,
+rerank_model: str = "BAAI/bge-reranker-base",
+):
+# add meta data replacement post processor
+postproc = MetadataReplacementPostProcessor(
+target_metadata_key="window"
+)
+# link: https://huggingface.co/BAAI/bge-reranker-base
+rerank = SentenceTransformerRerank(
+top_n=rerank_top_n,
+model=rerank_model
+)
+sentence_window_engine = sentence_index.as_query_engine(
+similarity_top_k=similarity_top_k,
+node_postprocessors=[postproc, rerank]
+)
+return sentence_window_engine
+# create index
+index = create_indexes(
+documents=documents,
+index_save_dir="./sentence_window_size_6_index",
+window_size=3,
+llm_model="gpt-3.5-turbo",
+temperature=0.1
+)
+# create query engine
+sentence_window_engine = create_query_engine(
+sentence_index=index,
+similarity_top_k=5,
+rerank_top_n=2,
+)
+# RAG pipeline evals
+tru = Tru()
+openai = OpenAITruLens()
+grounded = Groundedness(groundedness_provider=OpenAITruLens())
+# Define a groundedness feedback function
+f_groundedness = Feedback(grounded.groundedness_measure_with_cot_reasons).on(
+TruLlama.select_source_nodes().node.text
+).on_output(
+).aggregate(grounded.grounded_statements_aggregator)
+# Question/answer relevance between overall question and answer.
+f_qa_relevance = Feedback(openai.relevance).on_input_output()
+# Question/statement relevance between question and each context chunk.
+f_qs_relevance = Feedback(openai.qs_relevance).on_input().on(
+TruLlama.select_source_nodes().node.text
+).aggregate(np.mean)
+tru_query_engine_recorder = TruLlama(sentence_window_engine,
+app_id='sentence_window_size_6',
+feedbacks=[f_groundedness, f_qa_relevance, f_qs_relevance])
+eval_questions = []
+with open("./eval_questions.txt", "r") as eval_qn:
+for qn in eval_qn:
+qn_stripped = qn.strip()
+eval_questions.append(qn_stripped)
+def run_eval(eval_questions: List[str]):
+for qn in eval_questions:
+# eval using context window
+with tru_query_engine_recorder as recording:
+sentence_window_engine.query(qn)
+run_eval(eval_questions=eval_questions)
+# run dashboard
+tru.run_dashboard()
+Image By Code With Prince
+You can notice the trends with regards to context size, relevance and the groundedness as we discussed above, I don’t want to do any interpretation for you if the data speaks clearly. I challenge you to have more context window sizes, different embedding models and even use different LLM all together to play around with this and find what works best for your use case of a RAG pipeline.
+Also go back to the other pipelines with build and try to use a set of questions (10 questions to run a test) as for now, other pipelines as as the basic RAG and Parent Document Retrieval all used just one question. Comparing them with the Sentence Window pipeline we built in this case will not be a fair comparison.
+I challenge you to go back and run the set of questions on all other pipelines to get an accurate result and perform a better comparison.
+For us the lazy ones, no pun intended, I have done all that for you and you can find the code on my
+Github Repository
+, be sure to follow me on Github. Here are some screenshots of the results:
+Image By Code With Prince
+Image By Code With Prince
+Using sentence window retrieval we are using less tokens, almost 4 times as less and we have less cost associated. Better still our answer relevance, context relevance and groundedness is very good. This might not always be the case and I am not saying it’s a rule of thumb.
+Conclusion
+Congratulations for making it this far, I hope this has given you the understanding of how Sentence Window Retrieval works. Hope you find use cases for it in your day to day building of RAG pipelines.
+Other plaforms you can reach out to me:
+YouTube
+Twitter
+LinkedIn
+Discord
+Happy coding! and see you next time, the world keeps spinning.
+Llamaindex
+Llamaindex Rag
+Rag
+Llm
+Sentence Window Retrieval
+--
+--
+Follow
+Written by
+Prince Krampah
+379 Followers
+·
+Writer for
+AI Advances
+Hello there , am Prince a full-stack web developer, data science enthusiast, lover of Python Programming with a deep interest in deep learning, computer vision
+Follow
+Help
+Status
+About
+Careers
+Blog
+Privacy
+Terms
+Text to speech
+Teams
+```code
+from llama_index import (
+SimpleDirectoryReader,
+)
+# load document
+documents = SimpleDirectoryReader(
+input_dir="../dataFiles/"
+).load_data(show_progress=True)
+print(len(documents))
+```
+```code
+from llama_index import (
+SimpleDirectoryReader,
+Document
+)
+# load document
+documents = SimpleDirectoryReader(
+input_dir="../dataFiles/"
+).load_data(show_progress=True)
+# merge pages into one
+document = Document(text="\n\n".join([doc.text for doc in documents]))
+print(document)
+```
+```code
+from llama_index.node_parser import SentenceWindowNodeParser
+# create the sentence window node parser
+node_parser = SentenceWindowNodeParser.from_defaults(
+window_size=2,
+window_metadata_key="window",
+original_text_metadata_key="original_text",
+)
+# Toy example to play around with
+text = "I love programming. Python is my most favorite language. I love LLMs. I love LlamaIndex."
+# Get nodes
+nodes = node_parser.get_nodes_from_documents([Document(text=text)])
+# Print out individual nodes
+print([x.text for x in nodes])
+# Print out the window around the second node
+print(nodes[1].metadata["window"])
+```
+```code
+# creating OpenAI gpt-3.5-turbo LLM and OpenAIEmbedding model
+llm = OpenAI(model="gpt-3.5-turbo", temperature=0.1)
+embed_model = OpenAIEmbedding()
+# creating the service context
+sentence_context = ServiceContext.from_defaults(
+llm=llm,
+embed_model=embed_model,
+node_parser=node_parser,
+)
+```
+```code
+import os
+from llama_index import (
+SimpleDirectoryReader,
+Document,
+StorageContext,
+load_index_from_storage
+)
+from llama_index.node_parser import SentenceWindowNodeParser
+from llama_index.llms import OpenAI
+from llama_index.embeddings import OpenAIEmbedding
+from llama_index import ServiceContext
+from llama_index import VectorStoreIndex
+from decouple import config
+# set env variables
+os.environ["OPENAI_API_KEY"] = config("OPENAI_API_KEY")
+# load document
+documents = SimpleDirectoryReader(
+input_dir="../dataFiles/"
+).load_data(show_progress=True)
+# merge pages into one
+document = Document(text="\n\n".join([doc.text for doc in documents]))
+node_parser = SentenceWindowNodeParser.from_defaults(
+window_size=3,
+window_metadata_key="window",
+original_text_metadata_key="original_text",
+)
+# creating OpenAI gpt-3.5-turbo LLM and OpenAIEmbedding model
+llm = OpenAI(model="gpt-3.5-turbo", temperature=0.1)
+embed_model = OpenAIEmbedding()
+# creating the service context
+sentence_context = ServiceContext.from_defaults(
+llm=llm,
+embed_model=embed_model,
+node_parser=node_parser,
+)
+if not os.path.exists("./storage"):
+# creating the vector store index
+index = VectorStoreIndex.from_documents(
+[document], service_context=sentence_context
+)
+# make vector store persistant
+index.storage_context.persist(persist_dir="./storage")
+else:
+# load vector store indexed if they exist
+index = load_index_from_storage(
+StorageContext.from_defaults(persist_dir="./storage"),
+service_context=sentence_context
+)
+```
+```code
+from llama_index import QueryBundle
+from llama_index.schema import TextNode, NodeWithScore
+query = QueryBundle("I love Python programming")
+scored_nodes = [
+NodeWithScore(node=TextNode(text="Programming can be boring, bugs all day"), score=0.6),
+NodeWithScore(node=TextNode(text="Python is my most favorite programming language"), score=0.4),
+]
+```
+```code
+import os
+from llama_index import (
+SimpleDirectoryReader,
+Document,
+StorageContext,
+load_index_from_storage
+)
+from llama_index.node_parser import SentenceWindowNodeParser
+from llama_index.llms import OpenAI
+from llama_index.embeddings import OpenAIEmbedding
+from llama_index import ServiceContext
+from llama_index import VectorStoreIndex
+from llama_index.indices.postprocessor import MetadataReplacementPostProcessor
+from llama_index.indices.postprocessor import SentenceTransformerRerank
+from decouple import config
+# set env variables
+os.environ["OPENAI_API_KEY"] = config("OPENAI_API_KEY")
+# load document
+documents = SimpleDirectoryReader(
+input_dir="../dataFiles/"
+).load_data(show_progress=True)
+# merge pages into one
+document = Document(text="\n\n".join([doc.text for doc in documents]))
+node_parser = SentenceWindowNodeParser.from_defaults(
+window_size=3,
+window_metadata_key="window",
+original_text_metadata_key="original_text",
+)
+# creating OpenAI gpt-3.5-turbo LLM and OpenAIEmbedding model
+llm = OpenAI(model="gpt-3.5-turbo", temperature=0.1)
+embed_model = OpenAIEmbedding()
+# creating the service context
+sentence_context = ServiceContext.from_defaults(
+llm=llm,
+embed_model=embed_model,
+node_parser=node_parser,
+)
+if not os.path.exists("./storage"):
+# creating the vector store index
+index = VectorStoreIndex.from_documents(
+[document], service_context=sentence_context
+)
+# make vector store persistant
+index.storage_context.persist(persist_dir="./storage")
+else:
+# load vector store indexed if they exist
+index = load_index_from_storage(
+StorageContext.from_defaults(persist_dir="./storage"),
+service_context=sentence_context
+)
+# add meta data replacement post processor
+postproc = MetadataReplacementPostProcessor(
+target_metadata_key="window"
+)
+# link: https://huggingface.co/BAAI/bge-reranker-base
+rerank = SentenceTransformerRerank(
+top_n=2, model="BAAI/bge-reranker-base"
+)
+```
+```code
+import os
+from llama_index import (
+SimpleDirectoryReader,
+Document,
+StorageContext,
+load_index_from_storage
+)
+from llama_index.node_parser import SentenceWindowNodeParser
+from llama_index.llms import OpenAI
+from llama_index.embeddings import OpenAIEmbedding
+from llama_index import ServiceContext
+from llama_index import VectorStoreIndex
+from llama_index.indices.postprocessor import MetadataReplacementPostProcessor
+from llama_index.indices.postprocessor import SentenceTransformerRerank
+from decouple import config
+# set env variables
+os.environ["OPENAI_API_KEY"] = config("OPENAI_API_KEY")
+# load document
+documents = SimpleDirectoryReader(
+input_dir="../dataFiles/"
+).load_data(show_progress=True)
+# merge pages into one
+document = Document(text="\n\n".join([doc.text for doc in documents]))
+node_parser = SentenceWindowNodeParser.from_defaults(
+window_size=3,
+window_metadata_key="window",
+original_text_metadata_key="original_text",
+)
+# creating OpenAI gpt-3.5-turbo LLM and OpenAIEmbedding model
+llm = OpenAI(model="gpt-3.5-turbo", temperature=0.1)
+embed_model = OpenAIEmbedding()
+# creating the service context
+sentence_context = ServiceContext.from_defaults(
+llm=llm,
+embed_model=embed_model,
+node_parser=node_parser,
+)
+if not os.path.exists("./storage"):
+# creating the vector store index
+index = VectorStoreIndex.from_documents(
+[document], service_context=sentence_context
+)
+# make vector store persistant
+index.storage_context.persist(persist_dir="./storage")
+else:
+# load vector store indexed if they exist
+index = load_index_from_storage(
+StorageContext.from_defaults(persist_dir="./storage"),
+service_context=sentence_context
+)
+# add meta data replacement post processor
+postproc = MetadataReplacementPostProcessor(
+target_metadata_key="window"
+)
+# link: https://huggingface.co/BAAI/bge-reranker-base
+rerank = SentenceTransformerRerank(
+top_n=2, model="BAAI/bge-reranker-base"
+)
+# query engine
+sentence_window_engine = index.as_query_engine(
+similarity_top_k=5, node_postprocessors=[postproc, rerank]
+)
+# test it out
+response = sentence_window_engine.query(
+"What did the president say about covid-19?"
+)
+print(response)
+```
+```code
+import os
+from llama_index import (
+SimpleDirectoryReader,
+Document,
+StorageContext,
+load_index_from_storage
+)
+from llama_index.node_parser import SentenceWindowNodeParser
+from llama_index.llms import OpenAI
+from llama_index.embeddings import OpenAIEmbedding
+from llama_index import ServiceContext
+from llama_index import VectorStoreIndex
+from llama_index.indices.postprocessor import MetadataReplacementPostProcessor
+from llama_index.indices.postprocessor import SentenceTransformerRerank
+from decouple import config
+# set env variables
+os.environ["OPENAI_API_KEY"] = config("OPENAI_API_KEY")
+# load document
+documents = SimpleDirectoryReader(
+input_dir="../dataFiles/"
+).load_data(show_progress=True)
+# merge pages into one
+document = Document(text="\n\n".join([doc.text for doc in documents]))
+def create_indexes(
+documents: Document,
+index_save_dir: str,
+window_size: int = 4,
+llm_model: str = "gpt-3.5-turbo",
+temperature: float = 0.1
+):
+node_parser = SentenceWindowNodeParser.from_defaults(
+window_size=window_size,
+window_metadata_key="window",
+original_text_metadata_key="original_text",
+)
+# creating OpenAI gpt-3.5-turbo LLM and OpenAIEmbedding model
+llm = OpenAI(model=llm_model, temperature=temperature)
+embed_model = OpenAIEmbedding()
+# creating the service context
+sentence_context = ServiceContext.from_defaults(
+llm=llm,
+embed_model=embed_model,
+node_parser=node_parser,
+)
+if not os.path.exists(index_save_dir):
+# creating the vector store index
+index = VectorStoreIndex.from_documents(
+[document], service_context=sentence_context
+)
+# make vector store persistant
+index.storage_context.persist(persist_dir=index_save_dir)
+else:
+# load vector store indexed if they exist
+index = load_index_from_storage(
+StorageContext.from_defaults(persist_dir=index_save_dir),
+service_context=sentence_context
+)
+return index
+def create_query_engine(
+sentence_index: VectorStoreIndex,
+similarity_top_k: int = 6,
+rerank_top_n: int = 5,
+rerank_model: str = "BAAI/bge-reranker-base",
+):
+# add meta data replacement post processor
+postproc = MetadataReplacementPostProcessor(
+target_metadata_key="window"
+)
+# link: https://huggingface.co/BAAI/bge-reranker-base
+rerank = SentenceTransformerRerank(
+top_n=rerank_top_n,
+model=rerank_model
+)
+sentence_window_engine = sentence_index.as_query_engine(
+similarity_top_k=similarity_top_k,
+node_postprocessors=[postproc, rerank]
+)
+return sentence_window_engine
+# create index
+index = create_indexes(
+documents=documents,
+index_save_dir="./storage",
+window_size=3,
+llm_model="gpt-3.5-turbo",
+temperature=0.1
+)
+# create query engine
+sentence_window_engine = create_query_engine(
+sentence_index=index,
+similarity_top_k=5,
+rerank_top_n=2,
+)
+response = sentence_window_engine.query(
+"What did the president say about covid-19?"
+)
+print(response)
+```
+```code
+tru = Tru(database_file="<path_to_data_base>/default.sqlite")
+```
+```code
+import os
+from typing import List
+from llama_index import (
+SimpleDirectoryReader,
+Document,
+StorageContext,
+load_index_from_storage
+)
+from llama_index.node_parser import SentenceWindowNodeParser
+from llama_index.llms import OpenAI
+from llama_index.embeddings import OpenAIEmbedding
+from llama_index import ServiceContext
+from llama_index import VectorStoreIndex
+from llama_index.indices.postprocessor import MetadataReplacementPostProcessor
+from llama_index.indices.postprocessor import SentenceTransformerRerank
+from llama_index.llms import OpenAI
+# for loading environment variables
+from decouple import config
+from trulens_eval import Feedback, Tru, TruLlama
+from trulens_eval.feedback import Groundedness
+from trulens_eval.feedback.provider.openai import OpenAI as OpenAITruLens
+import numpy as np
+# set env variables
+os.environ["OPENAI_API_KEY"] = config("OPENAI_API_KEY")
+# load document
+documents = SimpleDirectoryReader(
+input_dir="../dataFiles/"
+).load_data(show_progress=True)
+# merge pages into one
+document = Document(text="\n\n".join([doc.text for doc in documents]))
+def create_indexes(
+documents: Document,
+index_save_dir: str,
+window_size: int = 4,
+llm_model: str = "gpt-3.5-turbo",
+temperature: float = 0.1
+):
+node_parser = SentenceWindowNodeParser.from_defaults(
+window_size=window_size,
+window_metadata_key="window",
+original_text_metadata_key="original_text",
+)
+# creating OpenAI gpt-3.5-turbo LLM and OpenAIEmbedding model
+llm = OpenAI(model=llm_model, temperature=temperature)
+embed_model = OpenAIEmbedding()
+# creating the service context
+sentence_context = ServiceContext.from_defaults(
+llm=llm,
+embed_model=embed_model,
+node_parser=node_parser,
+)
+if not os.path.exists(index_save_dir):
+# creating the vector store index
+index = VectorStoreIndex.from_documents(
+[document], service_context=sentence_context
+)
+# make vector store persistant
+index.storage_context.persist(persist_dir=index_save_dir)
+else:
+# load vector store indexed if they exist
+index = load_index_from_storage(
+StorageContext.from_defaults(persist_dir=index_save_dir),
+service_context=sentence_context
+)
+return index
+def create_query_engine(
+sentence_index: VectorStoreIndex,
+similarity_top_k: int = 6,
+rerank_top_n: int = 5,
+rerank_model: str = "BAAI/bge-reranker-base",
+):
+# add meta data replacement post processor
+postproc = MetadataReplacementPostProcessor(
+target_metadata_key="window"
+)
+# link: https://huggingface.co/BAAI/bge-reranker-base
+rerank = SentenceTransformerRerank(
+top_n=rerank_top_n,
+model=rerank_model
+)
+sentence_window_engine = sentence_index.as_query_engine(
+similarity_top_k=similarity_top_k,
+node_postprocessors=[postproc, rerank]
+)
+return sentence_window_engine
+# create index
+index = create_indexes(
+documents=documents,
+index_save_dir="./storage",
+window_size=3,
+llm_model="gpt-3.5-turbo",
+temperature=0.1
+)
+# create query engine
+sentence_window_engine = create_query_engine(
+sentence_index=index,
+similarity_top_k=5,
+rerank_top_n=2,
+)
+# RAG pipeline evals
+tru = Tru()
+openai = OpenAITruLens()
+grounded = Groundedness(groundedness_provider=OpenAITruLens())
+# Define a groundedness feedback function
+f_groundedness = Feedback(grounded.groundedness_measure_with_cot_reasons).on(
+TruLlama.select_source_nodes().node.text
+).on_output(
+).aggregate(grounded.grounded_statements_aggregator)
+# Question/answer relevance between overall question and answer.
+f_qa_relevance = Feedback(openai.relevance).on_input_output()
+# Question/statement relevance between question and each context chunk.
+f_qs_relevance = Feedback(openai.qs_relevance).on_input().on(
+TruLlama.select_source_nodes().node.text
+).aggregate(np.mean)
+tru_query_engine_recorder = TruLlama(sentence_window_engine,
+app_id='sentence_window_size_3',
+feedbacks=[f_groundedness, f_qa_relevance, f_qs_relevance])
+eval_questions = []
+with open("./eval_questions.txt", "r") as eval_qn:
+for qn in eval_qn:
+qn_stripped = qn.strip()
+eval_questions.append(qn_stripped)
+def run_eval(eval_questions: List[str]):
+for qn in eval_questions:
+# eval using context window
+with tru_query_engine_recorder as recording:
+sentence_window_engine.query(qn)
+run_eval(eval_questions=eval_questions)
+# run dashboard
+tru.run_dashboard()
+```
+```code
+import os
+from typing import List
+from llama_index import (
+SimpleDirectoryReader,
+Document,
+StorageContext,
+load_index_from_storage
+)
+from llama_index.node_parser import SentenceWindowNodeParser
+from llama_index.llms import OpenAI
+from llama_index.embeddings import OpenAIEmbedding
+from llama_index import ServiceContext
+from llama_index import VectorStoreIndex
+from llama_index.indices.postprocessor import MetadataReplacementPostProcessor
+from llama_index.indices.postprocessor import SentenceTransformerRerank
+from llama_index.llms import OpenAI
+# for loading environment variables
+from decouple import config
+from trulens_eval import Feedback, Tru, TruLlama
+from trulens_eval.feedback import Groundedness
+from trulens_eval.feedback.provider.openai import OpenAI as OpenAITruLens
+import numpy as np
+# set env variables
+os.environ["OPENAI_API_KEY"] = config("OPENAI_API_KEY")
+# load document
+documents = SimpleDirectoryReader(
+input_dir="../dataFiles/"
+).load_data(show_progress=True)
+# merge pages into one
+document = Document(text="\n\n".join([doc.text for doc in documents]))
+def create_indexes(
+documents: Document,
+index_save_dir: str,
+window_size: int = 4,
+llm_model: str = "gpt-3.5-turbo",
+temperature: float = 0.1
+):
+node_parser = SentenceWindowNodeParser.from_defaults(
+window_size=window_size,
+window_metadata_key="window",
+original_text_metadata_key="original_text",
+)
+# creating OpenAI gpt-3.5-turbo LLM and OpenAIEmbedding model
+llm = OpenAI(model=llm_model, temperature=temperature)
+embed_model = OpenAIEmbedding()
+# creating the service context
+sentence_context = ServiceContext.from_defaults(
+llm=llm,
+embed_model=embed_model,
+node_parser=node_parser,
+)
+if not os.path.exists(index_save_dir):
+# creating the vector store index
+index = VectorStoreIndex.from_documents(
+[document], service_context=sentence_context
+)
+# make vector store persistant
+index.storage_context.persist(persist_dir=index_save_dir)
+else:
+# load vector store indexed if they exist
+index = load_index_from_storage(
+StorageContext.from_defaults(persist_dir=index_save_dir),
+service_context=sentence_context
+)
+return index
+def create_query_engine(
+sentence_index: VectorStoreIndex,
+similarity_top_k: int = 6,
+rerank_top_n: int = 5,
+rerank_model: str = "BAAI/bge-reranker-base",
+):
+# add meta data replacement post processor
+postproc = MetadataReplacementPostProcessor(
+target_metadata_key="window"
+)
+# link: https://huggingface.co/BAAI/bge-reranker-base
+rerank = SentenceTransformerRerank(
+top_n=rerank_top_n,
+model=rerank_model
+)
+sentence_window_engine = sentence_index.as_query_engine(
+similarity_top_k=similarity_top_k,
+node_postprocessors=[postproc, rerank]
+)
+return sentence_window_engine
+# create index
+index = create_indexes(
+documents=documents,
+index_save_dir="./sentence_window_size_6_index",
+window_size=3,
+llm_model="gpt-3.5-turbo",
+temperature=0.1
+)
+# create query engine
+sentence_window_engine = create_query_engine(
+sentence_index=index,
+similarity_top_k=5,
+rerank_top_n=2,
+)
+# RAG pipeline evals
+tru = Tru()
+openai = OpenAITruLens()
+grounded = Groundedness(groundedness_provider=OpenAITruLens())
+# Define a groundedness feedback function
+f_groundedness = Feedback(grounded.groundedness_measure_with_cot_reasons).on(
+TruLlama.select_source_nodes().node.text
+).on_output(
+).aggregate(grounded.grounded_statements_aggregator)
+# Question/answer relevance between overall question and answer.
+f_qa_relevance = Feedback(openai.relevance).on_input_output()
+# Question/statement relevance between question and each context chunk.
+f_qs_relevance = Feedback(openai.qs_relevance).on_input().on(
+TruLlama.select_source_nodes().node.text
+).aggregate(np.mean)
+tru_query_engine_recorder = TruLlama(sentence_window_engine,
+app_id='sentence_window_size_6',
+feedbacks=[f_groundedness, f_qa_relevance, f_qs_relevance])
+eval_questions = []
+with open("./eval_questions.txt", "r") as eval_qn:
+for qn in eval_qn:
+qn_stripped = qn.strip()
+eval_questions.append(qn_stripped)
+def run_eval(eval_questions: List[str]):
+for qn in eval_questions:
+# eval using context window
+with tru_query_engine_recorder as recording:
+sentence_window_engine.query(qn)
+run_eval(eval_questions=eval_questions)
+# run dashboard
+tru.run_dashboard()
+```
+ Links:
+ - ("https://rsci.app.link/?%24canonical_url=https%3A%2F%2Fmedium.com%2Fp%2F9f246cffa07b&%7Efeature=LoOpenInAppButton&%7Echannel=ShowPostUnderCollection&source=---two_column_layout_nav----------------------------------", "Open in app")
+ - ("https://huggingface.co/BAAI/bge-reranker-base", "hugging face")
+ - ("https://github.com/Princekrampah/AdvancedRAGTechniques_LlamaIndex", "GitHub Repository")
+ - ("https://github.com/Princekrampah/AdvancedRAGTechniques_LlamaIndex", "Github Repository")
+ - ("https://www.linkedin.com/in/prince-krampah-5a2b921bb/?originalSubdomain=tz", "LinkedIn")
+ - ("https://medium.com/tag/llamaindex?source=post_page-----9f246cffa07b---------------llamaindex-----------------", "Llamaindex")
+ - ("https://medium.com/tag/llamaindex-rag?source=post_page-----9f246cffa07b---------------llamaindex_rag-----------------", "Llamaindex Rag")
+ - ("https://medium.com/tag/rag?source=post_page-----9f246cffa07b---------------rag-----------------", "Rag")
+ - ("https://medium.com/tag/llm?source=post_page-----9f246cffa07b---------------llm-----------------", "Llm")
+ - ("https://medium.com/tag/sentence-window-retrieval?source=post_page-----9f246cffa07b---------------sentence_window_retrieval-----------------", "Sentence Window Retrieval")
+ - ("https://medium.statuspage.io/?source=post_page-----9f246cffa07b--------------------------------", "Status")
+ - ("https://speechify.com/medium?source=post_page-----9f246cffa07b--------------------------------", "Text to speech")
+ - ("https://medium.com/business?source=post_page-----9f246cffa07b--------------------------------", "Teams")
