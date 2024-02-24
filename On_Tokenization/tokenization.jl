@@ -140,10 +140,10 @@ begin
 	merges₁ = Dict{Tuple{<: Integer, <: Integer}, Integer}()
 	for ix ∈ 1:num_merges
   		stats₁ = get_stats(ids₁)
-  		pair = argmax(stats₁)
-  		idx = N + ix - 1
+  		pair = argmax(stats₁)  # new pair 
+  		idx = N + ix - 1       # new token value
   		println("merging $(pair) into a new token $(idx)")
-  		global ids₁ = merge(ids₁, pair, idx)
+  		global ids₁ = merge(ids₁, pair, idx)  # perfomr merge by replacing co-occ with the new token value for pair
   		merges₁[pair] = idx
 	end
 end
@@ -167,15 +167,71 @@ md"""LLM and tokens (_from Andrej Karpathy presentation_) $(LocalResource("./tok
 # ╔═╡ 86ae2b81-31e0-434a-a87a-825dd8e3ea82
 md"""
 ### Decoding
+
+Given a sequence of integers in the range $[0, vocab\_size]$, what is the corresponding text?
 """
 
 # ╔═╡ 02face12-ba98-449d-9567-3633582ac689
-
+"""
+  Given ids (list of integers), return the corresponding string
+"""
+function decode(ids::Vector{UInt8}, vocab::Dict{<: Integer, Vector{UInt8}})::String
+	collect(
+		vocab[idx][1] for idx ∈ ids
+	) |> String
+end
 
 # ╔═╡ be962b8e-854a-4ae0-be4e-8e1fb874f8cf
+begin
+	vocab₀ = Dict{Integer, Vector{UInt8}}(idx => UInt8[idx] for idx ∈ 0:255)
 
+	# And now we extend the dictionary, but we need to do in order from 256..278
+	for ((p₀, p₁), idx) ∈ sort(merges₁ |> collect, by=p -> p[2], rev=false)
+	 	vocab₀[idx] = vocab₀[p₀] + vocab₀[p₁]
+	end
+end# 
 
 # ╔═╡ 6a6ae316-4af7-4a63-a86d-d9f972ce531f
+vocab₀
+
+# ╔═╡ cd66c91c-4237-4f6a-ba3c-0d3566882b6b
+md"""
+### Encoding
+
+Now the other way around. Given a string, what are the tokens?
+"""
+
+# ╔═╡ 1a6b30ed-6362-42ba-a6f3-6d306f15b16f
+function encode(text::String, merges)::Vector{<: Integer}
+	tokens = (collect ∘ codeunits)(text)
+	while length(tokens) ≥ 2
+		stats = get_stats(tokens)
+		pair = argmin(stats)
+		pair ∉ keys(merges) && break
+		idx = merges[pair]
+		tokens = merge(tokens, pair, idx)
+	end
+	tokens
+end
+
+# ╔═╡ 4e0f2cf1-8cd4-448c-8e5c-8c413e544672
+decode(encode("hello world", merges₁), vocab₀)
+
+# ╔═╡ 6c45873c-9c6a-4fc9-b6df-0fe5c2d944c1
+text₂ = decode(encode(text₁, merges₁), vocab₀)
+
+# ╔═╡ fc2389a7-6686-4097-86dd-32c635b0146f
+begin
+	val_text = """Many common characters, including numerals, punctuation, and other symbols, are unified within the standard and are not treated as specific to any given writing system. Unicode encodes thousands of emoji, with the continued development thereof conducted by the Consortium as a part of the standard.[4] Moreover, the widespread adoption of Unicode was in large part responsible for the initial popularization of emoji outside of Japan. Unicode is ultimately capable of encoding more than 1.1 million characters."""
+	
+	val_text₂ = decode(encode(val_text, merges₁), vocab₀)
+	@assert val_text₂ == val_text
+end
+
+# ╔═╡ 909c7192-4fec-4cc4-82b9-3ddee9beb557
+
+
+# ╔═╡ d66a0e02-0354-4075-9c53-357d438f3674
 
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
@@ -484,5 +540,12 @@ version = "17.4.0+2"
 # ╠═02face12-ba98-449d-9567-3633582ac689
 # ╠═be962b8e-854a-4ae0-be4e-8e1fb874f8cf
 # ╠═6a6ae316-4af7-4a63-a86d-d9f972ce531f
+# ╟─cd66c91c-4237-4f6a-ba3c-0d3566882b6b
+# ╠═1a6b30ed-6362-42ba-a6f3-6d306f15b16f
+# ╠═4e0f2cf1-8cd4-448c-8e5c-8c413e544672
+# ╠═6c45873c-9c6a-4fc9-b6df-0fe5c2d944c1
+# ╠═fc2389a7-6686-4097-86dd-32c635b0146f
+# ╠═909c7192-4fec-4cc4-82b9-3ddee9beb557
+# ╠═d66a0e02-0354-4075-9c53-357d438f3674
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
