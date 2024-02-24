@@ -13,6 +13,9 @@ end
 # ╔═╡ 50fb728a-10a9-4625-b12b-a77dcdbd2d47
 using Printf
 
+# ╔═╡ 88d1cde8-c680-4fab-9cfb-99067b594568
+using JSON
+
 # ╔═╡ b8e16b10-d295-11ee-0c3d-5d62b628a5e3
 md"""
 ## Let's build the GPT Tokenizer
@@ -148,6 +151,9 @@ begin
 	end
 end
 
+# ╔═╡ 0adbe4db-a7c1-47a0-aa8b-284803445006
+merges₁ |> typeof
+
 # ╔═╡ 15cdedb5-c5b8-4b41-9620-f16f6089c22b
 begin
 	println("tokens length: $(length(tokens₁))")
@@ -171,28 +177,28 @@ md"""
 Given a sequence of integers in the range $[0, vocab\_size]$, what is the corresponding text?
 """
 
-# ╔═╡ 02face12-ba98-449d-9567-3633582ac689
-"""
-  Given ids (list of integers), return the corresponding string
-"""
-function decode(ids::Vector{UInt8}, vocab::Dict{<: Integer, Vector{UInt8}})::String
-	collect(
-		vocab[idx][1] for idx ∈ ids
-	) |> String
-end
-
 # ╔═╡ be962b8e-854a-4ae0-be4e-8e1fb874f8cf
-begin
-	vocab₀ = Dict{Integer, Vector{UInt8}}(idx => UInt8[idx] for idx ∈ 0:255)
+"""
+  Create a closure `decode` which given ids (list of integers), returns the corresponding string
+"""
+function decode_hof(merges::Dict{Tuple{Integer, Integer}, Integer})::Function
+	vocab = Dict{Integer, Vector{UInt8}}(idx => UInt8[idx] for idx ∈ 0:255)
 
 	# And now we extend the dictionary, but we need to do in order from 256..278
-	for ((p₀, p₁), idx) ∈ sort(merges₁ |> collect, by=p -> p[2], rev=false)
-	 	vocab₀[idx] = vocab₀[p₀] + vocab₀[p₁]
+	for ((p₀, p₁), idx) ∈ sort(merges |> collect, by=p -> p[2], rev=false)
+	 	vocab[idx] = vocab[p₀] + vocab[p₁]
 	end
-end# 
+
+	function decode_fn(ids::Vector{UInt8})::String
+		collect(
+			vocab[idx][1] for idx ∈ ids
+		) |> String
+	end
+end
 
 # ╔═╡ 6a6ae316-4af7-4a63-a86d-d9f972ce531f
-vocab₀
+# vocab₀
+decode =  decode_hof(merges₁)
 
 # ╔═╡ cd66c91c-4237-4f6a-ba3c-0d3566882b6b
 md"""
@@ -201,46 +207,123 @@ md"""
 Now the other way around. Given a string, what are the tokens?
 """
 
-# ╔═╡ 1a6b30ed-6362-42ba-a6f3-6d306f15b16f
-function encode(text::String, merges)::Vector{<: Integer}
+# ╔═╡ 07701f3e-2341-41a7-a35b-8c7818c106d4
+# closure over  merges₁
+function encode(text::String)::Vector{<: Integer}
 	tokens = (collect ∘ codeunits)(text)
 	while length(tokens) ≥ 2
 		stats = get_stats(tokens)
 		pair = argmin(stats)
-		pair ∉ keys(merges) && break
-		idx = merges[pair]
+		pair ∉ keys(merges₁) && break
+		idx = merges₁[pair]
 		tokens = merge(tokens, pair, idx)
 	end
 	tokens
 end
 
 # ╔═╡ 4e0f2cf1-8cd4-448c-8e5c-8c413e544672
-decode(encode("hello world", merges₁), vocab₀)
+(decode ∘ encode)("hello world") # decode(encode("hello world", merges₁), vocab₀)
 
 # ╔═╡ 6c45873c-9c6a-4fc9-b6df-0fe5c2d944c1
-text₂ = decode(encode(text₁, merges₁), vocab₀)
+text₂ = (decode ∘ encode)(text₁)  # decode(encode(text₁, merges₁), vocab₀)
 
 # ╔═╡ fc2389a7-6686-4097-86dd-32c635b0146f
 begin
 	val_text = """Many common characters, including numerals, punctuation, and other symbols, are unified within the standard and are not treated as specific to any given writing system. Unicode encodes thousands of emoji, with the continued development thereof conducted by the Consortium as a part of the standard.[4] Moreover, the widespread adoption of Unicode was in large part responsible for the initial popularization of emoji outside of Japan. Unicode is ultimately capable of encoding more than 1.1 million characters."""
 	
-	val_text₂ = decode(encode(val_text, merges₁), vocab₀)
+	val_text₂ = (decode ∘ encode)(val_text)  # decode(encode(val_text, merges₁), vocab₀)
 	@assert val_text₂ == val_text
 end
 
 # ╔═╡ 909c7192-4fec-4cc4-82b9-3ddee9beb557
+md"""
+### Forced splits using regex patterns (GPT series)
 
+Reference paper [Language Models are Unsupervised Multitask Learners](https://cdn.openai.com/better-language-models/language_models_are_unsupervised_multitask_learners.pdf), which uses _Byte Pair Encoding_ (BPE).
+"""
+
+# ╔═╡ f022bae4-02e0-400d-b19e-cc28949435ab
+gpt2pat = r"""'s|'t|'re|'ve|'m|'ll|'d| ?\p{L}+| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+"""
+
+# ╔═╡ b82744b0-10a7-4c20-b879-806491251a83
+matches = [m.match for m ∈ eachmatch(gpt2pat, "Hello've world123 how's are you!!!?")]
 
 # ╔═╡ d66a0e02-0354-4075-9c53-357d438f3674
+begin
+	example₀ = """
+for i in range(1, 101):
+    if i % 3 == 0 and i % 5 == 0:
+        print("FizzBuzz")
+    elif i % 3 == 0:
+        print("Fizz")
+    elif i % 5 == 0:
+        print("Buzz")
+    else:
+        print(i)
+"""
+	[m.match for m in eachmatch(gpt2pat, example₀)]
+end
+
+# ╔═╡ 96496c37-9724-4a09-9e8c-de7433c4d6f8
+md"""
+Reference the GPT-2 `encoder.py` Download the `vocab.bpe` and `encoder.json` files.
+"""
+
+# ╔═╡ eb141805-bfab-4c56-8430-f9613c086eeb
+function download(file_url::String)
+	local_file = split(file_url, '/')[end]
+	if !isfile(local_file)
+    	println("File does not exist $(local_file), downloading it with wget...")
+    	run(`wget -O $local_file $file_url`)
+	end
+end
+
+# ╔═╡ fc97f76e-76a3-429a-90ad-1b5df21da059
+download("https://openaipublic.blob.core.windows.net/gpt-2/models/1558M/vocab.bpe")
+
+# ╔═╡ 7fa992e1-b1f0-4d16-a95c-d68b285f2555
+download("https://openaipublic.blob.core.windows.net/gpt-2/models/1558M/encoder.json")
+
+# ╔═╡ 45622af7-6f8b-4c83-8ba2-e34a6b070d52
+encoder = open("./encoder.json", "r") do file
+    JSON.parse(file)
+end
+
+# ╔═╡ d220f181-048d-4811-8beb-6cbbd39d5b09
+begin
+	bpe_data = open("vocab.bpe", "r") do file
+    	read(file, String)
+	end
+
+	# Process the file content into a list of tuples
+	bpe_merges = [
+		tuple(split(merge_str)) for merge_str ∈ split(bpe_data, '\n')[2:end-1]
+	]
+end
+
+# ╔═╡ 4e3cc2ea-0a2d-4a58-b141-9ecc2ede2ac2
+md"""
+#### Special tokens
+"""
+
+# ╔═╡ 6e12ad9f-d82a-4130-859a-0eef350fad06
+length(encoder)  # 256 raw byte tokens + 50,000 merges  + 1 special token
+
+# ╔═╡ 4db510a5-3873-40da-975a-3dc8569e925d
+encoder["<|endoftext|>"]  # the only special token in use for the GPT-2 base model
+
+# ╔═╡ d47cf913-cc7e-4e6c-a2d4-03cc05ed0434
 
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
 [deps]
+JSON = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
 PlutoUI = "7f904dfe-b85e-4ff6-b463-dae2292396a8"
 Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
 
 [compat]
+JSON = "~0.21.4"
 PlutoUI = "~0.7.58"
 """
 
@@ -250,7 +333,7 @@ PLUTO_MANIFEST_TOML_CONTENTS = """
 
 julia_version = "1.10.1"
 manifest_format = "2.0"
-project_hash = "0ffa2908525f3f8b81101dc67569eebecc89a3f7"
+project_hash = "a37c4fb60c06dc59a9a0393840bcde021f0653d7"
 
 [[deps.AbstractPlutoDingetjes]]
 deps = ["Pkg"]
@@ -517,6 +600,7 @@ version = "17.4.0+2"
 # ╟─75ee93fc-55d5-4bf3-a763-fc657f20bd7e
 # ╠═39909ad9-a0d6-48e9-ac56-198884d1020e
 # ╠═50fb728a-10a9-4625-b12b-a77dcdbd2d47
+# ╠═88d1cde8-c680-4fab-9cfb-99067b594568
 # ╟─d9ba96ed-6394-43d3-bdf7-c6d611691e78
 # ╠═50d2d442-8f3c-48d7-9ec5-6ceb5245212e
 # ╠═5e734148-c190-4928-8cae-1f155a6f67ae
@@ -533,19 +617,31 @@ version = "17.4.0+2"
 # ╟─2f6d7871-0de6-4916-9663-d0a1178fba2c
 # ╠═7c24a3bf-5c9e-4630-bc76-3cd8a78aabc8
 # ╠═b029d04b-adfa-4b6c-892d-023d04a073a6
+# ╠═0adbe4db-a7c1-47a0-aa8b-284803445006
 # ╠═15cdedb5-c5b8-4b41-9620-f16f6089c22b
 # ╟─ab4558ad-95bb-4137-a95b-9cbff1501a87
 # ╠═7f20f216-02d1-4de0-8669-196945e7655f
 # ╟─86ae2b81-31e0-434a-a87a-825dd8e3ea82
-# ╠═02face12-ba98-449d-9567-3633582ac689
 # ╠═be962b8e-854a-4ae0-be4e-8e1fb874f8cf
 # ╠═6a6ae316-4af7-4a63-a86d-d9f972ce531f
 # ╟─cd66c91c-4237-4f6a-ba3c-0d3566882b6b
-# ╠═1a6b30ed-6362-42ba-a6f3-6d306f15b16f
+# ╠═07701f3e-2341-41a7-a35b-8c7818c106d4
 # ╠═4e0f2cf1-8cd4-448c-8e5c-8c413e544672
 # ╠═6c45873c-9c6a-4fc9-b6df-0fe5c2d944c1
 # ╠═fc2389a7-6686-4097-86dd-32c635b0146f
-# ╠═909c7192-4fec-4cc4-82b9-3ddee9beb557
+# ╟─909c7192-4fec-4cc4-82b9-3ddee9beb557
+# ╠═f022bae4-02e0-400d-b19e-cc28949435ab
+# ╠═b82744b0-10a7-4c20-b879-806491251a83
 # ╠═d66a0e02-0354-4075-9c53-357d438f3674
+# ╟─96496c37-9724-4a09-9e8c-de7433c4d6f8
+# ╠═eb141805-bfab-4c56-8430-f9613c086eeb
+# ╠═fc97f76e-76a3-429a-90ad-1b5df21da059
+# ╠═7fa992e1-b1f0-4d16-a95c-d68b285f2555
+# ╠═45622af7-6f8b-4c83-8ba2-e34a6b070d52
+# ╠═d220f181-048d-4811-8beb-6cbbd39d5b09
+# ╟─4e3cc2ea-0a2d-4a58-b141-9ecc2ede2ac2
+# ╠═6e12ad9f-d82a-4130-859a-0eef350fad06
+# ╠═4db510a5-3873-40da-975a-3dc8569e925d
+# ╠═d47cf913-cc7e-4e6c-a2d4-03cc05ed0434
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
