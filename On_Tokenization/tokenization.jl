@@ -20,7 +20,7 @@ using JSON
 md"""
 ## Let's build the GPT Tokenizer
 
-Based on Andrej Karpathy's [Let's build the GPT Tokenizer](https://www.youtube.com/watch?v=zduSFxRajkE) a 02h13min34sec video published on 2024-02-21. 
+Based on Andrej Karpathy's [Let's build the GPT Tokenizer](https://www.youtube.com/watch?v=zduSFxRajkE), a 02h13min34sec video published on 2024-02-21.
 """
 
 # ╔═╡ 75ee93fc-55d5-4bf3-a763-fc657f20bd7e
@@ -313,7 +313,13 @@ length(encoder)  # 256 raw byte tokens + 50,000 merges  + 1 special token
 encoder["<|endoftext|>"]  # the only special token in use for the GPT-2 base model
 
 # ╔═╡ d47cf913-cc7e-4e6c-a2d4-03cc05ed0434
+md"""
+### minbpe exercise
 
+At this point we have everything we need to build our own GPT-4 tokenizer. This is part of the `minbpe repo`, which is the solution to that exercise, and is a cleaned up version of the code presented in the original notebook (i.e python implementation).
+
+Check original exercise and implemnetation: [Build your own GPT-4 Tokenizer!](https://github.com/karpathy/minbpe/blob/master/exercise.md)
+"""
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -642,6 +648,6 @@ version = "17.4.0+2"
 # ╟─4e3cc2ea-0a2d-4a58-b141-9ecc2ede2ac2
 # ╠═6e12ad9f-d82a-4130-859a-0eef350fad06
 # ╠═4db510a5-3873-40da-975a-3dc8569e925d
-# ╠═d47cf913-cc7e-4e6c-a2d4-03cc05ed0434
+# ╟─d47cf913-cc7e-4e6c-a2d4-03cc05ed0434
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
