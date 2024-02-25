@@ -146,7 +146,7 @@ begin
   		pair = argmax(stats₁)  # new pair 
   		idx = N + ix - 1       # new token value
   		println("merging $(pair) into a new token $(idx)")
-  		global ids₁ = merge(ids₁, pair, idx)  # perfomr merge by replacing co-occ with the new token value for pair
+  		global ids₁ = merge(ids₁, pair, idx)  # perform merge by replacing co-occ with the new token value for pair
   		merges₁[pair] = idx
 	end
 end
@@ -300,6 +300,12 @@ begin
 		tuple(split(merge_str)) for merge_str ∈ split(bpe_data, '\n')[2:end-1]
 	]
 end
+
+# ╔═╡ 41b4c870-4314-4a0c-92f7-a0a94c589bd4
+typeof(bpe_merges)
+
+# ╔═╡ 22adbcde-8116-4e5a-ae38-47d8ed8d6f70
+typeof(merges₁)
 
 # ╔═╡ 4e3cc2ea-0a2d-4a58-b141-9ecc2ede2ac2
 md"""
@@ -645,6 +651,8 @@ version = "17.4.0+2"
 # ╠═7fa992e1-b1f0-4d16-a95c-d68b285f2555
 # ╠═45622af7-6f8b-4c83-8ba2-e34a6b070d52
 # ╠═d220f181-048d-4811-8beb-6cbbd39d5b09
+# ╠═41b4c870-4314-4a0c-92f7-a0a94c589bd4
+# ╠═22adbcde-8116-4e5a-ae38-47d8ed8d6f70
 # ╟─4e3cc2ea-0a2d-4a58-b141-9ecc2ede2ac2
 # ╠═6e12ad9f-d82a-4130-859a-0eef350fad06
 # ╠═4db510a5-3873-40da-975a-3dc8569e925d
