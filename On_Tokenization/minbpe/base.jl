@@ -9,7 +9,15 @@ using Printf
    Example: [1, 2, 3, 1, 2] -> Dict{Tuple, Integer}((1, 2) => 2, (3, 1) => 1, (2, 3) => 1)
    Optionally allows to update an existing dictionary of counts
 """
-function get_stats(ids::Vector{<: Integer}; counts::Union{Dict{Tuple, Integer}, Nothing} = nothing):: Dict{Tuple, Integer}
+function get_stats(ids::Vector{<: Integer})::Dict{Tuple, Integer}
+  counts = Dict{Tuple, Integer}()
+  for pair ∈ zip(ids, ids[2:end])
+    counts[pair] = get(counts, pair, 0) + 1
+  end
+  counts
+end
+
+function get_stats!(counts::Union{Dict{Tuple, Integer}, Nothing}, ids::Vector{<: Integer})::Dict{Tuple, Integer}
   counts = (counts === nothing) ? Dict{Tuple, Integer}() : counts
   for pair ∈ zip(ids, ids[2:end])
     counts[pair] = get(counts, pair, 0) + 1
@@ -68,7 +76,7 @@ abstract type AbstractTokenizer end
 
 mutable struct Tokenizer <: AbstractTokenizer
   merges::Dict{TII, INT}
-  pattern::String
+  pattern::Union{String, Regex}
   special_tokens::Dict{String, INT}
   vocab::Dict{INT, Vector{UInt8}}
 
