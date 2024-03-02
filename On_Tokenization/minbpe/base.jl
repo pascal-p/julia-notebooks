@@ -4,6 +4,13 @@
 using Unicode
 using Printf
 
+const TII = Tuple{Integer, Integer}
+const INT = Integer
+
+const INT_INF = Base.typemax(Int64)      # ∞ for Integer
+const INT_NEG_INF = Base.typemax(Int64)  # -∞ for Integer
+
+
 """
    Given a list of integers, return a dictionary of counts of consecutive pairs
    Example: [1, 2, 3, 1, 2] -> Dict{Tuple, Integer}((1, 2) => 2, (3, 1) => 1, (2, 3) => 1)
@@ -68,9 +75,6 @@ function render_token(t::Vector{UInt8}) :: String
   String(copy(t)) |>
     s -> replace_control_characters(s)
 end
-
-const TII = Tuple{Integer, Integer}
-const INT = Integer
 
 abstract type AbstractTokenizer end
 
