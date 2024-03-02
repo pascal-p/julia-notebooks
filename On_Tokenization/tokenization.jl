@@ -186,13 +186,16 @@ function decode_hof(merges::Dict{Tuple{Integer, Integer}, Integer})::Function
 
 	# And now we extend the dictionary, but we need to do in order from 256..278
 	for ((p₀, p₁), idx) ∈ sort(merges |> collect, by=p -> p[2], rev=false)
-	 	vocab[idx] = vocab[p₀] + vocab[p₁]
+	 	# vocab[idx] = vocab[p₀] + vocab[p₁]
+		vocab[idx] = UInt8[vocab[p₀]..., vocab[p₁]...]
 	end
 
-	function decode_fn(ids::Vector{UInt8})::String
-		collect(
-			vocab[idx][1] for idx ∈ ids
-		) |> String
+	function decode_fn(ids::Vector{<: Integer})::String
+		v = UInt8[]
+		for idx ∈ ids
+			append!(v, vocab[idx])
+		end
+		v |> String
 	end
 end
 
@@ -207,13 +210,18 @@ md"""
 Now the other way around. Given a string, what are the tokens?
 """
 
+# ╔═╡ 795957e7-1662-4e8a-b6eb-f604e1556c61
+const INT_INF = Base.typemax(Int64)      # ∞ for Integer
+
 # ╔═╡ 07701f3e-2341-41a7-a35b-8c7818c106d4
 # closure over  merges₁
 function encode(text::String)::Vector{<: Integer}
 	tokens = (collect ∘ codeunits)(text)
 	while length(tokens) ≥ 2
 		stats = get_stats(tokens)
-		pair = argmin(stats)
+		pair = findmin(
+      		Dict{Tuple{Int, Int}, Int}(pair => get(merges₁, pair, INT_INF) for pair ∈ keys(stats))
+    	)[2]
 		pair ∉ keys(merges₁) && break
 		idx = merges₁[pair]
 		tokens = merge(tokens, pair, idx)
@@ -221,11 +229,21 @@ function encode(text::String)::Vector{<: Integer}
 	tokens
 end
 
+# ╔═╡ 92a7740c-4cb1-4e24-8326-005f17b913d1
+typeof(encode("hello world"))
+
+# ╔═╡ 4ff1d85b-5d21-4302-a4ad-68a5ddbab6b1
+begin
+	enc_hello_world = encode("hello world") 
+	(enc_hello_world, enc_hello_world .|> Int)
+end
+
+# ╔═╡ c2f1b7cf-9578-4969-ab1c-2ae1017411cf
+# Equivalently
+map(x -> Int(x), enc_hello_world) |> collect 
+
 # ╔═╡ 4e0f2cf1-8cd4-448c-8e5c-8c413e544672
 (decode ∘ encode)("hello world") # decode(encode("hello world", merges₁), vocab₀)
-
-# ╔═╡ 6c45873c-9c6a-4fc9-b6df-0fe5c2d944c1
-text₂ = (decode ∘ encode)(text₁)  # decode(encode(text₁, merges₁), vocab₀)
 
 # ╔═╡ fc2389a7-6686-4097-86dd-32c635b0146f
 begin
@@ -324,7 +342,12 @@ md"""
 
 At this point we have everything we need to build our own GPT-4 tokenizer. This is part of the `minbpe repo`, which is the solution to that exercise, and is a cleaned up version of the code presented in the original notebook (i.e python implementation).
 
-Check original exercise and implemnetation: [Build your own GPT-4 Tokenizer!](https://github.com/karpathy/minbpe/blob/master/exercise.md)
+Check original exercise and implementation here: 
+ - [Build your own GPT-4 Tokenizer!](https://github.com/karpathy/minbpe/blob/master/exercise.md)
+
+Check the Julia version:
+- [`minbpe` implementation](https://github.com/pascal-p/julia-notebooks/tree/main/On_Tokenization/minbpe)
+
 """
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
@@ -637,9 +660,12 @@ version = "17.4.0+2"
 # ╠═be962b8e-854a-4ae0-be4e-8e1fb874f8cf
 # ╠═6a6ae316-4af7-4a63-a86d-d9f972ce531f
 # ╟─cd66c91c-4237-4f6a-ba3c-0d3566882b6b
+# ╠═795957e7-1662-4e8a-b6eb-f604e1556c61
 # ╠═07701f3e-2341-41a7-a35b-8c7818c106d4
+# ╠═92a7740c-4cb1-4e24-8326-005f17b913d1
+# ╠═4ff1d85b-5d21-4302-a4ad-68a5ddbab6b1
+# ╠═c2f1b7cf-9578-4969-ab1c-2ae1017411cf
 # ╠═4e0f2cf1-8cd4-448c-8e5c-8c413e544672
-# ╠═6c45873c-9c6a-4fc9-b6df-0fe5c2d944c1
 # ╠═fc2389a7-6686-4097-86dd-32c635b0146f
 # ╟─909c7192-4fec-4cc4-82b9-3ddee9beb557
 # ╠═f022bae4-02e0-400d-b19e-cc28949435ab
