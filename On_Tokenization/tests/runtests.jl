@@ -55,3 +55,35 @@ end
   end
 
 end
+
+#
+#   Quick unit test, following along the Wikipedia example:
+# https://en.wikipedia.org/wiki/Byte_pair_encoding
+#
+# According to Wikipedia, running bpe on the input string:
+# "aaabdaaabac"
+#
+# for 3 merges will result in string:
+# "XdXac"
+#
+# where:
+#   X=ZY
+#   Y=ab
+#   Z=aa
+#
+# Keep in mind that for us a=97, b=98, c=99, d=100 (ASCII values)
+# so Z will be 256, Y will be 257, X will be 258.
+#
+# So we expect the output list of ids to be [258, 100, 258, 97, 99]
+@testset "test_wikipedia_example" begin
+  N = 256
+  text = "aaabdaaabac"
+
+  for tokenizer ∈ [Tokenizer(), RegexTokenizer()]
+    train(tokenizer, text, N + 3)
+    ids = encode(tokenizer, text)
+
+    @test ids .|> Int == [258, 100, 258, 97, 99]
+    @test decode(tokenizer, encode(tokenizer, text)) == text
+  end
+end

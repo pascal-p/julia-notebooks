@@ -41,7 +41,8 @@ function train(self::RegexTokenizer, text::String, vocab_size::Int, verbose=fals
 
   _merges = Dict{TII, INT}()
   _vocab = Dict{Integer, Vector{UInt8}}(idx => UInt8[idx] for idx ∈ 0:N-1)
-  for ix ∈ 1:num_merge
+
+  for ix ∈ 1:num_merges
     stats = Dict{Tuple, Integer}()
     for chunk_ids ∈ ids
       get_stats!(stats, chunk_ids)
@@ -52,12 +53,13 @@ function train(self::RegexTokenizer, text::String, vocab_size::Int, verbose=fals
     ids = [merge(chunk_ids, pair, idx) for chunk_ids ∈ ids]
     # save the merge
     _merges[pair] = idx
-    _vocab[idx] = _vocab[pair[1]] + _vocab[pair[2]]
-    verbose && println("merge $(ix)/$(num_merges): $(pair) -> $(idx) ($(vocab[idx])) had $(stats[pair]) occurrences")
+    _vocab[idx] = UInt8[_vocab[pair[1]]..., _vocab[pair[2]]...] # _vocab[idx] = _vocab[pair[1]] + _vocab[pair[2]]
+    verbose && println("merge $(ix)/$(num_merges): $(pair) -> $(idx) ($(_vocab[idx])) had $(stats[pair]) occurrences")
   end
 
   self.tokenizer.merges = _merges
   self.tokenizer.vocab = _vocab
+  nothing  # to align with signature
 end
 
 """
@@ -69,7 +71,7 @@ function register_special_tokens(self::RegexTokenizer, special_tokens::Dict{Stri
   self.inverse_special_tokens = Dict{INT, String}(v => k for (k, v) ∈ special_tokens)
 end
 
-function decode(self::RegexTokenizer, ids::Vector{UInt8})::String
+function decode(self::RegexTokenizer, ids::Vector{<: Integer})::String
   part_bytes = Vector{UInt8}()  # Array to hold byte arrays
   for idx ∈ ids
     if haskey(vocab(self), idx)
@@ -86,14 +88,16 @@ function decode(self::RegexTokenizer, ids::Vector{UInt8})::String
   collect(part_bytes) |> String
 end
 
-function _encode_chunk(self::RegexTokenizer, text_bytes::Vector{UInt8})::Vector{UInt8}
+function _encode_chunk(self::RegexTokenizer, text_bytes::Vector{UInt8})::Vector{<: Integer}
   ids = collect(text_bytes)
   while length(ids) ≥ 2
     stats = get_stats(ids)
-    pair = argmin(stats)
+    pair = findmin(
+      Dict{TII, INT}(pair => get(merges(self), pair, INT_INF) for pair ∈ keys(stats))
+    )[2]
     pair ∉ keys(merges(self)) && break
     idx = merges(self)[pair]
-    ids = merge_ids(ids, pair, idx)
+    ids = merge(ids, pair, idx)
   end
   ids
 end
@@ -103,11 +107,11 @@ end
 """
 function _encode(self::RegexTokenizer, text::String)::Vector{<: Integer}
   text_chunks = [m.match for m ∈ eachmatch(pattern(self), text)]
-  ids = Vector{UInt8}()  # Vector{Integer}()
+  ids = Vector{Integer}()
   for chunk ∈ text_chunks
     chunk_bytes = Vector{UInt8}(chunk) # Raw bytes
     chunk_ids = _encode_chunk(self, chunk_bytes)
-    append!(ids, chunk_ids) # `append!` to extend an array with elements of another collection ∼ Python's `extend` method for list
+    append!(ids, chunk_ids) # `append!` to extend array with elements of another collection ∼ Python's `extend` method for list
   end
   ids
 end
