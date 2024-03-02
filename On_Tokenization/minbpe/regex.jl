@@ -31,7 +31,7 @@ special_tokens(self::RegexTokenizer) = self.tokenizer.special_tokens
 vocab(self::RegexTokenizer) = self.tokenizer.vocab
 inverse_special_tokens(self::RegexTokenizer) = self.inverse_special_tokens
 
-function train(self::RegexTokenizer, text::String, vocab_size::Int, verbose=false)::Nothing
+function train!(self::RegexTokenizer, text::String, vocab_size::Int, verbose=false)::Nothing
   @assert vocab_size > N
   num_merges = vocab_size - N
 
@@ -66,7 +66,7 @@ end
    special_tokens is a dictionary of str -> int
    example: {"<|endoftext|>" => 100257}
 """
-function register_special_tokens(self::RegexTokenizer, special_tokens::Dict{String, INT})
+function register_special_tokens!(self::RegexTokenizer, special_tokens::Dict{String, INT})
   self.tokenizer.special_tokens = special_tokens
   self.inverse_special_tokens = Dict{INT, String}(v => k for (k, v) ∈ special_tokens)
 end
@@ -137,23 +137,43 @@ function encode(self::RegexTokenizer, text::String; allowed_special="none_raise"
   end
 
   isempty(special) && (return _encode(self, text))  # fallback to "standard" encode
-
-  special_pattern = "(" * join(map(re_escape, keys(special)), "|") * ")"  # Concatenate the keys of `special` into a regex pattern
-  special_chunks = split(
-    text,
-    Regex(special_pattern),
-    keep=true
-  )  # Split `text` based on the occurrence of any exact match with any of the special tokens
+  special_chunks = split(text, special)
 
   # Now all the special tokens are separated from the rest of the text.
   # All chunks of text are encoded separately, then results are joined.
-  ids = Vector{UInt8}()  # Vector{Integer}()  # Int[]
+  ids = Vector{Integer}()
   for part ∈ special_chunks
     if haskey(special, part)
       push!(ids, special[part])  # special token => encode separately as a special case.
     else
-      append!(ids, encode(self, part))  # ordinary sequence => encode normally.
+      append!(ids, encode(self, part |> String))  # ordinary sequence => encode normally.
     end
   end
   ids
+end
+
+function split(text::String, special::Dict{String, Integer})::Vector{String}
+  special_pattern = "(" * join(map(re_escape, collect(keys(special))), "|") * ")"  # Concatenate the keys of `special` into a regex pattern
+  regex = Regex(special_pattern)
+  special_chunks = String[]
+  last_end = 1
+  for m ∈ eachmatch(regex, text)
+    start_pos, end_pos = m.offset, m.offset + length(m.match) - 1
+    # Append text preceding the current match
+    if start_pos > last_end
+      push!(special_chunks, text[last_end:start_pos-1])
+    end
+    # Append the match itself
+    push!(special_chunks, m.match)
+    last_end = end_pos + 1
+  end
+
+  # Append any remaining text after the last match
+  last_end ≤ length(text) && (push!(special_chunks, text[last_end:end]))
+  special_chunks
+end
+
+function re_escape(str::String)::String
+  # Implement re.escape equivalent if necessary, for Julia 1.5 and later, this is typically not needed as Regex does it.
+  escape_string(str, "\\.+*?()|[]{}^\$") # This line is a simplified placeholder.
 end
