@@ -12,7 +12,7 @@ include("base.jl")
 const BasicTokenizer = Tokenizer
 const N = 256
 
-function train(self::BasicTokenizer, text::String, vocab_size::Int, verbose=false)::Nothing
+function train!(self::BasicTokenizer, text::String, vocab_size::Int, verbose=false)::Nothing
   @assert vocab_size > N
   num_merges = vocab_size - N
 

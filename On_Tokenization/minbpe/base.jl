@@ -114,7 +114,7 @@ end
 """
 Tokenizer can train a vocabulary of size vocab_size from text
 """
-train(::AbstractTokenizer, _text::String, _vocab_size::Int, _verbose=false) = throw(ArgumentError("Not implemented"))
+train!(::AbstractTokenizer, _text::String, _vocab_size::Int, _verbose=false) = throw(ArgumentError("Not implemented"))
 
 """
 Tokenizer can encode a string into a list of integers
@@ -140,7 +140,7 @@ function save(self::AbstractTokenizer, file_prefix::String)::Nothing
     write(f, "$(pattern(self))\n")
     # write the special tokens, first the number of them, then each one
     @printf(f, "%d\n", special_tokens(self) |> length)
-    for (special, idx) ∈ special_token(self)
+    for (special, idx) ∈ special_tokens(self)
       write(f, "$special $idx\n")
     end
     # the merges dict
