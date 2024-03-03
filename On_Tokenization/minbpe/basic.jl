@@ -10,7 +10,6 @@
 include("base.jl")
 
 const BasicTokenizer = Tokenizer
-const N = 256
 
 function train!(self::BasicTokenizer, text::String, vocab_size::Int, verbose=false)::Nothing
   @assert vocab_size > N
@@ -27,8 +26,8 @@ function train!(self::BasicTokenizer, text::String, vocab_size::Int, verbose=fal
     idx = N + ix - 1            # new token value
     ids = merge(ids, pair, idx) # perform merge by replacing co-occ with the new token value for pair
 
-    _merges[pair] = idx
-    _vocab[idx] = UInt8[_vocab[pair[1]]..., _vocab[pair[2]]...]
+    _merges[pair .|> Int] = Int(idx)
+    _vocab[Int(idx)] = UInt8[_vocab[pair[1]]..., _vocab[pair[2]]...]
     verbose && println("merge $(ix)/$(num_merges): pair: $(pair) -> idx: $(idx) (vocab: $(_vocab[idx])) had stats: $(stats[pair]) occurrences")
   end
 
@@ -55,7 +54,7 @@ function encode(self::BasicTokenizer, text::String)::Vector{<: Integer}
     )[2]
     pair ∉ keys(merges(self)) && break
 
-    idx = self.merges[pair]  # merges(self)[pair]
+    idx = merges(self)[pair] # self.merges[pair]
     ids = merge(ids, pair, idx)
   end
   ids
