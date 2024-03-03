@@ -8,9 +8,10 @@
 # - RegexTokenizer handles optional special tokens.
 
 using Base.Iterators: partition
+import Base.split
+
 include("base.jl")
 
-const N = 256
 const GPT2_SPLIT_PATTERN = r"""'(?:[sdmt]|ll|ve|re)| ?\p{L}+| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+"""
 const GPT4_SPLIT_PATTERN = r"""'(?i:[sdmt]|ll|ve|re)|[^\r\n\p{L}\p{N}]?+\p{L}+|\p{N}{1,3}| ?[^\s\p{L}\p{N}]++[\r\n]*|\s*[\r\n]|\s+(?!\S)|\s+"""
 
@@ -30,6 +31,12 @@ pattern(self::RegexTokenizer) = self.tokenizer.pattern
 special_tokens(self::RegexTokenizer) = self.tokenizer.special_tokens
 vocab(self::RegexTokenizer) = self.tokenizer.vocab
 inverse_special_tokens(self::RegexTokenizer) = self.inverse_special_tokens
+
+set_merges!(self::RegexTokenizer, merges::Dict{TII, INT}) = self.tokenizer.merges = merges
+set_special_tokens!(self::RegexTokenizer, special_tokens::Dict{String, INT}) = self.tokenizer.special_tokens = special_tokens
+set_pattern!(self::RegexTokenizer, pattern::Regex) = self.tokenizer.pattern = pattern
+set_vocab!(self::RegexTokenizer) = self.tokenizer.vocab = _build_vocab(self.tokenizer.merges, self.tokenizer.special_tokens)
+
 
 function train!(self::RegexTokenizer, text::String, vocab_size::Int, verbose=false)::Nothing
   @assert vocab_size > N
@@ -52,8 +59,8 @@ function train!(self::RegexTokenizer, text::String, vocab_size::Int, verbose=fal
     # replace all occurrences of pair in ids with idx
     ids = [merge(chunk_ids, pair, idx) for chunk_ids ∈ ids]
     # save the merge
-    _merges[pair] = idx
-    _vocab[idx] = UInt8[_vocab[pair[1]]..., _vocab[pair[2]]...] # _vocab[idx] = _vocab[pair[1]] + _vocab[pair[2]]
+    _merges[pair .|> Int] = Int(idx)
+    _vocab[Int(idx)] = UInt8[_vocab[pair[1]]..., _vocab[pair[2]]...]
     verbose && println("merge $(ix)/$(num_merges): $(pair) -> $(idx) ($(_vocab[idx])) had $(stats[pair]) occurrences")
   end
 
@@ -85,11 +92,13 @@ function decode(self::RegexTokenizer, ids::Vector{<: Integer})::String
       throw(ArgumentError("invalid token id: $idx"))
     end
   end
+
   collect(part_bytes) |> String
 end
 
 function _encode_chunk(self::RegexTokenizer, text_bytes::Vector{UInt8})::Vector{<: Integer}
   ids = collect(text_bytes)
+
   while length(ids) ≥ 2
     stats = get_stats(ids)
     pair = findmin(
@@ -97,8 +106,9 @@ function _encode_chunk(self::RegexTokenizer, text_bytes::Vector{UInt8})::Vector{
     )[2]
     pair ∉ keys(merges(self)) && break
     idx = merges(self)[pair]
-    ids = merge(ids, pair, idx)
+    ids = merge(ids, pair, idx) .|> Int
   end
+
   ids
 end
 
@@ -107,12 +117,14 @@ end
 """
 function _encode(self::RegexTokenizer, text::String)::Vector{<: Integer}
   text_chunks = [m.match for m ∈ eachmatch(pattern(self), text)]
+
   ids = Vector{Integer}()
   for chunk ∈ text_chunks
     chunk_bytes = Vector{UInt8}(chunk) # Raw bytes
     chunk_ids = _encode_chunk(self, chunk_bytes)
-    append!(ids, chunk_ids) # `append!` to extend array with elements of another collection ∼ Python's `extend` method for list
+    append!(ids, chunk_ids .|> Int) # `append!` to extend array with elements of another collection ∼ Python's `extend` method for list
   end
+
   ids
 end
 
@@ -144,11 +156,12 @@ function encode(self::RegexTokenizer, text::String; allowed_special="none_raise"
   ids = Vector{Integer}()
   for part ∈ special_chunks
     if haskey(special, part)
-      push!(ids, special[part])  # special token => encode separately as a special case.
+      push!(ids, special[part] .|> Int)  # special token => encode separately as a special case.
     else
-      append!(ids, encode(self, part |> String))  # ordinary sequence => encode normally.
+      append!(ids, _encode(self, part |> String) .|> Int)  # ordinary sequence => encode normally.
     end
   end
+
   ids
 end
 

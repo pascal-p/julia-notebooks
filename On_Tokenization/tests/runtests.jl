@@ -10,7 +10,7 @@ const SPECIALS_STRING = """
 <|endoftext|>And this is another document
 <|endoftext|><|fim_prefix|>And this one has<|fim_suffix|> tokens.<|fim_middle|> FIM
 <|endoftext|>Last document!!! 👋<|endofprompt|>
-""" |> strip
+""" |> strip |> String
 
 const SPECIAL_TOKENS = Dict{String, INT}(
     "<|endoftext|>" => 100257,
@@ -25,7 +25,7 @@ const LLAMA_TEXT = """
 Llamas are social animals and live with others as a herd. Their wool is soft and contains only a small amount of lanolin.[2] Llamas can learn simple tasks after a few repetitions. When using a pack, they can carry about 25 to 30% of their body weight for 8 to 13 km (5–8 miles).[3] The name llama (in the past also spelled "lama" or "glama") was adopted by European settlers from native Peruvians.[4]
 The ancestors of llamas are thought to have originated from the Great Plains of North America about 40 million years ago, and subsequently migrated to South America about three million years ago during the Great American Interchange. By the end of the last ice age (10,000–12,000 years ago), camelids were extinct in North America.[3] As of 2007, there were over seven million llamas and alpacas in South America and over 158,000 llamas and 100,000 alpacas, descended from progenitors imported late in the 20th century, in the United States and Canada.[5]
 <|fim_prefix|>In Aymara mythology, llamas are important beings. The Heavenly Llama is said to drink water from the ocean and urinates as it rains.[6] According to Aymara eschatology,<|fim_suffix|> where they come from at the end of time.[6]<|fim_middle|> llamas will return to the water springs and ponds<|endofprompt|>
-""" |> strip
+""" |> strip |> String
 
 function unpack(text::String)
   if startswith(text, "FILE:")
@@ -50,10 +50,9 @@ end
 
   for tokenizer ∈ [RegexTokenizer(), Tokenizer()]
     for text ∈ [texts...]   # make copy
-      @test decode(tokenizer, encode(tokenizer, text)) == text
+      @test decode(tokenizer, encode(tokenizer, text)) ≡ text
     end
   end
-
 end
 
 #
@@ -80,10 +79,60 @@ end
   text = "aaabdaaabac"
 
   for tokenizer ∈ [Tokenizer(), RegexTokenizer()]
-    train(tokenizer, text, N + 3)
+    train!(tokenizer, text, N + 3)
     ids = encode(tokenizer, text)
 
     @test ids .|> Int == [258, 100, 258, 97, 99]
-    @test decode(tokenizer, encode(tokenizer, text)) == text
+    @test decode(tokenizer, encode(tokenizer, text)) ≡ text
+  end
+end
+
+@testset "test_save_load" begin
+  test_tokenizer_tmp = tempname()
+
+  try
+    N = 256
+    # take a bit more complex piece of text and train the tokenizer, chosen at random
+    text = LLAMA_TEXT
+
+    # create a Tokenizer and do 64 merges
+    tokenizer = RegexTokenizer()
+    train!(tokenizer, text, N + 64)
+    register_special_tokens!(tokenizer, SPECIAL_TOKENS)
+
+    ids = encode(tokenizer, text; allowed_special="all")
+    # println(" ==> ids: $(ids) | len ids: $(length(ids))")
+    # println(" ==> merges: $(merges(tokenizer))")
+    @test decode(tokenizer, ids) ≡ LLAMA_TEXT # text
+
+    ## verify that save/load work as expected
+    ## save the tokenizer (TODO use a proper temporary directory)
+    save(tokenizer, test_tokenizer_tmp)
+
+    ## re-load the tokenizer
+    _tokenizer = RegexTokenizer()
+    load!(_tokenizer, "$(test_tokenizer_tmp).model") # "test_tokenizer_tmp.model")
+
+    # println("- tokenizer.merges (mem ): $(merges(tokenizer))")
+    # println("- tokenizer.merges (load): $(merges(_tokenizer))")
+
+    # println("- 1.1 tokenizer.pattern (mem ): $(pattern(tokenizer)) | $(typeof(pattern(tokenizer)))")
+    # println("- 1.2 tokenizer.pattern (load): $(pattern(_tokenizer)) | $(typeof(pattern(tokenizer)))")
+
+    # println("- 2.1 tokenizer.special_tokens (mem ): $(special_tokens(tokenizer))")
+    # println("- 2.2 tokenizer.special_tokens (load): $(special_tokens(_tokenizer))")
+
+    # println("- 3.1 tokenizer.vocab (mem ): $(vocab(tokenizer)) | len: $(length(vocab(tokenizer)))\n")
+    # println("- 3.2 tokenizer.vocab (load): $(vocab(_tokenizer)) | len: $(length(vocab(_tokenizer)))\n")
+
+    _ids =  encode(_tokenizer, text; allowed_special="all")
+    # println(" ==> _ids: $(_ids) | len ids: $(length(_ids))")
+    @test decode(_tokenizer, _ids) ≡ LLAMA_TEXT # text
+
+    @test encode(_tokenizer, text; allowed_special="all") == _ids
+
+  finally
+    rm("$(test_tokenizer_tmp).model")
+    rm("$(test_tokenizer_tmp).vocab")
   end
 end
