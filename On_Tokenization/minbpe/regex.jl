@@ -7,7 +7,7 @@
 # - RegexTokenizer handles an optional regex splitting pattern.
 # - RegexTokenizer handles optional special tokens.
 
-using Base.Iterators: partition
+# using Base.Iterators: partition
 import Base.split
 
 include("base.jl")
@@ -36,7 +36,7 @@ set_merges!(self::RegexTokenizer, merges::Dict{TII, INT}) = self.tokenizer.merge
 set_special_tokens!(self::RegexTokenizer, special_tokens::Dict{String, INT}) = self.tokenizer.special_tokens = special_tokens
 set_pattern!(self::RegexTokenizer, pattern::Regex) = self.tokenizer.pattern = pattern
 set_vocab!(self::RegexTokenizer) = self.tokenizer.vocab = _build_vocab(self.tokenizer.merges, self.tokenizer.special_tokens)
-
+set_vocab!(self::RegexTokenizer, _vocab::Dict{Integer, Vector{UInt}}) = self.tokenizer.vocab = _vocab
 
 function train!(self::RegexTokenizer, text::String, vocab_size::Int, verbose=false)::Nothing
   @assert vocab_size > N

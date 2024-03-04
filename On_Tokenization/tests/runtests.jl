@@ -1,9 +1,7 @@
 using Test
 
-include("../minbpe/basic.jl")
 include("../minbpe/regex.jl")
-
-const INT = Integer
+include("../minbpe/basic.jl")
 
 const SPECIALS_STRING = """
 <|endoftext|>Hello world this is one document
@@ -91,7 +89,7 @@ end
   test_tokenizer_tmp = tempname()
 
   try
-    N = 256
+    # N = 256 - defined in `base.jl`
     # take a bit more complex piece of text and train the tokenizer, chosen at random
     text = LLAMA_TEXT
 

@@ -54,7 +54,7 @@ function encode(self::BasicTokenizer, text::String)::Vector{<: Integer}
     )[2]
     pair ∉ keys(merges(self)) && break
 
-    idx = merges(self)[pair] # self.merges[pair]
+    idx = merges(self)[pair]
     ids = merge(ids, pair, idx)
   end
   ids
