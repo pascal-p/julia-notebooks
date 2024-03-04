@@ -4,9 +4,8 @@
 using Unicode
 using Printf
 
-const TII = Tuple{Integer, Integer}
 const INT = Integer
-
+TII = Tuple{<: Integer, <: Integer}      # ERROR: LoadError: invalid redefinition of constant Main.TII
 const INT_INF = Base.typemax(Int64)      # ∞ for Integer
 const INT_NEG_INF = Base.typemax(Int64)  # -∞ for Integer
 const N = 256
@@ -37,7 +36,7 @@ end
   of pair with the new integer token idx
   Example: ids=[1, 2, 3, 1, 2], pair=(1, 2), idx=4 -> Integer[4, 3, 4]
 """
-function merge(ids::Vector{<: Integer}, pair::Tuple{<: Integer, <: Integer}, idx::Integer)
+function merge(ids::Vector{<: Integer}, pair::TII, idx::Integer)
   newids = Vector{Integer}()  # == Integer[]
   ix = 1
   while ix ≤ length(ids)
@@ -131,7 +130,7 @@ abstract type AbstractTokenizer end
 
 mutable struct Tokenizer <: AbstractTokenizer
   merges::Dict{TII, INT}
-  pattern::Regex # Union{String, Regex}
+  pattern::Regex
   special_tokens::Dict{String, INT}
   vocab::Dict{INT, Vector{UInt8}}
 
