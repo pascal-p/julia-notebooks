@@ -51,7 +51,7 @@ include("regex.jl")
 #   [0x28, 0x73, 0x74, 0x75, 0x64, 0x65, 0x6e, 0x74]                                     => 40104
 #   ⋮                                                                                     => ⋮
 
-function bpe(mergeable_ranks, token, max_rank)  # ::Tuple
+function bpe(mergeable_ranks, token, max_rank)::Vector{Vector{UInt}}
   parts = [UInt[b] for b in token] # Convert token into an array of UInt
   while true
     min_idx, min_rank = nothing, nothing
@@ -72,8 +72,7 @@ function bpe(mergeable_ranks, token, max_rank)  # ::Tuple
     parts =  vcat(parts[1:min_idx-1], [vcat(parts[min_idx], parts[min_idx + 1])], parts[min_idx+2:end])
   end
 
-  # Convert parts back to strings if necessary, then wrap into a Tuple
-  parts  # String.(parts) # |> Tuple
+  parts  # String.(parts)
 end
 
 function recover_merges(mergeable_ranks::Dict{Vector{UInt8}, Int})::Dict{Tuple{<: Integer, <: Integer}, Integer}
@@ -139,3 +138,7 @@ mutable struct GPT4Tokenizer <: AbstractTokenizer
     new(tokenizer, byte_shuffle, inverse_byte_shuffle)
   end
 end
+
+# Example:
+# julia> tokenizer = GPT4Tokenizer()
+# GPT4Tokenizer(RegexTokenizer(Tokenizer(Dict{Tuple{Integer, Integer}, Integer}((0x0000000000000158, 0x0000000000000116) => 4023, (0x00000000000065dd, 0x0000000000000251) => 79071, (0x000000000000026f, 0x0000000000001ace) => 45121, (0x000000000000012c, 0x00000000000004e2) => 5948, (0x0000000000000398, 0x00000000000001cc) => 3417, (0x000000000000029a, 0x0000000000000105) => 23258, (0x000000000000850f, 0x000000000000083e) => 72104, (0x000000000000406e, 0x00000000000098d7) => 92091, (0x0000000000000134, 0x000000000000015b) => 16387, (0x0000000000000056, 0x00000000000030bf) => 26372…), r"'(?i:[sdmt]|ll|ve|re)|[^\r\n\p{L}\p{N}]?+\p{L}+|\p{N}{1,3}| ?[^\s\p{L}\p{N}]++[\r\n]*|\s*[\r\n]|\s+(?!\S)|\s+", Dict{String, Integer}("<|fim_suffix|>" => 100260, "<|fim_prefix|>" => 100258, "<|endofprompt|>" => 100276, "<|endoftext|>" => 100257, "<|fim_middle|>" => 100259), Dict{Integer, Vector{UInt8}}(92533 => [0x8c, 0x7a, 0x8c, 0x76, 0x8d, 0xe1, 0x8c, 0x78, 0x8c, 0x71, 0x8c, 0x79, 0x8d, 0xe0], 76914 => [0xdc, 0x52, 0x48, 0x4d, 0x54, 0x52], 45120 => [0xdc, 0x24, 0x31, 0x20], 1703 => [0xdc, 0x19, 0x1c], 37100 => [0xdc, 0x51, 0x44, 0x42, 0x51, 0x44, 0x40, 0x53, 0x48, 0x4e, 0x4d, 0x40, 0x4b], 90240 => [0x3e, 0x34, 0x2d, 0x32, 0x34, 0x2f, 0x2f, 0x2e, 0x31, 0x33, 0x24, 0x23], 60540 => [0xc5, 0x44, 0x57, 0x4f, 0x4e, 0x51, 0x53], 91393 => [0x48, 0x52, 0x48, 0x45, 0x58], 59930 => [0x3e, 0x28, 0x2f, 0x35], 3406 => [0x07, 0x49]…)), Dict{Integer, String}(100258 => "<|fim_prefix|>", 100257 => "<|endoftext|>", 100276 => "<|endofprompt|>", 100259 => "<|fim_middle|>", 100260 => "<|fim_suffix|>")), Dict{UInt8, Int64}(0x38 => 23, 0x23 => 2, 0x6e => 77, 0x3c => 27, 0xdc => 152, 0x1e => 218, 0x06 => 194, 0x43 => 34, 0xea => 166, 0xd7 => 147…), Dict{Int64, UInt8}(56 => 0x59, 35 => 0x44, 110 => 0xb2, 60 => 0x5d, 220 => 0x20, 30 => 0x3f, 6 => 0x27, 67 => 0x64, 234 => 0x8c, 215 => 0x1b…))
