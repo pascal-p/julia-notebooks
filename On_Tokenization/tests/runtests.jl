@@ -12,9 +12,11 @@ using JSON
 using PythonCall
 const TIKTOKEN = pyimport("tiktoken")
 
-include("../minbpe/gpt4.jl")
-include("../minbpe/regex.jl")
-include("../minbpe/basic.jl")
+push!(LOAD_PATH, "./minbpe")
+using MinBPE  # include("../minbpe/MinBPE.jl")
+using MinBPE: INT, N, BytePairEncoding
+using MinBPE: Tokenizer, BasicTokenizer, RegexTokenizer, GPT4Tokenizer
+using MinBPE: encode, decode, train!, save, load!, register_special_tokens!
 
 const SPECIALS_STRING = """
 <|endoftext|>Hello world this is one document
@@ -117,7 +119,6 @@ end
 #
 # So we expect the output list of ids to be [258, 100, 258, 97, 99]
 @testset "test_wikipedia_example" begin
-  N = 256
   text = "aaabdaaabac"
 
   for tokenizer ∈ [Tokenizer(), RegexTokenizer()]
@@ -133,7 +134,6 @@ end
   test_tokenizer_tmp = tempname()
 
   try
-    # N = 256 - defined in `base.jl`
     # take a bit more complex piece of text and train the tokenizer, chosen at random
     text = LLAMA_TEXT
 
@@ -143,17 +143,14 @@ end
     register_special_tokens!(tokenizer, SPECIAL_TOKENS)
 
     ids = encode(tokenizer, text; allowed_special="all")
-    # println(" ==> ids: $(ids) | len ids: $(length(ids))")
-    # println(" ==> merges: $(merges(tokenizer))")
     @test decode(tokenizer, ids) ≡ LLAMA_TEXT # text
 
     ## verify that save/load work as expected
-    ## save the tokenizer (TODO use a proper temporary directory)
     save(tokenizer, test_tokenizer_tmp)
 
     ## re-load the tokenizer
     _tokenizer = RegexTokenizer()
-    load!(_tokenizer, "$(test_tokenizer_tmp).model") # "test_tokenizer_tmp.model")
+    load!(_tokenizer, "$(test_tokenizer_tmp).model")
 
     # println("- tokenizer.merges (mem ): $(merges(tokenizer))")
     # println("- tokenizer.merges (load): $(merges(_tokenizer))")
