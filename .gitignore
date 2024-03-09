@@ -11,3 +11,6 @@
 [A-Z]*/
 
 MLJ_Workshop/{img,orig_jl,meta,data}
+
+# PythonCall / CondaPkg
+.CondaPkg/
