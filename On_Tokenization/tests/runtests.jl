@@ -1,6 +1,17 @@
 using Test
 using JSON
 
+# Assume PythonCall, CondaPkg are installed
+# also:
+# julia> using CondaPkg
+#
+# julia> # press ] to enter the Pkg REPL
+#
+# pkg> conda add tiktoken
+#
+using PythonCall
+const TIKTOKEN = pyimport("tiktoken")
+
 include("../minbpe/gpt4.jl")
 include("../minbpe/regex.jl")
 include("../minbpe/basic.jl")
@@ -45,7 +56,6 @@ const TIKTOKEN_IDS = [
 function unpack(text::Union{String, Vector{Int}})
   if isa(text, String) && startswith(text, "FILE:")
     dirname_ = dirname(abspath(@__FILE__))
-    println("Found dirname: $(dirname_)")
     _file = joinpath(dirname_, text[6:end])
     # assume .txt or .json!
     return endswith(_file, ".txt") ? read(_file, String) :
@@ -76,6 +86,16 @@ end
     gpt4_tokenizer_ids = encode(tokenizer, text)
     @test gpt4_tokenizer_ids == tiktoken_ids
   end
+end
+
+@testset "test_gpt4_tiktoken_equality_special_tokens" begin
+  tokenizer = GPT4Tokenizer()
+  py_enc = TIKTOKEN.get_encoding("cl100k_base")
+
+  tiktoken_ids = py_enc.encode(SPECIALS_STRING, allowed_special="all") |>
+    py_v -> pyconvert(Vector{Integer}, py_v)
+  gpt4_tokenizer_ids = encode(tokenizer, SPECIALS_STRING, allowed_special="all")
+  @test gpt4_tokenizer_ids == tiktoken_ids
 end
 
 #
