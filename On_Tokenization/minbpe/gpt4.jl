@@ -121,8 +121,8 @@ mutable struct GPT4Tokenizer <: AbstractTokenizer
     _merges = recover_merges(mergeable_ranks)  # the merges are those of gpt4, but we have to recover them
     set_merges!(tokenizer, _merges)
     _vocab = Dict{Integer, Vector{UInt}}(idx => UInt[idx] for idx ∈ 0:N-1)
-    for ((p₀, p₁), idx) ∈ sort(merges(tokenizer) |> collect, by=pair -> pair[2], rev=false)
-      _vocab[Int(idx)] = UInt[_vocab[p₀]..., _vocab[p₁]...]
+    for ((p₀, p₁), ix) ∈ sort(merges(tokenizer) |> collect, by=pair -> pair[2], rev=false)
+      _vocab[Int(ix)] = UInt[_vocab[p₀]..., _vocab[p₁]...]
     end
     set_vocab!(tokenizer, _vocab)
 
@@ -138,6 +138,93 @@ mutable struct GPT4Tokenizer <: AbstractTokenizer
     new(tokenizer, byte_shuffle, inverse_byte_shuffle)
   end
 end
+
+merges(self::GPT4Tokenizer) = merges(self.tokenizer)
+pattern(self::GPT4Tokenizer) = pattern(self.tokenizer)
+special_tokens(self::GPT4Tokenizer) = special_tokens(self.tokenizer)
+vocab(self::GPT4Tokenizer) = vocab(self.tokenizer)
+byte_shuffle(self::GPT4Tokenizer) = self.byte_shuffle
+inverse_byte_shuffle(self::GPT4Tokenizer) = self.inverse_byte_shuffle
+
+
+function _encode_chunk(self::GPT4Tokenizer, text_bytes::Vector{UInt8})::Vector{<: Integer}
+  permuted_bytes = [text_bytes[byte_shuffle(self)[b] + 1] for b ∈ text_bytes]
+  _encode_chunk(self.tokenizer, permuted_bytes)
+end
+
+encode(self::GPT4Tokenizer, text::String; allowed_special="none_raise")::Vector{<: Integer} = encode(self.tokenizer, text; allowed_special)
+# or = encode(self.tokenizer, text; allowed_special=allowed_special)
+
+function decode(self::GPT4Tokenizer, ids::Vector{<: Integer})::String
+  text_bytes = Vector{UInt8}()  # Array to hold byte arrays
+
+  for idx ∈ ids
+    append!(text_bytes, vocab(self)[idx])
+  end
+
+  # Adjust this if `inverse_byte_shuffle` expects 0-based indexing.
+  shuffled_bytes = [text_bytes[inverse_byte_shuffle(self)[b] + 1] for b ∈ 1:length(text_bytes)]
+
+  copy(shuffled_bytes) |> String # collect(shuffled_bytes) |> String
+end
+
+"""
+  train() disabled
+   this is a pretrained tokenizer, it is not intended to be trained
+"""
+train!(::RegexTokenizer, ::String, ::Int, verbose=false) = throw(ArgumentError("Not implemented because not a pretrained tokenizer"))
+
+# save/load would require some thoughts (thus disabled ...)
+#  - change save/load of base to add support for byte_shuffle...
+#  - alternatively, we could move byte_shuffle to base type, but that would mean some uglyness
+#    just to support the GPT-4 tokenizer and its weird historical quirks around byte_shuffle.
+save(::GPT4Tokenizer, ::String) = throw(ArgumentError("Not implemented"))
+load!(::GPT4Tokenizer, ::String) = throw(ArgumentError("Not implemented"))
+
+function save_vocab(self::GPT4Tokenizer, vocab_file::String)
+  _vocab = Dict{INT, Vector{UInt8}}()
+
+  # Build vocab considering the byte shuffle
+  for ix ∈ 0:255
+    _vocab[ix + 1] = [inverse_byte_shuffle(self)[ix + 1]]
+  end
+
+  for ((p₀, p₁), ix) in self.merges
+    _vocab[Int(ix)] = UInt8[_vocab[p₀]..., _vocab[p₁]...]
+  end
+
+  # Prepare the inverted merges for traceability
+  inverted_merges = Dict(value => key for (key, value) ∈ merges(self))
+
+  # Open the vocab file for writing (enc"UTF-8")
+  open(vocab_file, "w") do f
+    for (idx, token) ∈ sort(collect(vocab))  # Sort by index to maintain order
+      # Handle UTF-8 safely
+      s = ""
+      try
+        s = render_token(token)
+
+      catch ex
+        if isa(ex, Base.InvalidCharError)
+          # Replace invalid UTF-8 character representations if needed.
+          s = "�"
+        else
+          rethrow(ex)
+        end
+      end
+
+      if haskey(inverted_merges, idx)
+        idx₀, idx₁ = inverted_merges[idx]
+        s₀ = render_token(vocab(self)[idx₀])
+        s₁ = render_token(vocab(self)[idx₁])
+        write(f, "[$s₀][$s₁] -> [$s] $idx\n")  # @printf(f, "[%s][%s] -> [%s] %d\n", s0, s1, s, idx)
+      else
+        write(f, "[$s] $idx\n")  # @printf(f, "[%s] %d\n", s, idx)
+      end
+    end
+  end
+end
+
 
 # Example:
 # julia> tokenizer = GPT4Tokenizer()
