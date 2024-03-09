@@ -1,5 +1,7 @@
 using Test
+using JSON
 
+include("../minbpe/gpt4.jl")
 include("../minbpe/regex.jl")
 include("../minbpe/basic.jl")
 
@@ -25,26 +27,35 @@ The ancestors of llamas are thought to have originated from the Great Plains of 
 <|fim_prefix|>In Aymara mythology, llamas are important beings. The Heavenly Llama is said to drink water from the ocean and urinates as it rains.[6] According to Aymara eschatology,<|fim_suffix|> where they come from at the end of time.[6]<|fim_middle|> llamas will return to the water springs and ponds<|endofprompt|>
 """ |> strip |> String
 
-function unpack(text::String)
-  if startswith(text, "FILE:")
+const TEST_STRINGS = [
+  "",                                    # empty string
+  "?",                                   # single character
+  "hello world!!!? (こにちは) lol123 😉", # fun small string
+  "FILE:grigori_perelman.txt",           # FILE: is handled as a special string in unpack()
+]
+
+const TIKTOKEN_IDS = [
+  # mappings from TEST_STRINGS
+  Int[],
+  Int[30],
+  Int[15339, 1917, 12340, 30, 320, 22957, 20230, 86614, 8, 28509, 4513, 57037],
+  "FILE:grigori_perelman-tokens.json",
+]
+
+function unpack(text::Union{String, Vector{Int}})
+  if isa(text, String) && startswith(text, "FILE:")
     dirname_ = dirname(abspath(@__FILE__))
     println("Found dirname: $(dirname_)")
-    g_perelman_file = joinpath(dirname_, text[6:end])
-    contents = read(g_perelman_file, String)
-    return contents
+    _file = joinpath(dirname_, text[6:end])
+    # assume .txt or .json!
+    return endswith(_file, ".txt") ? read(_file, String) :
+      endswith(_file, ".json") ? JSON.parsefile(_file) : throw(ArgumentError("fiel extension should be .txt or .json"))
   end
   text
 end
 
 @testset "encode/decode" begin
-  test_strings = [
-    "",                                    # empty string
-    "?",                                   # single character
-    "hello world!!!? (こにちは) lol123 😉", # fun small string
-    "FILE:grigori_perelman.txt",           # FILE: is handled as a special string in unpack()
-  ]
-
-  texts = test_strings .|> unpack
+  texts = TEST_STRINGS .|> unpack
 
   for tokenizer ∈ [RegexTokenizer(), Tokenizer()]
     for text ∈ [texts...]   # make copy
@@ -53,8 +64,22 @@ end
   end
 end
 
+@testset "test gpt4 tiktoken equality" begin
+  texts = TEST_STRINGS .|> unpack
+  tokens =  TIKTOKEN_IDS .|> unpack
+
+  tokenizer = GPT4Tokenizer()
+  enc = BytePairEncoding.load_tiktoken("cl100k_base")
+
+  for (text, tiktoken_ids) ∈ zip([texts...], tokens)
+    # tiktoken_ids = enc(text)...
+    gpt4_tokenizer_ids = encode(tokenizer, text)
+    @test gpt4_tokenizer_ids == tiktoken_ids
+  end
+end
+
 #
-#   Quick unit test, following along the Wikipedia example:
+# Quick unit test, following along the Wikipedia example:
 # https://en.wikipedia.org/wiki/Byte_pair_encoding
 #
 # According to Wikipedia, running bpe on the input string:
