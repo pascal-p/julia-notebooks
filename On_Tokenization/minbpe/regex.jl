@@ -15,6 +15,8 @@ include("base.jl")
 const GPT2_SPLIT_PATTERN = r"""'(?:[sdmt]|ll|ve|re)| ?\p{L}+| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+"""
 const GPT4_SPLIT_PATTERN = r"""'(?i:[sdmt]|ll|ve|re)|[^\r\n\p{L}\p{N}]?+\p{L}+|\p{N}{1,3}| ?[^\s\p{L}\p{N}]++[\r\n]*|\s*[\r\n]|\s+(?!\S)|\s+"""
 
+abstract type AbstractTokenizer <: AbstractBaseTokenizer end
+
 mutable struct RegexTokenizer <: AbstractTokenizer
   tokenizer::Tokenizer
   inverse_special_tokens::Dict{INT, String}
@@ -73,12 +75,12 @@ end
    special_tokens is a dictionary of str -> int
    example: {"<|endoftext|>" => 100257}
 """
-function register_special_tokens!(self::RegexTokenizer, special_tokens::Dict{String, INT})
+function register_special_tokens!(self::AbstractTokenizer, special_tokens::Dict{String, INT})
   self.tokenizer.special_tokens = special_tokens
   self.inverse_special_tokens = Dict{INT, String}(v => k for (k, v) ∈ special_tokens)
 end
 
-function decode(self::RegexTokenizer, ids::Vector{<: Integer})::String
+function decode(self::AbstractTokenizer, ids::Vector{<: Integer})::String
   part_bytes = Vector{UInt8}()  # Array to hold byte arrays
   for idx ∈ ids
     if haskey(vocab(self), idx)
@@ -115,7 +117,7 @@ end
 """
    Encoding that ignores any special tokens.
 """
-function _encode(self::RegexTokenizer, text::String)::Vector{<: Integer}
+function _encode(self::AbstractTokenizer, text::String)::Vector{<: Integer}
   text_chunks = [m.match for m ∈ eachmatch(pattern(self), text)]
 
   ids = Vector{Integer}()
@@ -134,7 +136,7 @@ end
     if none_raise, then an error is raised if any special token is encountered in text
     this is the default tiktoken behavior right now...
 """
-function encode(self::RegexTokenizer, text::String; allowed_special="none_raise")::Vector{<: Integer}
+function encode(self::AbstractTokenizer, text::String; allowed_special="none_raise")::Vector{<: Integer}
   special = if allowed_special == "all"
     special_tokens(self)
   elseif allowed_special == "none"

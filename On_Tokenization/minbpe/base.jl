@@ -126,9 +126,9 @@ function render_token(t::Vector{UInt8})::String
     s_ -> replace_control_characters(s_)
 end
 
-abstract type AbstractTokenizer end
+abstract type AbstractBaseTokenizer end
 
-mutable struct Tokenizer <: AbstractTokenizer
+mutable struct Tokenizer <: AbstractBaseTokenizer
   merges::Dict{TII, INT}
   pattern::Regex
   special_tokens::Dict{String, INT}
@@ -150,14 +150,12 @@ set_special_tokens!(self::Tokenizer, special_tokens::Dict{String, INT}) = self.s
 set_pattern!(self::Tokenizer, pattern::Regex) = self.pattern = ppatern
 set_vocab!(self::Tokenizer) = self.vocab = _build_vocab(self.merges, self.special_tokens)
 
-
 function _build_vocab(merges::Dict{TII, INT}, special_tokens::Dict{String, INT})::Dict{INT, Vector{UInt8}}
   vocab = Dict{INT, Vector{UInt8}}(idx => UInt8[idx] for idx ∈ 0:255)
 
   # And now we extend the dictionary, but we need to do in order from 256..278
   for ((p₀, p₁), idx) ∈ sort(merges |> collect, by=pair -> pair[2], rev=false)
-    # vocab[UInt8(idx)] = UInt8[vocab[p₀]..., vocab[p₁]...]
-    vocab[Int(idx)] = UInt8[vocab[p₀]..., vocab[p₁]...]
+    vocab[Int(idx)] = UInt8[vocab[p₀]..., vocab[p₁]...]  # vocab[UInt8(idx)] = UInt8[vocab[p₀]..., vocab[p₁]...]
   end
 
   # + Special tokens
@@ -171,17 +169,17 @@ end
 """
 Tokenizer can train a vocabulary of size vocab_size from text
 """
-train!(::AbstractTokenizer, _text::String, _vocab_size::Int, _verbose=false) = throw(ArgumentError("Not implemented"))
+train!(::AbstractBaseTokenizer, _text::String, _vocab_size::Int, _verbose=false) = throw(ArgumentError("Not implemented"))
 
 """
 Tokenizer can encode a string into a list of integers
 """
-encode(::AbstractTokenizer, _text::String)::Vector{<: Integer} = throw(ArgumentError("Not implemented"))
+encode(::AbstractBaseTokenizer, _text::String)::Vector{<: Integer} = throw(ArgumentError("Not implemented"))
 
 """
 Tokenizer can decode a list of integers into a string
 """
-decode(::AbstractTokenizer, _ids::Vector{UInt8})::String = throw(ArgumentError("Not implemented"))
+decode(::AbstractBaseTokenizer, _ids::Vector{UInt8})::String = throw(ArgumentError("Not implemented"))
 
 """
   Saves two files: file_prefix.vocab and file_prefix.model
@@ -189,7 +187,7 @@ decode(::AbstractTokenizer, _ids::Vector{UInt8})::String = throw(ArgumentError("
   - `model` file is the critical one, intended for load()
   - `vocab` file is just a pretty printed version for human inspection only
 """
-function save(self::AbstractTokenizer, file_prefix::String)
+function save(self::AbstractBaseTokenizer, file_prefix::String)
   model_file = file_prefix * ".model"
   open(model_file, "w") do f
     write(f, "minbpe v1\n")
@@ -240,7 +238,7 @@ end
 """
   Inverse of save() but only for the model file
 """
-function load!(self::AbstractTokenizer, model_file::String)::Nothing
+function load!(self::AbstractBaseTokenizer, model_file::String)::Nothing
   @assert endswith(model_file, ".model")
   _merges = Dict{TII, INT}()
   _special_tokens = Dict{String, INT}()
