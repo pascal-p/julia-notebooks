@@ -148,12 +148,12 @@ inverse_byte_shuffle(self::GPT4Tokenizer) = self.inverse_byte_shuffle
 
 
 function _encode_chunk(self::GPT4Tokenizer, text_bytes::Vector{UInt8})::Vector{<: Integer}
-  permuted_bytes = [text_bytes[byte_shuffle(self)[b] + 1] for b ∈ text_bytes]
+  permuted_bytes = Vector{UInt8}()
+  for b ∈ text_bytes
+    append!(permuted_bytes, UInt8[byte_shuffle(self)[b]])
+  end
   _encode_chunk(self.tokenizer, permuted_bytes)
 end
-
-encode(self::GPT4Tokenizer, text::String; allowed_special="none_raise")::Vector{<: Integer} = encode(self.tokenizer, text; allowed_special)
-# or = encode(self.tokenizer, text; allowed_special=allowed_special)
 
 function decode(self::GPT4Tokenizer, ids::Vector{<: Integer})::String
   text_bytes = Vector{UInt8}()  # Array to hold byte arrays
