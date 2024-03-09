@@ -76,13 +76,12 @@ end
 
 @testset "test gpt4 tiktoken equality" begin
   texts = TEST_STRINGS .|> unpack
-  tokens =  TIKTOKEN_IDS .|> unpack
+  tokens =  TIKTOKEN_IDS .|> unpack  # see next testset for using encode from python tiktoken
 
   tokenizer = GPT4Tokenizer()
   enc = BytePairEncoding.load_tiktoken("cl100k_base")
 
   for (text, tiktoken_ids) ∈ zip([texts...], tokens)
-    # tiktoken_ids = enc(text)...
     gpt4_tokenizer_ids = encode(tokenizer, text)
     @test gpt4_tokenizer_ids == tiktoken_ids
   end

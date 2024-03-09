@@ -172,12 +172,16 @@ function split(text::String, special::Dict{String, Integer})::Vector{String}
   regex = Regex(special_pattern)
   special_chunks = String[]
   last_end = 1
+
   for m ∈ eachmatch(regex, text)
     start_pos, end_pos = m.offset, m.offset + length(m.match) - 1
+
     # Append text preceding the current match
     if start_pos > last_end
-      push!(special_chunks, text[last_end:start_pos-1])
+      safe_start = prevind(text, start_pos) # instead start_pos - 1 => StringIndexError: invalid index`
+      push!(special_chunks, text[last_end:safe_start])
     end
+
     # Append the match itself
     push!(special_chunks, m.match)
     last_end = end_pos + 1
