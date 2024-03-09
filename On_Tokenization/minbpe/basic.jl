@@ -7,7 +7,7 @@
 # - Does not handle the regular expression splitting pattern.
 # - Does not handle any special tokens.
 
-include("base.jl")
+# include("base.jl")
 
 const BasicTokenizer = Tokenizer
 

@@ -6,7 +6,7 @@
 
 using BytePairEncoding
 
-include("regex.jl")
+# include("regex.jl")
 
 # julia> enc = BytePairEncoding.load_tiktoken("cl100k_base")
 #   Downloaded artifact: cl100k_base
@@ -172,7 +172,7 @@ end
   train() disabled
    this is a pretrained tokenizer, it is not intended to be trained
 """
-train!(::RegexTokenizer, ::String, ::Int, verbose=false) = throw(ArgumentError("Not implemented because not a pretrained tokenizer"))
+train!(::GPT4Tokenizer, ::String, ::Int, verbose=false) = throw(ArgumentError("Not implemented because not a pretrained tokenizer"))
 
 # save/load would require some thoughts (thus disabled ...)
 #  - change save/load of base to add support for byte_shuffle...
