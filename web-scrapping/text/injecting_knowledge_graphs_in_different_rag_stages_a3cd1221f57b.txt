@@ -1,0 +1,46 @@
+- Title: Injecting Knowledge Graphs in different RAG stages
+- Author and date: Chia Jeng Yang
+·
+Follow
+Published in
+Enterprise RAG
+·
+10 min read
+·
+Jan 5, 2024
+- Link: https://medium.com/enterprise-rag/injecting-knowledge-graphs-in-different-rag-stages-a3cd1221f57b
+Main:
+In this article, I wanted to cover precisely where knowledge graphs (KG) can be applied within a RAG pipeline.
+We will explore different types of problems that arise in a RAG pipeline and how they can be solved by applying knowledge graphs at different stages throughout the pipeline. We will discuss a practical example of a RAG pipeline that is enhanced across its different stages with knowledge graphs, with exactly how the answer and queries are improved at each stage. Another key takeaway I hope to convey is that the deployment of graph technology is more akin to a structured data store being used to strategically inject human reasoning in RAG systems, as opposed to simply a general store of structured data to be queried against for all purposes.
+For background on complex RAG and multi-hop data retrieval, check out this
+non-technical intro
+and a
+more technical deep-dive
+.
+Let’s cover terminology for the different steps in the KG-enabled RAG process, using the stages illustrated in the image above:
+We will first demonstrate what techniques at different stages should be used for, with a practical example at the end of the article.
+Further reading:
+Let us deconstruct this with an example from the medical field. In this
+article
+, Wisecube proposes the following question: “What is the latest research in Alzheimer’s disease treatment?” Revamping the RAG system to leverage the aforementioned strategies could then employ the following steps below. To be explicit, we do not believe every RAG system necessarily needs all or even any of the steps below. We think these are techniques that can be employed for specific use-cases that we believe are relatively common in complex RAG use-cases, and potentially some simple ones.
+Here, I’ve mapped the same initial stages from the initial image at the top of the article into this image here, so the numbered stages in the RAG process are aligned, with a couple of additional stages. We then incorporate all the techniques discussed (Chunk Augmentation, Chunk Extraction Rules, Recursive Knowledge Graph Queries, Response Augmentation, Response Control, Chunk Access Controls) — Stages 1 to 6 accordingly.
+An advantage of using a knowledge graph over a vector database for query augmentation is that a knowledge graph can enforce consistent retrieval for certain key topics and concepts where the relationships are known. At
+WhyHow.AI
+, we’re simplifying knowledge graph creation and management within RAG pipelines.
+If everyone building a complex RAG system will need some sort of knowledge graph, the market for knowledge graphs could grow exponentially, the number of small ontologies created and needed grows exponentially. If true, the market dynamic of ontology buyers and sellers become far more fragmented, and ontology markets become interesting.
+Although we framed personalization as the control of the flow of information between the user and the vector database, personalization can also be understood as the encapsulation of traits that identify a user.
+Knowledge graphs as Digital Twins can reflect the storage of a much broader collection of user traits that can be used for a range of personalization efforts. To the extent that a knowledge graph is an external data store (i.e. external to an LLM model), it is far more easily extractable in a coherent form (i.e. the knowledge graph data can be plugged, played and removed in a more modular fashion). Additional personal context could in theory be extracted and maintained as a personal digital twin/data store. If modular digital twins that allow users to port personal preferences between models will exist in the future, it is likely that knowledge graphs will represent the best means for such inter-model personalization between systems and models.
+WhyHow.AI is focused on helping developers easily create and incorporate knowledge graphs into their existing RAG pipelines. If you’re a developer early in thinking about, in the process of, or have already incorporated knowledge graphs in RAG, we’d love to chat at
+team@whyhow.ai
+.
+ Links:
+ - ("https://rsci.app.link/?%24canonical_url=https%3A%2F%2Fmedium.com%2Fp%2Fa3cd1221f57b&%7Efeature=LoOpenInAppButton&%7Echannel=ShowPostUnderCollection&source=---two_column_layout_nav----------------------------------", "Open in app")
+ - ("https://medium.com/enterprise-rag?source=post_page-----a3cd1221f57b--------------------------------", "")
+ - ("https://medium.com/enterprise-rag?source=post_page-----a3cd1221f57b--------------------------------", "Enterprise RAG")
+ - ("https://docs.llamaindex.ai/en/stable/examples/query_engine/multi_doc_auto_retrieval/multi_doc_auto_retrieval.html", "https://docs.llamaindex.ai/en/stable/examples/query_engine/multi_doc_auto_retrieval/multi_doc_auto_retrieval.html")
+ - ("https://www.llamaindex.ai/", "Llamaindex")
+ - ("https://www.linkedin.com/pulse/multi-hop-question-answering-llms-knowledge-graphs-wisecube/", "article")
+ - ("https://medium.com/enterprise-rag?source=post_page-----a3cd1221f57b--------------------------------", "")
+ - ("https://medium.com/enterprise-rag?source=post_page-----a3cd1221f57b--------------------------------", "Enterprise RAG")
+ - ("https://medium.statuspage.io/?source=post_page-----a3cd1221f57b--------------------------------", "Status")
+ - ("https://speechify.com/medium?source=post_page-----a3cd1221f57b--------------------------------", "Text to speech")
