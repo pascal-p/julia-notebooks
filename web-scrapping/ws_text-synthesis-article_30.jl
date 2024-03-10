@@ -111,9 +111,12 @@ md = extract_content(rroot; selectors=[".bm"], verbose=false)  # other metadata
 # ╔═╡ 67fd72dc-5540-440d-a8f3-8324914553b8
 text = extract_content(
 	rroot; 
+	
 	# "p.pw-post-body-paragraph", "div.ch.bg.fw.fx.fy.fz", "pre.ba.bj"
-	selectors=["p.pw-post-body-paragraph",],  # "pre.ba.bj": for code snipet or "pre", did not work with (table extraction): "table.highlight" 
-	detect_code=true,
+	selectors=["div.ch.bg"], # ["p.pw-post-body-paragraph", "h2.ov.ow", "li.na.nb.gt"],  
+	# "pre.ba.bj": for code snipet or "pre", did not work with (table extraction): "table.highlight"
+	
+	detect_code=false,
 	verbose=false
 )
 

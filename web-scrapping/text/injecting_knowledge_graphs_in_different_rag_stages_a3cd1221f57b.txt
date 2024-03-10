@@ -10,6 +10,20 @@ Enterprise RAG
 Jan 5, 2024
 - Link: https://medium.com/enterprise-rag/injecting-knowledge-graphs-in-different-rag-stages-a3cd1221f57b
 Main:
+Injecting Knowledge Graphs in different RAG stages
+Chia Jeng Yang
+·
+Follow
+Published in
+Enterprise RAG
+·
+10 min read
+·
+Jan 5, 2024
+--
+2
+Listen
+Share
 In this article, I wanted to cover precisely where knowledge graphs (KG) can be applied within a RAG pipeline.
 We will explore different types of problems that arise in a RAG pipeline and how they can be solved by applying knowledge graphs at different stages throughout the pipeline. We will discuss a practical example of a RAG pipeline that is enhanced across its different stages with knowledge graphs, with exactly how the answer and queries are improved at each stage. Another key takeaway I hope to convey is that the deployment of graph technology is more akin to a structured data store being used to strategically inject human reasoning in RAG systems, as opposed to simply a general store of structured data to be queried against for all purposes.
 For background on complex RAG and multi-hop data retrieval, check out this
@@ -18,21 +32,131 @@ and a
 more technical deep-dive
 .
 Let’s cover terminology for the different steps in the KG-enabled RAG process, using the stages illustrated in the image above:
+Stage 1: Pre-processing: This refers to the processing of a query before it is used to help with chunk extraction from the vector database
+Stage 2/D: Chunk Extraction: This refers to the retrieval of the most related chunk(s) of information from the database
+Stage 3- 5: Post-Processing: This refers to processes you perform to prepare the information retrieved to generate the answer
 We will first demonstrate what techniques at different stages should be used for, with a practical example at the end of the article.
+Pre-processing
+1. Query Augmentation: Addition of context to a query before it performs a retrieval from the vector database
+Why: This strategy is used to augment queries with missing context and to fix bad queries. This can also be used to inject a company’s world view of how they define or view certain common or niche terms.
+There are many instances where a company may have their own world view of particular terms. For example, a travel-tech company may want to make sure that GPT-4’s out of the box LLM is able to understand that ‘beachfront’ homes and ‘near the beach’ homes represent very different types of properties and cannot be used interchangeably. Injecting this context during the pre-processing stage helps ensure this distinction within a RAG pipeline can provide an accurate response.
+Historically, a common application of knowledge graphs in enterprise search systems have been in helping to build out acronym dictionaries such that acronyms within the question posed, or within documents / data stores can be effectively recognized by the search engine.
+This can be used for multi-hop reasoning as we articulated
+in this previous article here
+.
+When: Stage 1
 Further reading:
+https://www.seobythesea.com/2019/08/augmented-search-queries/
+Chunk Extraction
+2. Document hierarchies: Creation of document hierarchies and rules for navigating chunks within a vector database
+Why: This is used for quickly identifying relevant chunks within a document hierarchy and enables you to use natural language to create rules that dictate which documents/chunks a query must reference before generating a response.
+The first knowledge graph can be a hierarchy of document descriptions referencing chunks stored within the vector database.
+The second knowledge graph can be for rules to navigate the document hierarchy. For example, consider a RAG system for a venture fund. You could write a natural language rule that is deterministically applied to the query planning agent ‘To answer a question about investor obligations, first check what the investor invested into in the investor portfolio list, and then check the legal documents for said portfolio’.
+When: Stage 2
+Further reading:
+https://docs.llamaindex.ai/en/stable/examples/query_engine/multi_doc_auto_retrieval/multi_doc_auto_retrieval.html
+https://medium.com/enterprise-rag/a-first-intro-to-complex-rag-retrieval-augmented-generation-a8624d70090f
+2. Contextual Dictionaries: Creation of conceptual structure and rules for navigating chunks within a vector database
+Why: Contextual dictionaries are useful for understanding which document chunks contain important topics. This is analogous to an index at the back of a book.
+A contextual dictionary is essentially a knowledge graph of metadata.
+This dictionary could be used to maintain rules for navigating chunks. You can include a natural language rule, ‘Any question related to the concept of happiness, you must perform an exhaustive search of all related chunks, as defined by the contextual dictionary.’ that is translated into Cypher queries by an LLM agent within the Query Planning Agent to augment the chunks to be extracted. The establishment of such a rule can also ensure consistent extraction of chunks.
+How is this different from a simple metadata search? Besides improving speed, if the documents are simple, it would not be. However, there may be instances where you want to ensure that specific chunks of information are tagged as related to a concept, even if the concept may not be mentioned or implied in the chunk. This might occur when discussing orthogonal information (i.e. information that disputes or is at odds with a particular concept). Contextual dictionaries make it easy to establish clear associations to non-obvious chunks of information.
+When: Stage 2
+Further reading:
+https://medium.com/data-science-at-microsoft/creating-a-metadata-graph-structure-for-in-memory-optimization-2902e1b9b254
+Post-processing
+3. Recursive Knowledge Graph Queries
+Why: This is used to combine information extracted and store a cohesive conjoined answer. LLM query the graph for the answer. This is functionally similar to a Tree of Thought or a Chain of Thought process where external information is stored in a knowledge graph to help determine the next step of investigation.
+You basically run the chunk extraction again and again, retrieve extracted information, and store in a knowledge graph to enforce connections to reveal relationships. Once relationships are established and the information is saved in the KG, run the query again with the full context extracted from the KG. If insufficient context, save the extracted answer in the same KG again to enforce more connections and rinse/repeat.
+This is also especially useful if data is continuously flowing into your system and you want to make sure that answers are updated over time with new context.
+When: Stage 3
+Further reading:
+https://neo4j.com/developer-blog/knowledge-graphs-llms-multi-hop-question-answering/
+4. Answer Augmentation: Addition of context based on initially generated query from vector database
+Why: This is used to add additional information that must exist in any answer referring to a specific concept that failed to be retrieved or did not exist in the vector database. This is especially useful for including disclaimers or caveats in answers based on certain concepts mentioned or triggered.
+An interesting avenue of speculation could also include using answer augmentation as a way for consumer-facing RAG systems to include personalized advertisements within the answers, when certain answers mention certain products.
+When: Stage 4
+5. Answer Rules: Elimination and repetition of results based on rules set in KG
+Why: This is used to enforce consistent rules about answers that can be generated. This has implications for trust and safety where you may want to eliminate known wrong or dangerous answers. Demo:
+https://youtu.be/Ukz_wgLBNqw
+Llamaindex
+has an interesting example of using a knowledge graph of Wikipedia to double-check an LLM’s answer for ground truth:
+https://medium.com/@haiyangli_38602/make-meaningful-knowledge-graph-from-opensource-rebel-model-6f9729a55527
+. This is an interesting example because although Wikipedia does not serve as a source of ground truth for an internal RAG system, you can use an objective industry or commonsense knowledge graph to protect against LLM hallucinations.
+When: Stage 5
+6. Chunk Access Controls:
+Why: Knowledge graphs can enforce rules regarding which chunks a user can retrieve based on their permissions.
+For example, let’s say a healthcare company is building a RAG system that contains access to sensitive clinical trial data. They only want privileged employees to be able to retrieve sensitive data from a vector store. By storing these access rules as attributes on knowledge graph data, they can tell their RAG system to only retrieve privileged chunks if the user is permitted to do so.
+When: Stage 6 (see below)
+1 / 4 / 6. Chunk Personalization:
+Why: Knowledge graphs can be used to personalize each response to users.
+For example, consider an enterprise RAG system where you want to customize responses for each employee, team, or department in each office. When generating an answer, a RAG system could consult a KG to understand which chunks contain the most relevant information based on the user’s role and location.
+You would want to both include context, and what that context implies for each answer.
+You would want to then include that context as a prompt or answer augmentation.
+This strategy could build upon Chunk Access Control. Once the RAG system has determined the most relevant data for that particular user, it could also ensure that the user indeed has permission to access that data.
+When: This feature can be included in Stage 1, 4 or 6.
+A practical example combining all the use-cases discussed
 Let us deconstruct this with an example from the medical field. In this
 article
 , Wisecube proposes the following question: “What is the latest research in Alzheimer’s disease treatment?” Revamping the RAG system to leverage the aforementioned strategies could then employ the following steps below. To be explicit, we do not believe every RAG system necessarily needs all or even any of the steps below. We think these are techniques that can be employed for specific use-cases that we believe are relatively common in complex RAG use-cases, and potentially some simple ones.
 Here, I’ve mapped the same initial stages from the initial image at the top of the article into this image here, so the numbered stages in the RAG process are aligned, with a couple of additional stages. We then incorporate all the techniques discussed (Chunk Augmentation, Chunk Extraction Rules, Recursive Knowledge Graph Queries, Response Augmentation, Response Control, Chunk Access Controls) — Stages 1 to 6 accordingly.
+1. Query Augmentation:
+For the question — “What is the latest research in Alzheimer’s disease treatment?”, with access to a knowledge graph, an LLM agent can consistently retrieve structured data about the latest Alzheimer’s treatments, such as “cholinesterase inhibitors” and “memantine.”
+The RAG system would then augment the question to be more specific: “What is the latest research on cholinesterase inhibitors and memantine in Alzheimer’s disease treatment?”
+2. Document Hierarchies and Vector Database retrieval:
+Using a document hierarchy, identify which documents and chunks are the most relevant to “cholinesterase inhibitors” and “memantine” and return the relevant answer.
+Relevant chunk extraction rules that exist about “cholinesterase inhibitors” help guide the query engine to extract the most useful chunks. The document hierarchy helps the query engine quickly identify the document related to side effects and it begins extracting chunks within the document.
+The contextual dictionary helps the query engine quickly identify chunks related to “cholinesterase inhibitors’’ and begins extracting relevant chunks on this topic. An established rule about “cholinesterase inhibitors” states that queries about side effects on cholinesterase inhibitors should also examine chunks related to enzyme X. This is because enzyme X is a well-known side-effect that cannot be missed, and the relevant chunks are included accordingly.
+3. Recursive Knowledge Graph Queries:
+Using recursive knowledge graph queries, an initial query returns a side-effect to “memantime” called the “XYZ effect”.
+The “XYZ effect” is stored as context within a separate knowledge graph for recursive context.
+The LLM is asked to examine the newly augmented query with the additional context of the XYZ effect. Gauging the answer against past formatted answers, it determines that more information about the XYZ effect is needed to constitute a satisfactory answer. It then performs a deeper search within the XYZ effect node within the knowledge graph, thus performing a multi-hop query.
+Within the XYZ effect node, it discovers information about Clinical Trial A and Clinical Trial B that it could include in the answers.
+6. Chunk Control Access
+Although Clinical Trial A & B both contain helpful context, a metadata tag associated with the Clinical Trial B node notes that access to this node is restricted from the User. As such, a standing Control Access rule prevents the Clinical Trial B node from being included in the response to the User.
+Only information about Clinical Trial A is returned to the LLM to help formulate its returned answer.
+4. Augmented Response:
+As a post-processing step, you may also elect to enhance the post-processing output with a healthcare-industry-specific knowledge graph. For example, you could include a default health warning specific to memantine treatments or any additional information associated with Clinical Trial A is included.
+4. Chunk Personalization:
+With the additional context that the User is a junior employee in the R&D department stored, and that information about Clinical Trial B was restricted from the User, the answer is augmented with a note saying that they were barred from access Clinical Trial B information, and told to refer to a senior manager for more information.
 An advantage of using a knowledge graph over a vector database for query augmentation is that a knowledge graph can enforce consistent retrieval for certain key topics and concepts where the relationships are known. At
 WhyHow.AI
 , we’re simplifying knowledge graph creation and management within RAG pipelines.
+Interesting Ideas:
+Monetization of company/industry ontology
 If everyone building a complex RAG system will need some sort of knowledge graph, the market for knowledge graphs could grow exponentially, the number of small ontologies created and needed grows exponentially. If true, the market dynamic of ontology buyers and sellers become far more fragmented, and ontology markets become interesting.
+Personalization: Digital Twins
 Although we framed personalization as the control of the flow of information between the user and the vector database, personalization can also be understood as the encapsulation of traits that identify a user.
 Knowledge graphs as Digital Twins can reflect the storage of a much broader collection of user traits that can be used for a range of personalization efforts. To the extent that a knowledge graph is an external data store (i.e. external to an LLM model), it is far more easily extractable in a coherent form (i.e. the knowledge graph data can be plugged, played and removed in a more modular fashion). Additional personal context could in theory be extracted and maintained as a personal digital twin/data store. If modular digital twins that allow users to port personal preferences between models will exist in the future, it is likely that knowledge graphs will represent the best means for such inter-model personalization between systems and models.
+Listen
 WhyHow.AI is focused on helping developers easily create and incorporate knowledge graphs into their existing RAG pipelines. If you’re a developer early in thinking about, in the process of, or have already incorporated knowledge graphs in RAG, we’d love to chat at
 team@whyhow.ai
 .
+Retrieval Augmented
+Llm
+Knowledge Graph
+--
+--
+2
+Follow
+Written by
+Chia Jeng Yang
+2.5K Followers
+·
+Editor for
+Enterprise RAG
+Co-Founder of
+WhyHow.AI
+Follow
+Help
+Status
+About
+Careers
+Blog
+Privacy
+Terms
+Text to speech
+Teams
  Links:
  - ("https://rsci.app.link/?%24canonical_url=https%3A%2F%2Fmedium.com%2Fp%2Fa3cd1221f57b&%7Efeature=LoOpenInAppButton&%7Echannel=ShowPostUnderCollection&source=---two_column_layout_nav----------------------------------", "Open in app")
  - ("https://medium.com/enterprise-rag?source=post_page-----a3cd1221f57b--------------------------------", "")
