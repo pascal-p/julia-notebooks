@@ -42,7 +42,7 @@ const TOPIC = "Advanced RAG, Recursive and Iterative Retrieval"
 
 # ╔═╡ 2f4ae40f-a1ab-470b-a1b7-a04fec353b0e
 const INSTRUCT_PROMPT = """Generate a comprehensive and detailed synthesis of the following excerpt (delimited by triple backticks) about $(TOPIC).
-Please ignore the web links for the reference as they will be handled differently later. Extract all code snipets once and indent them with 2 space characters. Here is the excerpt:""";
+Please ignore and abstain from any comment about the web links for the reference as they will be handled differently later. Extract all code snipets once, if avaialable, and indent them with 2 space characters. Here is the excerpt:""";
 
 # ╔═╡ ba4e4c0f-2835-4a76-a9d4-7d7ba02becb2
 println(INSTRUCT_PROMPT)
@@ -90,8 +90,20 @@ First we need to locate the node of interest...
 # ╔═╡ 78389e7c-e6a5-4bd2-9274-d1a2c68a4920
 rroot = parsed_doc.root[2].children[1].children[1];
 
+# ╔═╡ f496d90f-b390-442e-b809-86e4c19f34e6
+rroot |> propertynames, tag(rroot.parent)
+
 # ╔═╡ 8fdfb225-1475-483e-a81a-5a450b5b0dbd
-traverse_article_structure(rroot)
+traverse_article_structure(rroot; selector="p.pw-post-body-paragraph")
+
+# ╔═╡ 67fd72dc-5540-440d-a8f3-8324914553b8
+text = extract_content(
+	rroot;
+	selectors=["div.ch.bg.fy.fz.ga.gb"],  # selectors=["p.pw-post-body-paragraph"],
+	detect_code=false,
+	verbose=false,
+	only_tags=[:p, :h1, :h2, :h3, :li, :ul, :ol, :span]
+)
 
 # ╔═╡ f1dd1b92-b841-414b-8cca-d3bcdda675dd
 md"""
@@ -103,19 +115,20 @@ md"""
 """
 
 # ╔═╡ 8fe89775-2853-49e4-885a-f3bdb1e792db
-md_title = extract_content(rroot; selectors=[".pw-post-title"], verbose=false)  # Title
+md_title = extract_content(
+	rroot;
+	selectors=[".pw-post-title"],
+	verbose=false,
+	only_tags=[:h1]
+)  # Title
 
 # ╔═╡ 72d4f892-2bd2-43af-b71e-5252a666ce0c
-md = extract_content(rroot; selectors=[".bm"], verbose=false)  # other metadata
-
-# ╔═╡ 67fd72dc-5540-440d-a8f3-8324914553b8
-text = extract_content(
+md = extract_content(
 	rroot; 
-	# "p.pw-post-body-paragraph", "div.ch.bg.fw.fx.fy.fz", "pre.ba.bj"
-	selectors=["div.ch.bg"],  # "pre.ba.bj": for code snipet or "pre", did not work with (table extraction): "table.highlight" 
-	detect_code=true,
-	verbose=false
-)
+	selectors=[".hu.hv"],
+	verbose=false,
+	only_tags=[:div, :p, :a, :span]
+)  # other metadata
 
 # ╔═╡ ed56ba67-5e5a-43e9-9a5f-8e63597725f7
 links = extract_links(
@@ -147,12 +160,12 @@ md"""
 	 INSTRUCT_PROMPT,
 	 full_text;
 	 max_tokens=4096,
-	 model="gpt-4-1106-preview",
-	 temperature=0.1,
+	 model="gpt-4-turbo-preview",
+	 temperature=0.2,
 	 seed=117,
 )
 
-# took 168744 milliseconds
+# # took 168744 milliseconds
 
 # ╔═╡ 9b661918-23b6-46fb-9af1-53454d750d5f
 synthesis_links = string(
@@ -622,11 +635,12 @@ version = "17.4.0+2"
 # ╠═2402d947-3e04-4495-9e92-1f59b171dcc8
 # ╟─dc32f9b1-b270-40a5-9067-4dad5bed40fa
 # ╠═78389e7c-e6a5-4bd2-9274-d1a2c68a4920
+# ╠═f496d90f-b390-442e-b809-86e4c19f34e6
 # ╠═8fdfb225-1475-483e-a81a-5a450b5b0dbd
+# ╠═67fd72dc-5540-440d-a8f3-8324914553b8
 # ╟─f1dd1b92-b841-414b-8cca-d3bcdda675dd
 # ╠═8fe89775-2853-49e4-885a-f3bdb1e792db
 # ╠═72d4f892-2bd2-43af-b71e-5252a666ce0c
-# ╠═67fd72dc-5540-440d-a8f3-8324914553b8
 # ╠═ed56ba67-5e5a-43e9-9a5f-8e63597725f7
 # ╠═0110956d-424d-4c7c-87ef-eda4a2cfc291
 # ╠═0df8719c-a91d-4449-8dac-337a832eb065

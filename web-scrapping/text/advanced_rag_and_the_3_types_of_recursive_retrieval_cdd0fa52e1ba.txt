@@ -8,22 +8,9 @@ Enterprise RAG
 7 min read
 ·
 Jan 31, 2024
+--
 - Link: https://medium.com/enterprise-rag/advanced-rag-and-the-3-types-of-recursive-retrieval-cdd0fa52e1ba
 Main:
-Advanced RAG and the 3 types of Recursive Retrieval
-Chia Jeng Yang
-·
-Follow
-Published in
-Enterprise RAG
-·
-7 min read
-·
-Jan 31, 2024
---
-2
-Listen
-Share
 In this article, we dive into the different ways to use Recursive or Iterative Retrieval to help develop self-learning RAG systems that are able to learn over time, and to deeply explore unstructured data, either autonomously, or in directions that you point the knowledge graph to.
 “In recursive retrieval, a query is applied across smaller chunks of the corpus, intermediate results are recursively fed into the next steps, and aggregation happens to combine the outputs.” — Anthony Alcaraz, CAIO @ Fribl
 In other words, you have an LLM agent that continuously scans for relevant sentences and paragraphs, retrieves them, then combines them and examines the answer. If there are any references to other concepts, or pages, or information that hints at the final answer, it retrieves information related to these second order concepts or information.
@@ -33,15 +20,9 @@ Secondly, we can use it to perform multi-hop retrieval across multiple documents
 Thirdly, we can now confidently tie increased unstructured data input to a tangible increase in LLM accuracy.
 In a multi-hop retrieval context, the seed node, and the relationships it needs to track are generated automatically by the LLM in response to a query, and this is essentially the way that an LLM can use a knowledge graph as a tool to tackle multi-hop queries. We are extremely excited about the opportunity for knowledge graphs to be created iteratively and ‘just-in-time’ to a specific question to act as a second brain within a RAG pipeline.
 Expanding more broadly into how recursive retrieval can be done, we examine multiple different approaches to recursive retrieval that can be implemented. Here, there are three ways to think about it. Recursive retrieval can be classified into:
-Page-Based Recursive Retrieval
-Information-Centric Recursive Retrieval
-Concept-Centric Recursive Retrieval
 In
-Page-Based Recursive Retrieval
 , we are looking for the next pages to perform subsequent retrieval on. In
-Information-Centric Recursive Retrieval
 , we are looking for the supporting concepts to perform subsequent retrieval on. In
-Concept-Centric Recursive Retrieval
 , we are simply looking to recursively add information to a single core concept.
 Page-Based Recursive Retrieval
 As the LLM is retrieving information and putting it into a knowledge graph, the LLM is instructed to track and dive deeper into the subsequent pages that are referenced. This is especially useful for highly technical manuals in manufacturing industries.
@@ -49,11 +30,9 @@ For example, if Page 1 cites a reference to Page 10 and 20, the agents will expl
 For documents with clear structured references to other pages or exhibits, such as manuals or manufacturing documents, we can create RAG systems that are able to navigate a corpus of documents in seconds. If each page of the document only refers to one single topic, and not multiple topics, we can even save the relationships between pages into a document hierarchy that can be cached and referenced over time.
 One limitation of this approach is if references to other page numbers are not present or not consistent. Consider a legal example — a document discussing liabilities that Client X is facing may acknowledge the presence of other liabilities discussed in other documents without referencing the document name or alternative pages. In this case, we would need a knowledge graph to be able to iteratively group concepts together across unstructured data.
 An example of this recursive retrieval of pages approach was created by Hirishi of Greywing. In this
-demo
 , Hrishi uses reference pages cited in each document as nodes for points of future navigation. One unique feature of Hrishi’s domain is that since the questions pertain to a physical ship, measuring the accuracy of answers at each intermediate step is far easier since we can more easily measure progress to the right answer. This is because the relevant information for the ship is bound in the manual, and there is no outside context required.
 Information-Centric Recursive Retrieval
 In this
-Harry Potter demo
 we made, we perform a retrieval of information process. We fix the seed node/concept, which is a main character, that acts as the basis for exploration. We then allow the LLM to discover the key relationships to track between the character and other concepts/entities, based on what we are looking to understand. This affects the relationships that are tracked. If there are specific relationships we are looking to understand, we can manually amend the relationships ourselves.
 Armed with an opinion of the relationships we are looking to focus on, as well as the seed node to center our exploration around, the LLM then looks through each chapter and populates the knowledge graph accordingly. With each chapter that is added, the iterative knowledge graph expands accordingly. The knowledge graph becomes directionally smarter over time, in the area of focus that has been defined, as more and more information is processed by the LLM.
 Let’s consider another legal use-case If we want to focus on the liabilities that Client X may be facing, we set the seed node to be ‘Client X’. Then, as chunks are retrieved and run against Client X, the knowledge graph of liabilities relevant to Client X expands over time until the search is complete.
@@ -70,47 +49,15 @@ This can be tackled in a few ways. Firstly, good prompting and multi-agent const
 Understanding when the right answer is reached. In a search process, it can be unclear when sufficient information has been adequately retrieved, and if the existing formulated answer is 50% or 100% complete. It may be the case that a discovery of a n+4 node brings up information that contradicts the findings so far. An analogy to this would be how we as humans have the opportunity to perform Google Searches, but inevitably stop at Page 2 or 3 of Google Searches and call it a day.
 This can be tackled with the aforementioned prompt engineering, or by using an LLM to help evaluate the answer.
 This can also be tackled with a bit of pre-processing work. All relevant concepts can be mapped beforehand in a contextual dictionary,
-which we wrote about here
 . As a refresher, a contextual dictionary is a map that highlights which concepts can be found in which chunks. It is essentially the RAG equivalent of an old-fashioned index. Once all the relevant chunks within a concept have been queried, we can assume that the retrieval process is complete.
-Old-Fashioned Index
 WhyHow.AI is focused on helping developers easily create and incorporate knowledge graphs into their existing RAG pipelines. If you’re a developer early in thinking about, in the process of, or have already incorporated knowledge graphs in RAG, we’d love to chat at
-team@whyhow.ai
 .
 Related Articles:
-https://pub.aimind.so/rag-optimization-retrieval-as-a-multi-step-process-optimizing-knowledge-graph-and-vector-d249fc82b497
-https://ai.plainenglish.io/crafting-knowledgeable-ai-with-retrieval-augmentation-a-guide-to-best-practices-33c84626be1e
-Listen
-Retrieval Augmented
-Llm
-AI
-Mlops
---
---
-2
-Follow
-Written by
-Chia Jeng Yang
-2.5K Followers
-·
-Editor for
-Enterprise RAG
-Co-Founder of
-WhyHow.AI
-Follow
-Help
-Status
-About
-Careers
-Blog
-Privacy
-Terms
-Text to speech
-Teams
  Links:
  - ("https://rsci.app.link/?%24canonical_url=https%3A%2F%2Fmedium.com%2Fp%2Fcdd0fa52e1ba&%7Efeature=LoOpenInAppButton&%7Echannel=ShowPostUnderCollection&source=---two_column_layout_nav----------------------------------", "Open in app")
  - ("https://medium.com/enterprise-rag?source=post_page-----cdd0fa52e1ba--------------------------------", "")
- - ("https://medium.com/enterprise-rag?source=post_page-----cdd0fa52e1ba--------------------------------", "Enterprise RAG")
  - ("https://medium.com/enterprise-rag?source=post_page-----cdd0fa52e1ba--------------------------------", "")
- - ("https://medium.com/enterprise-rag?source=post_page-----cdd0fa52e1ba--------------------------------", "Enterprise RAG")
- - ("https://medium.statuspage.io/?source=post_page-----cdd0fa52e1ba--------------------------------", "Status")
- - ("https://speechify.com/medium?source=post_page-----cdd0fa52e1ba--------------------------------", "Text to speech")
+ - ("https://medium.com/enterprise-rag?source=post_page-----cdd0fa52e1ba--------------------------------", "")
+ - ("https://medium.com/enterprise-rag?source=post_page-----cdd0fa52e1ba--------------------------------", "")
+ - ("https://medium.statuspage.io/?source=post_page-----cdd0fa52e1ba--------------------------------", "")
+ - ("https://speechify.com/medium?source=post_page-----cdd0fa52e1ba--------------------------------", "")
