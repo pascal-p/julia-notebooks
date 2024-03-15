@@ -8,7 +8,6 @@ Enterprise RAG
 7 min read
 ·
 Jan 31, 2024
---
 - Link: https://medium.com/enterprise-rag/advanced-rag-and-the-3-types-of-recursive-retrieval-cdd0fa52e1ba
 Main:
 In this article, we dive into the different ways to use Recursive or Iterative Retrieval to help develop self-learning RAG systems that are able to learn over time, and to deeply explore unstructured data, either autonomously, or in directions that you point the knowledge graph to.

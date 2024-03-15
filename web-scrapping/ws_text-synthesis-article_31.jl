@@ -125,9 +125,9 @@ md_title = extract_content(
 # ╔═╡ 72d4f892-2bd2-43af-b71e-5252a666ce0c
 md = extract_content(
 	rroot; 
-	selectors=[".hu.hv"],
+	selectors=[".hz.ia"],
 	verbose=false,
-	only_tags=[:div, :p, :a, :span]
+	only_tags=[:div, :p, :span, :a]
 )  # other metadata
 
 # ╔═╡ ed56ba67-5e5a-43e9-9a5f-8e63597725f7
