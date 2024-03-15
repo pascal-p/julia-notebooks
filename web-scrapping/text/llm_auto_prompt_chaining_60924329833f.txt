@@ -1,0 +1,249 @@
+- Title: LLM Auto-Prompt & Chaining
+- Author and date: Using DSPy with GPT 3.5 on Azure
+- Link: https://paul-bruffett.medium.com/llm-auto-prompt-chaining-60924329833f
+Main:
+First, some context on prompting libraries. There are several LLM library archetypes:
+These offer a very thin wrapper for prompt templating and generation with a minimal level of abstraction for string insertion and extraction. Example libraries: MiniChain
+High-level application development with LLMs. These offer batteries-included pre-built application modules to configure together and plug in data. These can considerably accelerate standard use cases and abstract much of the implementation or API specific details. Example libraries: LangChain, LlamaIndex
+Control the individual completions of LLMs; offering the ability to implement control flows when constructing prompts, enforcing specific schemas like JSON or constraining sampling to a regular expression. Example libraries: Guidance, LMQL, RELM, Outlines
+Much like traditional machine learning, inputs and targets are defined, along with a high-level set of operators or building blocks, and the specifics for each prompt and stage are optimized or generated. Example libraries: DSPy
+Prompt development and LLM chaining often requires extensive trial and error, both to develop the prompts and to compose them into discrete tasks.
+for developing higher level tasks that self-optimize and evaluate the tasks.
+DSPy on Kaggle Q&A
+In
+I’ll demonstrate core DSPy concepts using a
+for question and answering.
+First we’ll setup DSPy, including using a source for accessing Wikipedia abstracts, the first paragraph of a dump of articles, this does mean our knowledge agent won’t be as accurate as some information required won’t be available, but it’s a good prototype:
+turbo = dspy.OpenAI(api_key="",api_provider="azure",deployment_id="gpt35", api_version="2023-09-15-preview",
+api_base="",model_type='chat')
+colbertv2_wiki17_abstracts = dspy.ColBERTv2(url='http://20.102.90.50:2017/wiki17_abstracts')
+dspy.settings.configure(lm=turbo, rm=colbertv2_wiki17_abstracts)
+dspy.settings.configure(lm=turbo)
+Here I’m using GPT3.5-Turbo deployed on Azure, you’ll need to fill in the API key and URL for your instance.
+Next we load and do some pre-processing of the data, including dropping nulls and renaming fields:
+df1 = pd.read_csv('data/S08_question_answer_pairs.txt', sep='\t')
+df2 = pd.read_csv('data/S09_question_answer_pairs.txt', sep='\t')
+test = pd.read_csv('data/S10_question_answer_pairs.txt', sep='\t', encoding = 'ISO-8859-1')
+train = pd.concat([df1, df2], ignore_index=True)
+train = train.rename(columns={"Question": "question", "Answer": "answer"})
+test = test.rename(columns={"Question": "question", "Answer": "answer"})
+The dataset consists of several other attributes but we’re primarily interested in the question and answer, we could use the difficulty and article to evaluate our model in the future:
+Signatures
+One of the key concepts in DSPy is the Signature. This defines the input and output of the LLM, Signatures are defined in a way reminescent of building PyTorch networks. Our first Signature is simple, taking an input and providing an output:
+class BasicQA(dspy.Signature):
+"""Answer questions with short factoid answers."""
+question = dspy.InputField()
+answer = dspy.OutputField(desc="often between 1 and 5 words")
+BasicQA acts as the definition for our prompt structure and is then invoked using a Predictor:
+# Define the predictor.
+generate_answer = dspy.Predict(BasicQA)
+example = train_ds.train[0]
+# Call the predictor on a particular input.
+pred = generate_answer(question=example.question)
+# Print the input and the prediction.
+print(f"Question: {example.question}")
+print(f"Predicted Answer: {pred.answer}")
+Predictor invokes our LLM on a question which I’ve selected from the training set, by calling inspect_history on the LLM instance we configured earlier we can see the conversation:
+Here we can see the simple Signature inserted the text we included and built a simple prompt structure.
+We can wrap Signatures:
+# Define the predictor. Notice we're just changing the class. The signature BasicQA is unchanged.
+generate_answer_with_chain_of_thought = dspy.ChainOfThought(BasicQA)
+# Call the predictor on the same input.
+pred = generate_answer_with_chain_of_thought(question=example.question)
+# Print the input, the chain of thought, and the prediction.
+print(f"Question: {example.question}")
+print(f"Thought: {pred.rationale.split('.', 1)[1].strip()}")
+print(f"Predicted Answer: {pred.answer}")
+and here we see:
+The prompt is similar but we have the addition of a “Reasoning” step along with intermediate reasoning results. To date we’re still not actually using any retrieval, answers are being generated with the in-built knowledge of GPT3.5.
+Now let’s build a more sophisticated prompt structure.
+class GenerateAnswer(dspy.Signature):
+"""Answer questions with short factoid answers."""
+context = dspy.InputField(desc="may contain relevant facts")
+question = dspy.InputField()
+answer = dspy.OutputField(desc="often between 1 and 5 words")
+class RAG(dspy.Module):
+def __init__(self, num_passages=3):
+super().__init__()
+self.retrieve = dspy.Retrieve(k=num_passages)
+self.generate_answer = dspy.ChainOfThought(GenerateAnswer)
+
+def forward(self, question):
+context = self.retrieve(question).passages
+prediction = self.generate_answer(context=context, question=question)
+return dspy.Prediction(context=context, answer=prediction.answer)
+Using the same basic structure as the previous example, we’re adding the retrieved context in our first Signature, and now we’re defining a calling solution that looks similar to how we would define a network in PyTorch with the init setting up the structure and forward defining the invocation.
+Again, Prediction generates the results by calling our LLM.
+Now that we’ve built a slightly more sophisticated solution, we can also introduce the concept of Teleprompters.
+Teleprompters
+These create and validate examples for inclusion in the prompt which instruct the model, in our case it’s question and answer examples. There are a variety of teleprompters to evaluate examples but we’ll be using a fairly straightforward few shot solution:
+from dspy.teleprompt import BootstrapFewShot
+# Validation logic: check that the predicted answer is correct.
+# Also check that the retrieved context does actually contain that answer.
+def validate_context_and_answer(example, pred, trace=None):
+answer_EM = dspy.evaluate.answer_exact_match(example, pred)
+answer_PM = dspy.evaluate.answer_passage_match(example, pred)
+return answer_EM and answer_PM
+# Set up a basic teleprompter, which will compile our RAG program.
+teleprompter = BootstrapFewShot(metric=validate_context_and_answer)
+# Compile!
+compiled_rag = teleprompter.compile(RAG(), trainset=trainset[100:150])
+Here I’ve selected a smaller set of training data, we don’t require extensive data as it is not fine tuning the model but rather selecting examples for inclusion in the prompt.
+Now, when we inspect a prediction:
+Answer questions with short factoid answers.
+---
+Question: Why are otters vulnerable to prey depletion?
+Answer: prey-dependency
+Question: When was the pan flute spread to other parts of Europe?
+Answer: After the 7th century BC
+Question: From what type of Cymbals can a expert player obtain an enormous dynamic range?
+Answer: Crash cymbals
+Question: Did John Adams support the Stamp Act of 1765?
+Answer: No
+Question: What did Cleveland die from?
+Answer: A heart attack
+Question: When is the first record of S08_settlement in Singapore?
+Answer: The first records of S08_settlement in Singapore are from the second century AD.
+Question: Does the giant otter inhabit South Africa?
+Answer: No
+Question: What do we refer musicians who play flute?
+Answer: A flute player, a flautist or a flutist.
+Question: What resembles that of the similarly-sized cougar in the Americas?
+Answer: The leopard's ecological role
+Question: Was Millard Fillmore the thirteenth President of the United States?
+Answer: yes
+Question: From what did Pascal suffer throughout his life?
+Answer: poor health
+Question: Where was Grant born?
+Answer: Point Pleasant, Ohio
+Question: What areas can giraffes inhabit?
+Answer: savannas, grasslands, or open woodlands
+---
+Follow the following format.
+Context: may contain relevant facts
+Question: ${question}
+Reasoning: Let's think step by step in order to ${produce the answer}. We ...
+Answer: often between 1 and 5 words
+---
+Context:
+[1] «Volt | The volt (symbol: V) is the derived unit for electric potential, electric potential difference (voltage), and electromotive force. It is named after the Italian physicist Alessandro Volta (1745–1827).»
+[2] «Volt (disambiguation) | Volt (abbreviated V) is a unit of electric potential and electromotive force, named after Alessandro Volta.»
+[3] «Galvanic cell | A galvanic cell, or voltaic cell, named after Luigi Galvani, or Alessandro Volta respectively, is an electrochemical cell that derives electrical energy from spontaneous redox reactions taking place within the cell. It generally consists of two different metals connected by a salt bridge, or individual half-cells separated by a porous membrane.»
+Question: What important electrical unit was named in honor of Volta?
+Reasoning: Let's think step by step in order to produce the answer. We know that Alessandro Volta was an Italian physicist, and that there are multiple references to him in the context.
+Answer: The volt.
+---
+Context:
+[1] «Henri Becquerel | Antoine Henri Becquerel (15 December 1852 – 25 August 1908) was a French physicist, Nobel laureate, and the first person to discover evidence of radioactivity. For work in this field he, along with Marie Skłodowska-Curie and Pierre Curie, received the 1903 Nobel Prize in Physics. The SI unit for radioactivity, the becquerel (Bq), is named after him.»
+[2] «Louis Alfred Becquerel | Louis Alfred Becquerel (3 June 1814 – 10 March 1862) was a French physician and medical researcher.»
+[3] «Jean Becquerel | Jean Becquerel (5 February 1878 – 4 July 1953) was a French physicist, and son of Antoine-Henri Becquerel. He worked on the optical and magnetic properties of crystals, discovering the rotation of the plane of polarisation by a magnetic field. He also published a textbook on relativity. In 1909, he became the fourth in his family to occupy the physics chair at the Muséum National d'Histoire Naturelle, following in the footsteps of his father, his grandfather A. E. Becquerel and his great-grandfather Antoine César Becquerel.»
+Question: In what year did Henri Becquerel die?
+Reasoning: Let's think step by step in order to produce the answer. We know that Henri Becquerel was born on December 15, 1852 and that he died at some point after that. We also know that he received the Nobel Prize in Physics in 1903.
+Answer: 1908
+---
+Context:
+[1] «Bytown | Bytown is the former name of Ottawa, Ontario, Canada's capital city. It was founded on September 26, 1826, incorporated as a town on January 1, 1850, and superseded by the incorporation of the City of Ottawa on January 1, 1855. The founding was marked by a sod turning, and a letter from Governor General Dalhousie which authorized Lieutenant Colonel John By to divide up the town into lots. Bytown came about as a result of the construction of the Rideau Canal and grew largely due to the Ottawa River timber trade. Bytown's first mayor was John Scott, elected in 1847.»
+[2] «First City Hall (Ottawa) | The first city hall for the city of Ottawa, Ontario was built in 1849 on Elgin Street between Queen and Albert Streets.»
+[3] «Bytown and Prescott Railway | The Bytown and Prescott Railway (B&PR) was a railway joining Ottawa (then called Bytown) with Prescott on the Saint Lawrence River. The company was incorporated in 1850, and the first train ran from Prescott into Bytown on Christmas Day, 1854. The 84 km (52 mile) railway, Ottawa's first to outside markets, was initially used to ship lumber collected on the Ottawa River for further shipping along the St. Lawrence to markets in the United States and Montreal.»
+Question: What was Ottawa's name in 1850?
+Reasoning: Let's think step by step in order to produce the answer. We know that Ottawa was originally called Bytown and was incorporated as a town on January 1, 1850.
+Answer: Bytown
+---
+Context:
+[1] «Xirula | The xirula (] , spelled "chiroula" in French, also pronounced "txirula", "(t)xülüla" in Zuberoan Basque; Gascon: "flabuta"; French: "galoubet") is a small three holed woodwind instrument or flute usually made of wood akin to the Basque txistu or three-hole pipe, but more high pitched and strident, tuned to C and an octave higher than the "silbote". The sound that flows from the flute has often been perceived as a metaphor for the tweet cadences of bird songs. Some scholars point out that flutes found in the Caverns of Isturitz and Oxozelaia going back to a period spanning 35,000 to 10,000 years ago bear witness to the early presence of the instrument's forerunner in the region, while this view has been disputed.»
+[2] «Zuffolo | Zuffolo (also chiufolo, ciufolo) is an Italian fipple flute. First described in the 14th century, it has a rear thumb-hole, two front finger-holes, and a conical bore. It is approximately 8 cm in length and has a range of over two octaves, from B to C . A larger instrument of the same name, with a lowest note of C5 appeared in the early 17th century .»
+[3] «Shvi | The shvi (Armenian: Շվի , "whistle", pronounced "sh-vee") is a fipple flute with a labium mouth piece. Commonly made of wood (apricot, boxwood, ebony ) or bamboo and up to 12 in in length, it typically has a range of an octave and a-half. The "tav shvi" is made from apricot wood, it is up to 18 in long, and is tuned 1/4 lower producing a more lyrical and intimate sound.»
+Question: What material is a chi flute fashioned from?
+Reasoning: Let's think step by step in order to produce the answer. We know that the chi flute is also known as the zuffolo and is an Italian fipple flute. We also know that it has a conical bore and two front finger-holes.
+Answer: It is usually made of wood.
+We see several examples from the train set included in the prompt, along with context sourced from the Wikipedia extracts.
+Now we can evaluate the results against our test set:
+from dspy.evaluate.evaluate import Evaluate
+# Set up the `evaluate_on_hotpotqa` function. We'll use this many times below.
+evaluate_on_hotpotqa = Evaluate(devset=testset[:50], num_threads=1, display_progress=True, display_table=5)
+# Evaluate the `compiled_rag` program with the `answer_exact_match` metric.
+metric = dspy.evaluate.answer_exact_match
+evaluate_on_hotpotqa(compiled_rag, metric=metric)
+Initial results are very poor in accuracy:
+at 6%, but we can see that many of the answers were correct but didn’t match the verbiage exactly. This, along with enhancements in the Q&A to ask and search for follow up information are limitations.
+For evaluation, we could use an evaluation LLM to assess broad accuracy and get a more refined view of if the results are similar enough to be considered accurate.
+As far as a more complex Signature, implementing the Baleen pattern marginally increases accuracy on this example, but for other use cases with more complex questions it can dramatically improve things:
+class GenerateSearchQuery(dspy.Signature):
+"""Write a simple search query that will help answer a complex question."""
+context = dspy.InputField(desc="may contain relevant facts")
+question = dspy.InputField()
+query = dspy.OutputField()
+Here we have a helper function to generate queries that are needed to answer intermediate tasks or find supporting information.
+from dsp.utils import deduplicate
+class SimplifiedBaleen(dspy.Module):
+def __init__(self, passages_per_hop=3, max_hops=2):
+super().__init__()
+self.generate_query = [dspy.ChainOfThought(GenerateSearchQuery) for _ in range(max_hops)]
+self.retrieve = dspy.Retrieve(k=passages_per_hop)
+self.generate_answer = dspy.ChainOfThought(GenerateAnswer)
+self.max_hops = max_hops
+
+def forward(self, question):
+context = []
+
+for hop in range(self.max_hops):
+query = self.generate_query[hop](context=context, question=question).query
+passages = self.retrieve(query).passages
+context = deduplicate(context + passages)
+pred = self.generate_answer(context=context, question=question)
+return dspy.Prediction(context=context, answer=pred.answer)
+Now we have a signature that can generate queries based on chained tasks and insert those as context into the prompt:
+Write a simple search query that will help answer a complex question.
+---
+Follow the following format.
+Context: may contain relevant facts
+Question: ${question}
+Reasoning: Let's think step by step in order to ${produce the query}. We ...
+Query: ${query}
+---
+Context: N/A
+Question: How many storeys are in the castle that David Gregory inherited?
+Reasoning: Let's think step by step in order to produce the query. We need to find information about the castle that David Gregory inherited, specifically the number of storeys it has.
+Query: "David Gregory castle storeys"
+Write a simple search query that will help answer a complex question.
+---
+Follow the following format.
+Context: may contain relevant facts
+Question: ${question}
+Reasoning: Let's think step by step in order to ${produce the query}. We ...
+Query: ${query}
+---
+Context:
+[1] «David Gregory (physician) | David Gregory (20 December 1625 – 1720) was a Scottish physician and inventor. His surname is sometimes spelt as Gregorie, the original Scottish spelling. He inherited Kinnairdy Castle in 1664. Three of his twenty-nine children became mathematics professors. He is credited with inventing a military cannon that Isaac Newton described as "being destructive to the human species". Copies and details of the model no longer exist. Gregory's use of a barometer to predict farming-related weather conditions led him to be accused of witchcraft by Presbyterian ministers from Aberdeen, although he was never convicted.»
+[2] «Gregory House | Gregory House, M.D., commonly referred to by his surname House, is the title character of the American medical drama series "House". Created by David Shore and portrayed by English actor Hugh Laurie, he leads a team of diagnosticians as the Head of Diagnostic Medicine at the fictional Princeton-Plainsboro Teaching Hospital in Princeton, New Jersey (based on the real-life Yale–New Haven Hospital in New Haven, Connecticut).»
+[3] «David S. Castle | David S. Castle (13 February 1884 – 28 October 1956) was an architect in Texas.»
+Question: How many storeys are in the castle that David Gregory inherited?
+Reasoning: Let's think step by step in order to produce the query. We need to find information about Kinnairdy Castle, which David Gregory inherited.
+Query: "Kinnairdy Castle storeys David Gregory"
+Answer questions with short factoid answers.
+---
+Follow the following format.
+Context: may contain relevant facts
+Question: ${question}
+Reasoning: Let's think step by step in order to ${produce the answer}. We ...
+Answer: often between 1 and 5 words
+---
+Context:
+[1] «David Gregory (physician) | David Gregory (20 December 1625 – 1720) was a Scottish physician and inventor. His surname is sometimes spelt as Gregorie, the original Scottish spelling. He inherited Kinnairdy Castle in 1664. Three of his twenty-nine children became mathematics professors. He is credited with inventing a military cannon that Isaac Newton described as "being destructive to the human species". Copies and details of the model no longer exist. Gregory's use of a barometer to predict farming-related weather conditions led him to be accused of witchcraft by Presbyterian ministers from Aberdeen, although he was never convicted.»
+[2] «Gregory House | Gregory House, M.D., commonly referred to by his surname House, is the title character of the American medical drama series "House". Created by David Shore and portrayed by English actor Hugh Laurie, he leads a team of diagnosticians as the Head of Diagnostic Medicine at the fictional Princeton-Plainsboro Teaching Hospital in Princeton, New Jersey (based on the real-life Yale–New Haven Hospital in New Haven, Connecticut).»
+[3] «David S. Castle | David S. Castle (13 February 1884 – 28 October 1956) was an architect in Texas.»
+[4] «Kinnairdy Castle | Kinnairdy Castle is a tower house, having five storeys and a garret, two miles south of Aberchirder, Aberdeenshire, Scotland. The alternative name is Old Kinnairdy.»
+[5] «Kinnaird Castle, Brechin | Kinnaird Castle is a 15th-century castle in Angus, Scotland. The castle has been home to the Carnegie family, the Earl of Southesk, for more than 600 years.»
+Question: How many storeys are in the castle that David Gregory inherited?
+Reasoning: Let's think step by step in order to produce the answer. We need to identify which castle David Gregory inherited and how many storeys it has.
+Answer: Five storeys.
+DSPy offers an interesting framework for applying some traditional machine learning concepts and tactics to the space of large language models, possibly making it easier to develop and evaluate prompts while also making them less brittle when data changes or when the LLM must be restructured.
+ Links:
+ - ("https://rsci.app.link/?%24canonical_url=https%3A%2F%2Fmedium.com%2Fp%2F60924329833f&%7Efeature=LoOpenInAppButton&%7Echannel=ShowPostUnderUser&source=---two_column_layout_nav----------------------------------", "Open in app")
+ - ("https://github.com/stanfordnlp/dspy", "DSPy offers a framework")
+ - ("https://github.com/paulbruffett/DSPy/blob/main/DSPy%20Intro.ipynb", "this notebook")
+ - ("https://medium.com/tag/llm?source=post_page-----60924329833f---------------llm-----------------", "")
+ - ("https://medium.com/tag/llmops?source=post_page-----60924329833f---------------llmops-----------------", "")
+ - ("https://medium.statuspage.io/?source=post_page-----60924329833f--------------------------------", "")
+ - ("https://speechify.com/medium?source=post_page-----60924329833f--------------------------------", "")
+ - ("https://medium.com/business?source=post_page-----60924329833f--------------------------------", "")
