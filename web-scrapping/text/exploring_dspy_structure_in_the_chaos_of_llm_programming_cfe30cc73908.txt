@@ -206,13 +206,9 @@ The following two are currently my favourite resources on DSPy on the internet.
 --
 searching for “simplicity on the far side of complexity” |
  Links:
- - ("https://rsci.app.link/?%24canonical_url=https%3A%2F%2Fmedium.com%2Fp%2Fcfe30cc73908&%7Efeature=LoOpenInAppButton&%7Echannel=ShowPostUnderUser&source=---two_column_layout_nav----------------------------------", "Open in app")
  - ("https://arxiv.org/pdf/2310.03714.pdf", "https://arxiv.org/pdf/2310.03714.pdf")
- - ("https://medium.com/tag/dspy?source=post_page-----cfe30cc73908---------------dspy-----------------", "")
- - ("https://medium.com/tag/llm?source=post_page-----cfe30cc73908---------------llm-----------------", "")
- - ("https://medium.com/tag/generative-ai-tools?source=post_page-----cfe30cc73908---------------generative_ai_tools-----------------", "")
- - ("https://medium.com/tag/llmops?source=post_page-----cfe30cc73908---------------llmops-----------------", "")
+ - ("https://medium.com/tag/dspy?source=post_page-----cfe30cc73908---------------dspy-----------------", "dspy")
+ - ("https://medium.com/tag/llm?source=post_page-----cfe30cc73908---------------llm-----------------", "llm")
+ - ("https://medium.com/tag/generative-ai-tools?source=post_page-----cfe30cc73908---------------generative_ai_tools-----------------", "generative_ai_tools")
+ - ("https://medium.com/tag/llmops?source=post_page-----cfe30cc73908---------------llmops-----------------", "llmops")
  - ("http://www.linkedin.com/in/anukriti-ranjan", "www.linkedin.com/in/anukriti-ranjan")
- - ("https://medium.statuspage.io/?source=post_page-----cfe30cc73908--------------------------------", "")
- - ("https://speechify.com/medium?source=post_page-----cfe30cc73908--------------------------------", "")
- - ("https://medium.com/business?source=post_page-----cfe30cc73908--------------------------------", "")

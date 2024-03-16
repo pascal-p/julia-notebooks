@@ -12,6 +12,7 @@ begin
 	using Gumbo
 	using Cascadia
 	using OpenAI
+	using URIs
 	# using AbstractTrees
 	# using Dates
 
@@ -49,11 +50,11 @@ const LLM_PARAMS = Dict{Symbol, Union{String, Real}}(
 )
 
 # ╔═╡ 2f4ae40f-a1ab-470b-a1b7-a04fec353b0e
-const INSTRUCT_PROMPT = """Generate a comprehensive and detailed synthesis, section by section, of the following excerpt (delimited by triple backticks) about $(TOPIC).
+const INSTRUCT_PROMPT = """Generate a comprehensive and detailed section-by-section synthesis of the following article (delimited by triple backticks) about "$(TOPIC)".
 
 Important:
-- Please ignore and abstain from any comment about the web links for the reference as they will be handled differently later, i.e no "Links" section. 
-- If provided in the excerpt then render all code blocks, as delimited by "```code" and "```", once. 
+- Ignore any web links provided in the excerpt and refrain from commenting on them, as they will be addressed separately at a later stage. Consequently, do not include a "Links" section.
+- Render all code blocks, as marked by "```code" and "```", exactly once. For Python code ensure proper formatting by using an indent of two space characters and vertical spacing between logical units such as loops, functions, methods and classes...
 
 Here is the excerpt:
 """;
@@ -151,7 +152,7 @@ links = extract_links(
 	rroot;
 	selectors=["a"], 
 	verbose=false, 
-	restrict_to=["github", "LinkedIn", "huggingface", "arxiv", "medium", "edu", "llamaindex", "langchain", "wikipedia", "cohere"]
+	restrict_to=["github", "LinkedIn", "huggingface", "arxiv", "medium", "edu", "llamaindex", "langchain", "wikipedia", "cohere", "dspy"]
 )
 
 # ╔═╡ 0110956d-424d-4c7c-87ef-eda4a2cfc291
@@ -209,7 +210,7 @@ md"""
 """
 
 # ╔═╡ c4f7a724-fe95-45cb-94af-656cc5fbebb5
-# Markdown.parse(join(synthesis, "\n"))
+Markdown.parse(join(synthesis, "\n"))
 
 # ╔═╡ fe39ac9a-88fc-4b35-9e91-e4d93b2187b3
 md"""
@@ -233,13 +234,15 @@ Gumbo = "708ec375-b3d6-5a57-a7ce-8257bf98657a"
 HTTP = "cd3eb016-35fb-5094-929b-558a96fad6f3"
 OpenAI = "e9f21f70-7185-4079-aca2-91159181367c"
 PlutoUI = "7f904dfe-b85e-4ff6-b463-dae2292396a8"
+URIs = "5c2747f8-b7ea-4ff2-ba2e-563bfd36b1d4"
 
 [compat]
 Cascadia = "~1.0.2"
 Gumbo = "~0.8.2"
-HTTP = "~1.10.1"
+HTTP = "~1.10.4"
 OpenAI = "~0.9.0"
-PlutoUI = "~0.7.54"
+PlutoUI = "~0.7.58"
+URIs = "~1.5.1"
 """
 
 # ╔═╡ 00000000-0000-0000-0000-000000000002
@@ -248,18 +251,18 @@ PLUTO_MANIFEST_TOML_CONTENTS = """
 
 julia_version = "1.10.2"
 manifest_format = "2.0"
-project_hash = "362c25656f7bf23fff2103f2e87b5b440956ebf6"
+project_hash = "9da148c4849b384a7f8e6b5541e82ee1e52dd62b"
 
 [[deps.AbstractPlutoDingetjes]]
 deps = ["Pkg"]
-git-tree-sha1 = "793501dcd3fa7ce8d375a2c878dca2296232686e"
+git-tree-sha1 = "0f748c81756f2e5e6854298f11ad8b2dfae6911a"
 uuid = "6e696c72-6542-2067-7265-42206c756150"
-version = "1.2.2"
+version = "1.3.0"
 
 [[deps.AbstractTrees]]
-git-tree-sha1 = "faa260e4cb5aba097a73fab382dd4b5819d8ec8c"
+git-tree-sha1 = "2d9c9a55f9c93e8887ad391fbae72f8ef55e1177"
 uuid = "1520ce14-60c1-5f80-bbc7-55ef81b5835c"
-version = "0.4.4"
+version = "0.4.5"
 
 [[deps.ArgTools]]
 uuid = "0dad84c5-d112-42e6-8d28-ef12dabb789f"
@@ -284,9 +287,9 @@ version = "1.0.2"
 
 [[deps.CodecZlib]]
 deps = ["TranscodingStreams", "Zlib_jll"]
-git-tree-sha1 = "cd67fc487743b2f0fd4380d4cbd3a24660d0eec8"
+git-tree-sha1 = "59939d8a997469ee05c4b4944560a820f9ba0d73"
 uuid = "944b1d66-785c-5afd-91f1-9de20f533193"
-version = "0.7.3"
+version = "0.7.4"
 
 [[deps.ColorTypes]]
 deps = ["FixedPointNumbers", "Random"]
@@ -301,9 +304,9 @@ version = "1.1.0+0"
 
 [[deps.ConcurrentUtilities]]
 deps = ["Serialization", "Sockets"]
-git-tree-sha1 = "8cfa272e8bdedfa88b6aefbbca7c19f1befac519"
+git-tree-sha1 = "6cbbd4d241d7e6579ab354737f4dd95ca43946e1"
 uuid = "f0e56b4a-5159-44fe-b623-3e5288b988bb"
-version = "2.3.0"
+version = "2.4.1"
 
 [[deps.Dates]]
 deps = ["Printf"]
@@ -316,9 +319,9 @@ version = "1.6.0"
 
 [[deps.ExceptionUnwrapping]]
 deps = ["Test"]
-git-tree-sha1 = "e90caa41f5a86296e014e148ee061bd6c3edec96"
+git-tree-sha1 = "dcb08a0d93ec0b1cdc4af184b26b591e9695423a"
 uuid = "460bff9d-24e4-43bc-9d9f-a8973cb893f4"
-version = "0.1.9"
+version = "0.1.10"
 
 [[deps.FileWatching]]
 uuid = "7b1f6079-737a-58dc-b8bc-7a2ca5c1b5ee"
@@ -343,15 +346,15 @@ version = "0.10.2+0"
 
 [[deps.HTTP]]
 deps = ["Base64", "CodecZlib", "ConcurrentUtilities", "Dates", "ExceptionUnwrapping", "Logging", "LoggingExtras", "MbedTLS", "NetworkOptions", "OpenSSL", "Random", "SimpleBufferStream", "Sockets", "URIs", "UUIDs"]
-git-tree-sha1 = "abbbb9ec3afd783a7cbd82ef01dcd088ea051398"
+git-tree-sha1 = "995f762e0182ebc50548c434c171a5bb6635f8e4"
 uuid = "cd3eb016-35fb-5094-929b-558a96fad6f3"
-version = "1.10.1"
+version = "1.10.4"
 
 [[deps.Hyperscript]]
 deps = ["Test"]
-git-tree-sha1 = "8d511d5b81240fc8e6802386302675bdf47737b9"
+git-tree-sha1 = "179267cfa5e712760cd43dcae385d7ea90cc25a4"
 uuid = "47d2ed2b-36de-50cf-bf87-49c2cf4b8b91"
-version = "0.0.4"
+version = "0.0.5"
 
 [[deps.HypertextLiteral]]
 deps = ["Tricks"]
@@ -361,9 +364,9 @@ version = "0.9.5"
 
 [[deps.IOCapture]]
 deps = ["Logging", "Random"]
-git-tree-sha1 = "d75853a0bdbfb1ac815478bacd89cd27b550ace6"
+git-tree-sha1 = "8b72179abc660bfab5e28472e019392b97d0985c"
 uuid = "b5f81e59-6552-4d32-b1f0-c071b021bf89"
-version = "0.2.3"
+version = "0.2.4"
 
 [[deps.InteractiveUtils]]
 deps = ["Markdown"]
@@ -477,15 +480,15 @@ version = "0.3.23+4"
 
 [[deps.OpenSSL]]
 deps = ["BitFlags", "Dates", "MozillaCACerts_jll", "OpenSSL_jll", "Sockets"]
-git-tree-sha1 = "51901a49222b09e3743c65b8847687ae5fc78eb2"
+git-tree-sha1 = "af81a32750ebc831ee28bdaaba6e1067decef51e"
 uuid = "4d8831e6-92b7-49fb-bdf8-b643e874388c"
-version = "1.4.1"
+version = "1.4.2"
 
 [[deps.OpenSSL_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
-git-tree-sha1 = "cc6e1927ac521b659af340e0ca45828a3ffc748f"
+git-tree-sha1 = "60e3045590bd104a16fefb12836c00c0ef8c7f8c"
 uuid = "458c3c95-2e84-50aa-8efc-19380b2a3a95"
-version = "3.0.12+0"
+version = "3.0.13+0"
 
 [[deps.Parsers]]
 deps = ["Dates", "PrecompileTools", "UUIDs"]
@@ -500,21 +503,21 @@ version = "1.10.0"
 
 [[deps.PlutoUI]]
 deps = ["AbstractPlutoDingetjes", "Base64", "ColorTypes", "Dates", "FixedPointNumbers", "Hyperscript", "HypertextLiteral", "IOCapture", "InteractiveUtils", "JSON", "Logging", "MIMEs", "Markdown", "Random", "Reexport", "URIs", "UUIDs"]
-git-tree-sha1 = "bd7c69c7f7173097e7b5e1be07cee2b8b7447f51"
+git-tree-sha1 = "71a22244e352aa8c5f0f2adde4150f62368a3f2e"
 uuid = "7f904dfe-b85e-4ff6-b463-dae2292396a8"
-version = "0.7.54"
+version = "0.7.58"
 
 [[deps.PrecompileTools]]
 deps = ["Preferences"]
-git-tree-sha1 = "03b4c25b43cb84cee5c90aa9b5ea0a78fd848d2f"
+git-tree-sha1 = "5aa36f7049a63a1528fe8f7c3f2113413ffd4e1f"
 uuid = "aea7be01-6a6a-4083-8856-8a6e6704d82a"
-version = "1.2.0"
+version = "1.2.1"
 
 [[deps.Preferences]]
 deps = ["TOML"]
-git-tree-sha1 = "00805cd429dcb4870060ff49ef443486c262e38e"
+git-tree-sha1 = "9306f6085165d270f7e3db02af26a400d580f5c6"
 uuid = "21216c6a-2e73-6563-6e65-726566657250"
-version = "1.4.1"
+version = "1.4.3"
 
 [[deps.Printf]]
 deps = ["Unicode"]
@@ -584,9 +587,9 @@ deps = ["InteractiveUtils", "Logging", "Random", "Serialization"]
 uuid = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [[deps.TranscodingStreams]]
-git-tree-sha1 = "1fbeaaca45801b4ba17c251dd8603ef24801dd84"
+git-tree-sha1 = "3caa21522e7efac1ba21834a03734c57b4611c7e"
 uuid = "3bb67fe8-82b1-5028-8e26-92a6c54297fa"
-version = "0.10.2"
+version = "0.10.4"
 weakdeps = ["Random", "Test"]
 
     [deps.TranscodingStreams.extensions]
