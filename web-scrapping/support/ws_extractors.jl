@@ -40,33 +40,23 @@ Principle:
 function extract_content(
   root;
   selectors=["p.nx-mt-6"],
-  detect_code=false,
   verbose=true,
   only_tags=[:p, :h1, :h2, :h3, :li, :ul, :ol, :span]
 )::String
 
   fulltext = String[]
   sel_vec = _get_selectors(root, selectors)
-
-  iscode = false
   pattern = split(selectors[1], ".")[end]
 
   for (ix, element) ∈ enumerate(sel_vec)
-    verbose &&  println("$(ix) - [$(element)] /// [$(element.attributes["class"])]")
+    verbose && :text ∉ propertynames(element) && println("$(ix) - Element: $(tag(element))")
 
-    iscode = detect_code && hasproperty(element, :attributes) &&
-      !occursin(pattern, element.attributes["class"])
-
-    if hasproperty(element, :children)
-      println("Proc. elem tag: $(tag(element)) | attr: $(element.attributes)")
-
+    if tag(element) ∈ only_tags && hasproperty(element, :children)
+      verbose && println("Proc[1]. elem tag: $(tag(element)) | attr: $(element.attributes)")
       text = dft(element.children, only_tags)
-      text = iscode ? string("```code\n", text, "\n```") : text
-
       push!(fulltext, text)
     end
 
-    iscode = false
   end
 
   join(
@@ -119,17 +109,20 @@ function dft(v_elt::Vector{<: Any}, only_tags::Vector{Symbol})::String
 
   function _dft(v_elt::Vector{<: Any})
     for elt ∈ v_elt
-      # :text ∉ propertynames(elt) && println("\tProc elem tag: $(tag(elt))")  # text element are not callable with tag()
       :text ∉ propertynames(elt) && tag(elt) ∉ only_tags && continue
 
-      hasproperty(elt, :children) && _dft(elt.children)
+      if :text ∉ propertynames(elt) && tag(elt) == :pre
+        push!(vtext, "```code")
+        hasproperty(elt, :children) && _dft(elt.children)
+        push!(vtext, "```\n")
+        @assert ! hasproperty(elt, :text)
 
-      if hasproperty(elt, :text)
-        txt = strip(elt.text)
-        push!(vtext, txt)
+      else
+        hasproperty(elt, :children) && _dft(elt.children)
+        hasproperty(elt, :text) && (push!(vtext, strip(elt.text)))
       end
-
     end
+
     vtext
   end
 
