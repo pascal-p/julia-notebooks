@@ -3,6 +3,7 @@ Web extraction primitives given a root from which to start and some selectors.
 """
 # using Cascadia  # Called in Pluto
 # using AbstractTrees
+# using URIs
 
 function traverse_article_structure(root; selector="p.pw-post-body-paragraph")
   for (ix, element) ∈ enumerate(eachmatch(Selector(selector), root))
@@ -69,13 +70,16 @@ function extract_content(
 end
 
 """
-Extract links fro ma given web page starting at root element
+  Extract links from a given web page starting at root element
+
+Possibly lot of irrelevant links, thus try syntactic tricks to eliminate those (very limited)
 """
 function extract_links(
   root;
   selectors=["a"], verbose=true,
   restrict_to=["github", "LinkedIn"],
-  excluding_regex=r"signin\?|policy\.medium\.com|followers\?|help\.medium|medium.com/(?:\?source|search\?|@)|work\-at\-medium|com/about"i,
+  excluding_regex=r"signin\?|policy\.medium\.com|followers\?|help\.medium|medium.com/(?:\?source|search\?|@)|work\-at\-medium|OpenInApp|com/about"i,
+  filtering_regex=r"^(?:layout_nav|global_nav|topnav|post_header|_footer|Follow|Sign in|[a-f0-9]+|/[a-z0-9]*)$"i, # for filtering link title (mostly irrelevant to the article)
   only_tags=[:a]
 )::Vector{Tuple{String, String}}
 
@@ -84,15 +88,35 @@ function extract_links(
   for element ∈ sel_vec
     if hasproperty(element, :attributes)
       if match(join(restrict_to, "|") |> p -> Regex(p, "i"), element.attributes["href"]) !== nothing
+        link_ref = element.attributes["href"]
+        link_title = dft(element.children, only_tags)
+        uri = URIs.URI(link_ref)
+
+        if length(link_title) == 0 || lowercase(link_title) == "open in app"
+          # ex. uri.query == "source=post_page-----cfe30cc73908---------------dspy-----------------"
+          # get `dspy`
+          for uri_part ∈ [uri.query, uri.path]
+            link_title = filter(s -> length(s) > 0, split(uri_part, '-'))[end]
+            length(link_title) == 0 && continue
+
+            # is the title acceptable? filter out navigation links...
+            match(filtering_regex, link_title) === nothing && break
+
+            link_title = "" # reset
+          end
+
+          length(link_title) == 0 && continue # still empty, ignore link
+        end
+
         push!(
           links,
-          (element.attributes["href"], dft(element.children, only_tags))
+          (link_ref, link_title)
         )
       end
     end
   end
 
-  # remove if link contains "signin?" or "policy..."
+  # remove if link contains "signin?" or "policy..." or ...
   filter(
     tupl -> match(excluding_regex, tupl[1]) === nothing,
     links
