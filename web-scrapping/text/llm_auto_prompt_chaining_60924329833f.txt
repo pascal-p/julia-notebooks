@@ -1,7 +1,14 @@
 - Title: LLM Auto-Prompt & Chaining
-- Author and date: Using DSPy with GPT 3.5 on Azure
+- Author and date: 
 - Link: https://paul-bruffett.medium.com/llm-auto-prompt-chaining-60924329833f
 Main:
+LLM Auto-Prompt & Chaining
+Using DSPy with GPT 3.5 on Azure
+·
+13 min read
+·
+Oct 24, 2023
+--
 First, some context on prompting libraries. There are several LLM library archetypes:
 These offer a very thin wrapper for prompt templating and generation with a minimal level of abstraction for string insertion and extraction. Example libraries: MiniChain
 High-level application development with LLMs. These offer batteries-included pre-built application modules to configure together and plug in data. These can considerably accelerate standard use cases and abstract much of the implementation or API specific details. Example libraries: LangChain, LlamaIndex
@@ -14,27 +21,37 @@ In
 I’ll demonstrate core DSPy concepts using a
 for question and answering.
 First we’ll setup DSPy, including using a source for accessing Wikipedia abstracts, the first paragraph of a dump of articles, this does mean our knowledge agent won’t be as accurate as some information required won’t be available, but it’s a good prototype:
+```code
 turbo = dspy.OpenAI(api_key="",api_provider="azure",deployment_id="gpt35", api_version="2023-09-15-preview",
 api_base="",model_type='chat')
 colbertv2_wiki17_abstracts = dspy.ColBERTv2(url='http://20.102.90.50:2017/wiki17_abstracts')
 dspy.settings.configure(lm=turbo, rm=colbertv2_wiki17_abstracts)
 dspy.settings.configure(lm=turbo)
+```
+
 Here I’m using GPT3.5-Turbo deployed on Azure, you’ll need to fill in the API key and URL for your instance.
 Next we load and do some pre-processing of the data, including dropping nulls and renaming fields:
+```code
 df1 = pd.read_csv('data/S08_question_answer_pairs.txt', sep='\t')
 df2 = pd.read_csv('data/S09_question_answer_pairs.txt', sep='\t')
 test = pd.read_csv('data/S10_question_answer_pairs.txt', sep='\t', encoding = 'ISO-8859-1')
 train = pd.concat([df1, df2], ignore_index=True)
 train = train.rename(columns={"Question": "question", "Answer": "answer"})
 test = test.rename(columns={"Question": "question", "Answer": "answer"})
+```
+
 The dataset consists of several other attributes but we’re primarily interested in the question and answer, we could use the difficulty and article to evaluate our model in the future:
 Signatures
 One of the key concepts in DSPy is the Signature. This defines the input and output of the LLM, Signatures are defined in a way reminescent of building PyTorch networks. Our first Signature is simple, taking an input and providing an output:
+```code
 class BasicQA(dspy.Signature):
 """Answer questions with short factoid answers."""
 question = dspy.InputField()
 answer = dspy.OutputField(desc="often between 1 and 5 words")
+```
+
 BasicQA acts as the definition for our prompt structure and is then invoked using a Predictor:
+```code
 # Define the predictor.
 generate_answer = dspy.Predict(BasicQA)
 example = train_ds.train[0]
@@ -43,9 +60,12 @@ pred = generate_answer(question=example.question)
 # Print the input and the prediction.
 print(f"Question: {example.question}")
 print(f"Predicted Answer: {pred.answer}")
+```
+
 Predictor invokes our LLM on a question which I’ve selected from the training set, by calling inspect_history on the LLM instance we configured earlier we can see the conversation:
 Here we can see the simple Signature inserted the text we included and built a simple prompt structure.
 We can wrap Signatures:
+```code
 # Define the predictor. Notice we're just changing the class. The signature BasicQA is unchanged.
 generate_answer_with_chain_of_thought = dspy.ChainOfThought(BasicQA)
 # Call the predictor on the same input.
@@ -54,9 +74,12 @@ pred = generate_answer_with_chain_of_thought(question=example.question)
 print(f"Question: {example.question}")
 print(f"Thought: {pred.rationale.split('.', 1)[1].strip()}")
 print(f"Predicted Answer: {pred.answer}")
+```
+
 and here we see:
 The prompt is similar but we have the addition of a “Reasoning” step along with intermediate reasoning results. To date we’re still not actually using any retrieval, answers are being generated with the in-built knowledge of GPT3.5.
 Now let’s build a more sophisticated prompt structure.
+```code
 class GenerateAnswer(dspy.Signature):
 """Answer questions with short factoid answers."""
 context = dspy.InputField(desc="may contain relevant facts")
@@ -72,11 +95,14 @@ def forward(self, question):
 context = self.retrieve(question).passages
 prediction = self.generate_answer(context=context, question=question)
 return dspy.Prediction(context=context, answer=prediction.answer)
+```
+
 Using the same basic structure as the previous example, we’re adding the retrieved context in our first Signature, and now we’re defining a calling solution that looks similar to how we would define a network in PyTorch with the init setting up the structure and forward defining the invocation.
 Again, Prediction generates the results by calling our LLM.
 Now that we’ve built a slightly more sophisticated solution, we can also introduce the concept of Teleprompters.
 Teleprompters
 These create and validate examples for inclusion in the prompt which instruct the model, in our case it’s question and answer examples. There are a variety of teleprompters to evaluate examples but we’ll be using a fairly straightforward few shot solution:
+```code
 from dspy.teleprompt import BootstrapFewShot
 # Validation logic: check that the predicted answer is correct.
 # Also check that the retrieved context does actually contain that answer.
@@ -88,8 +114,11 @@ return answer_EM and answer_PM
 teleprompter = BootstrapFewShot(metric=validate_context_and_answer)
 # Compile!
 compiled_rag = teleprompter.compile(RAG(), trainset=trainset[100:150])
+```
+
 Here I’ve selected a smaller set of training data, we don’t require extensive data as it is not fine tuning the model but rather selecting examples for inclusion in the prompt.
 Now, when we inspect a prediction:
+```code
 Answer questions with short factoid answers.
 ---
 Question: Why are otters vulnerable to prey depletion?
@@ -156,24 +185,33 @@ Context:
 Question: What material is a chi flute fashioned from?
 Reasoning: Let's think step by step in order to produce the answer. We know that the chi flute is also known as the zuffolo and is an Italian fipple flute. We also know that it has a conical bore and two front finger-holes.
 Answer: It is usually made of wood.
+```
+
 We see several examples from the train set included in the prompt, along with context sourced from the Wikipedia extracts.
 Now we can evaluate the results against our test set:
+```code
 from dspy.evaluate.evaluate import Evaluate
 # Set up the `evaluate_on_hotpotqa` function. We'll use this many times below.
 evaluate_on_hotpotqa = Evaluate(devset=testset[:50], num_threads=1, display_progress=True, display_table=5)
 # Evaluate the `compiled_rag` program with the `answer_exact_match` metric.
 metric = dspy.evaluate.answer_exact_match
 evaluate_on_hotpotqa(compiled_rag, metric=metric)
+```
+
 Initial results are very poor in accuracy:
 at 6%, but we can see that many of the answers were correct but didn’t match the verbiage exactly. This, along with enhancements in the Q&A to ask and search for follow up information are limitations.
 For evaluation, we could use an evaluation LLM to assess broad accuracy and get a more refined view of if the results are similar enough to be considered accurate.
 As far as a more complex Signature, implementing the Baleen pattern marginally increases accuracy on this example, but for other use cases with more complex questions it can dramatically improve things:
+```code
 class GenerateSearchQuery(dspy.Signature):
 """Write a simple search query that will help answer a complex question."""
 context = dspy.InputField(desc="may contain relevant facts")
 question = dspy.InputField()
 query = dspy.OutputField()
+```
+
 Here we have a helper function to generate queries that are needed to answer intermediate tasks or find supporting information.
+```code
 from dsp.utils import deduplicate
 class SimplifiedBaleen(dspy.Module):
 def __init__(self, passages_per_hop=3, max_hops=2):
@@ -192,7 +230,10 @@ passages = self.retrieve(query).passages
 context = deduplicate(context + passages)
 pred = self.generate_answer(context=context, question=question)
 return dspy.Prediction(context=context, answer=pred.answer)
+```
+
 Now we have a signature that can generate queries based on chained tasks and insert those as context into the prompt:
+```code
 Write a simple search query that will help answer a complex question.
 ---
 Follow the following format.
@@ -237,7 +278,12 @@ Context:
 Question: How many storeys are in the castle that David Gregory inherited?
 Reasoning: Let's think step by step in order to produce the answer. We need to identify which castle David Gregory inherited and how many storeys it has.
 Answer: Five storeys.
+```
+
 DSPy offers an interesting framework for applying some traditional machine learning concepts and tactics to the space of large language models, possibly making it easier to develop and evaluate prompts while also making them less brittle when data changes or when the LLM must be restructured.
+--
+--
+Enterprise Architect specializing in data and analytics.
  Links:
  - ("https://rsci.app.link/?%24canonical_url=https%3A%2F%2Fmedium.com%2Fp%2F60924329833f&%7Efeature=LoOpenInAppButton&%7Echannel=ShowPostUnderUser&source=---two_column_layout_nav----------------------------------", "Open in app")
  - ("https://github.com/stanfordnlp/dspy", "DSPy offers a framework")

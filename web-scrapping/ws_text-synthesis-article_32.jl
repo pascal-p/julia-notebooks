@@ -42,7 +42,13 @@ const TOPIC = "LLM (Large Language Models) auto-prompt"
 
 # ╔═╡ 2f4ae40f-a1ab-470b-a1b7-a04fec353b0e
 const INSTRUCT_PROMPT = """Generate a comprehensive and detailed synthesis, section by section, of the following excerpt (delimited by triple backticks) about $(TOPIC).
-Please ignore and abstain from any comment about the web links for the reference as they will be handled differently later. Extract all code snipets once, if avaialable, and indent them with 2 space characters. Here is the excerpt:""";
+
+Important:
+- Please ignore and abstain from any comment about the web links for the reference as they will be handled differently later, i.e no "Links" section. 
+- If provided in the excerpt then render all code blocks, as delimited by "```code" and "```", once. 
+
+Here is the excerpt:
+""";
 
 # ╔═╡ ba4e4c0f-2835-4a76-a9d4-7d7ba02becb2
 println(INSTRUCT_PROMPT)
@@ -94,15 +100,14 @@ rroot = parsed_doc.root[2].children[1].children[1];
 rroot |> propertynames, tag(rroot.parent)
 
 # ╔═╡ 8fdfb225-1475-483e-a81a-5a450b5b0dbd
-traverse_article_structure(rroot; selector="p.pw-post-body-paragraph")
+# traverse_article_structure(rroot; selector="p.pw-post-body-paragraph")
 
 # ╔═╡ 67fd72dc-5540-440d-a8f3-8324914553b8
 text = extract_content(
 	rroot;
 	selectors=["div.ch.bg.fy.fz.ga.gb"],  # selectors=["p.pw-post-body-paragraph"],
-	detect_code=true,
-	verbose=false,
-	only_tags=[:p, :h1, :h2, :h3, :li, :ul, :ol, :span, :pre]  # include :pre for code snipet
+	verbose=true,
+	only_tags=[:div, :p, :h1, :h2, :h3, :li, :ul, :ol, :span, :pre]  # include :pre for code snipet
 )
 
 # ╔═╡ f1dd1b92-b841-414b-8cca-d3bcdda675dd
@@ -147,6 +152,9 @@ full_text = string(
 	"\n Links:\n", map(s -> string(" - ", s), links) |> links -> join(links, "\n")
 )
 
+# ╔═╡ b80c155d-5ec2-4b3e-ac8d-6ee5cb18376b
+# println(full_text)
+
 # ╔═╡ 0df8719c-a91d-4449-8dac-337a832eb065
 save_text(TXT_FILEPATH, full_text)
 
@@ -164,8 +172,6 @@ md"""
 	 temperature=0.2,
 	 seed=117,
 )
-
-# # took 168744 milliseconds
 
 # ╔═╡ 9b661918-23b6-46fb-9af1-53454d750d5f
 synthesis_links = string(
@@ -195,7 +201,7 @@ md"""
 """
 
 # ╔═╡ c4f7a724-fe95-45cb-94af-656cc5fbebb5
-# Markdown.parse(join(synthesis, "\n"))
+Markdown.parse(join(synthesis, "\n"))
 
 # ╔═╡ fe39ac9a-88fc-4b35-9e91-e4d93b2187b3
 md"""
@@ -643,6 +649,7 @@ version = "17.4.0+2"
 # ╠═72d4f892-2bd2-43af-b71e-5252a666ce0c
 # ╠═ed56ba67-5e5a-43e9-9a5f-8e63597725f7
 # ╠═0110956d-424d-4c7c-87ef-eda4a2cfc291
+# ╠═b80c155d-5ec2-4b3e-ac8d-6ee5cb18376b
 # ╠═0df8719c-a91d-4449-8dac-337a832eb065
 # ╟─0883ae28-a94f-4bed-abce-39841605d29b
 # ╠═e2ffe835-65dc-4c85-aa9a-d98867da2ff5

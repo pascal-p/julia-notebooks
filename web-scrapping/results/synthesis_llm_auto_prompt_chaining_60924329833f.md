@@ -1,24 +1,19 @@
-### Title: LLM Auto-Prompt & Chaining
-- **Author and date**: Using DSPy with GPT 3.5 on Azure
-- **Link**: [Medium Article](https://paul-bruffett.medium.com/llm-auto-prompt-chaining-60924329833f)
+### LLM Auto-Prompt & Chaining
+#### Using DSPy with GPT 3.5 on Azure
+- **Publication Date:** Oct 24, 2023
 #### Main Content
-The article discusses various aspects of Large Language Models (LLMs) and their application through the DSPy framework, focusing on auto-prompting and chaining techniques.
-##### Context on Prompting Libraries
-Prompting libraries are categorized based on their functionality and level of abstraction:
-1. **Thin Wrappers**: Libraries like MiniChain provide minimal abstraction for prompt templating and generation.
-2. **High-Level Application Development**: Libraries such as LangChain and LlamaIndex offer pre-built modules for easy integration and application development.
-3. **Control Over Completions**: Libraries like Guidance, LMQL, RELM, and Outlines allow for more control over the prompts, including enforcing schemas and constraining sampling.
-4. **Optimized Prompt Development**: Libraries such as DSPy focus on defining inputs and targets, optimizing prompt stages.
-##### DSPy on Kaggle Q&A
-The article demonstrates the use of DSPy for a Q&A application, starting with setting up DSPy and configuring it to use GPT3.5-Turbo deployed on Azure and ColBERTv2 for accessing Wikipedia abstracts.
+The article discusses the concept of LLM (Large Language Models) auto-prompt and chaining, focusing on the use of DSPy with GPT 3.5 on Azure. It begins by providing context on prompting libraries, categorizing them into several archetypes based on their functionality and level of abstraction. These include libraries for prompt templating and generation, high-level application development, control over individual completions, and those that define inputs and targets for optimization or generation of prompts.
+#### Prompt Development and Chaining
+Prompt development and LLM chaining are highlighted as processes that often require extensive trial and error. The article introduces DSPy, a library that facilitates the development of higher-level tasks that self-optimize and evaluate tasks. The author demonstrates the core concepts of DSPy using a Kaggle Q&A dataset for question and answering, including setting up DSPy, loading and preprocessing data, and defining signatures for input and output of the LLM.
+#### Code Examples
+The article includes several code snippets demonstrating the setup and use of DSPy with GPT 3.5 on Azure. These snippets cover the configuration of DSPy with API keys and URLs, data preprocessing, and the definition and invocation of signatures for question answering. The examples progress from simple question answering to more sophisticated prompt structures that incorporate reasoning steps and retrieved context.
 ```python
-turbo = dspy.OpenAI(api_key="", api_provider="azure", deployment_id="gpt35", api_version="2023-09-15-preview",
-api_base="", model_type='chat')
+turbo = dspy.OpenAI(api_key="",api_provider="azure",deployment_id="gpt35", api_version="2023-09-15-preview",
+api_base="",model_type='chat')
 colbertv2_wiki17_abstracts = dspy.ColBERTv2(url='http://20.102.90.50:2017/wiki17_abstracts')
 dspy.settings.configure(lm=turbo, rm=colbertv2_wiki17_abstracts)
 dspy.settings.configure(lm=turbo)
 ```
-Data preprocessing involves loading, renaming fields, and concatenating datasets.
 ```python
 df1 = pd.read_csv('data/S08_question_answer_pairs.txt', sep='\t')
 df2 = pd.read_csv('data/S09_question_answer_pairs.txt', sep='\t')
@@ -27,48 +22,52 @@ train = pd.concat([df1, df2], ignore_index=True)
 train = train.rename(columns={"Question": "question", "Answer": "answer"})
 test = test.rename(columns={"Question": "question", "Answer": "answer"})
 ```
-##### Signatures and Predictors
-The concept of Signatures in DSPy is introduced, defining the input and output structure for the LLM. BasicQA and GenerateAnswer classes are examples of such signatures.
 ```python
 class BasicQA(dspy.Signature):
-  """Answer questions with short factoid answers."""
-  question = dspy.InputField()
-  answer = dspy.OutputField(desc="often between 1 and 5 words")
+"""Answer questions with short factoid answers."""
+question = dspy.InputField()
+answer = dspy.OutputField(desc="often between 1 and 5 words")
 ```
-Predictors are used to invoke these signatures on inputs, generating answers based on the defined structure.
 ```python
+# Define the predictor.
 generate_answer = dspy.Predict(BasicQA)
 example = train_ds.train[0]
+# Call the predictor on a particular input.
 pred = generate_answer(question=example.question)
+# Print the input and the prediction.
 print(f"Question: {example.question}")
 print(f"Predicted Answer: {pred.answer}")
 ```
-##### Chaining and Teleprompters
-The article further explores chaining signatures for more complex prompt structures and introduces Teleprompters for creating and validating examples to instruct the model.
 ```python
-from dspy.teleprompt import BootstrapFewShot
-def validate_context_and_answer(example, pred, trace=None):
-  answer_EM = dspy.evaluate.answer_exact_match(example, pred)
-  answer_PM = dspy.evaluate.answer_passage_match(example, pred)
-  return answer_EM and answer_PM
-teleprompter = BootstrapFewShot(metric=validate_context_and_answer)
-compiled_rag = teleprompter.compile(RAG(), trainset=trainset[100:150])
+# Define the predictor. Notice we're just changing the class. The signature BasicQA is unchanged.
+generate_answer_with_chain_of_thought = dspy.ChainOfThought(BasicQA)
+# Call the predictor on the same input.
+pred = generate_answer_with_chain_of_thought(question=example.question)
+# Print the input, the chain of thought, and the prediction.
+print(f"Question: {example.question}")
+print(f"Thought: {pred.rationale.split('.', 1)[1].strip()}")
+print(f"Predicted Answer: {pred.answer}")
 ```
-##### Evaluation and Advanced Signatures
-The evaluation of the model's performance and the introduction of more complex signatures like GenerateSearchQuery and SimplifiedBaleen are discussed. These advanced techniques allow for generating queries and incorporating retrieved context into the prompts for more accurate answers.
 ```python
-from dspy.evaluate.evaluate import Evaluate
-evaluate_on_hotpotqa = Evaluate(devset=testset[:50], num_threads=1, display_progress=True, display_table=5)
-metric = dspy.evaluate.answer_exact_match
-evaluate_on_hotpotqa(compiled_rag, metric=metric)
+class GenerateAnswer(dspy.Signature):
+"""Answer questions with short factoid answers."""
+context = dspy.InputField(desc="may contain relevant facts")
+question = dspy.InputField()
+answer = dspy.OutputField(desc="often between 1 and 5 words")
+class RAG(dspy.Module):
+def __init__(self, num_passages=3):
+super().__init__()
+self.retrieve = dspy.Retrieve(k=num_passages)
+self.generate_answer = dspy.ChainOfThought(GenerateAnswer)
+def forward(self, question):
+context = self.retrieve(question).passages
+prediction = self.generate_answer(context=context, question=question)
+return dspy.Prediction(context=context, answer=prediction.answer)
 ```
-##### Conclusion
-The article highlights DSPy's potential in applying machine learning concepts to LLMs, facilitating the development and evaluation of prompts. It showcases how DSPy can make prompt development less brittle and more adaptable to changes.
-#### Links
-- [Open in app](https://rsci.app.link/?%24canonical_url=https%3A%2F%2Fmedium.com%2Fp%2F60924329833f&%7Efeature=LoOpenInAppButton&%7Echannel=ShowPostUnderUser&source=---two_column_layout_nav----------------------------------)
-- [DSPy Framework on GitHub](https://github.com/stanfordnlp/dspy)
-- [DSPy Intro Notebook](https://github.com/paulbruffett/DSPy/blob/main/DSPy%20Intro.ipynb)
-- Additional references to Medium tags and pages related to LLM and business.
+#### Teleprompters and Evaluation
+The article introduces the concept of teleprompters, which create and validate examples for inclusion in the prompt. A specific example using a few-shot solution for validation is provided, along with a demonstration of compiling a program with selected training data. The evaluation of the compiled program against a test set is discussed, noting the initial poor accuracy but acknowledging the potential for improvement through further refinement.
+#### Conclusion
+The article presents DSPy as a promising framework for applying machine learning concepts to the development and evaluation of prompts for large language models. Through detailed examples and explanations, it demonstrates how DSPy can facilitate the creation of sophisticated prompt structures and improve the robustness of LLM applications.
 #### Links:
   - [Open in app - rsci.app.link](https://rsci.app.link/?%24canonical_url=https%3A%2F%2Fmedium.com%2Fp%2F60924329833f&%7Efeature=LoOpenInAppButton&%7Echannel=ShowPostUnderUser&source=---two_column_layout_nav----------------------------------)
   - [DSPy offers a framework - github.com](https://github.com/stanfordnlp/dspy)
