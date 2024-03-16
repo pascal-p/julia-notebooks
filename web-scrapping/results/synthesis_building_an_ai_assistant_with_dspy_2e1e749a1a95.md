@@ -1,13 +1,15 @@
 ### Title: Building an AI Assistant with DSPy
-#### Main
-**Introduction to DSPy and the Problem with Prompt Engineering**
-The article begins by expressing the author's frustration with prompt engineering in the context of working with Large Language Models (LLMs). The author criticizes the brittleness of prompts and the shift from precise programming languages to ambiguous natural language instructions. This sets the stage for introducing DSPy, a high-level programming framework designed to alleviate these issues by allowing developers to build agent pipelines programmatically without directly dealing with prompts, and to tune these pipelines in a data-driven and LLM-agnostic manner.
-**Building an AI Assistant with DSPy**
-The author proposes building an AI assistant as a way to demonstrate the capabilities of DSPy. An AI assistant is defined as a computer program that assists humans in tasks, ideally working on behalf of the user. The author outlines the typical functionalities of an AI assistant, including information retrieval, document analysis, form filling, parameter collection, function calling, and error identification. The use case chosen for illustration is an AI assistant for bridge bidding, chosen for its complexity and relevance to potential real-world applications.
-**Agent Framework**
-The article describes the agent framework used by the AI assistant, which relies on backend services invoked via agents built using language models. This framework allows for decoupling and specialization, with agents capable of reasoning, searching, and performing non-textual work. The AI assistant acts as a fluent and coherent LLM that routes intents and is supported by a policy or guardrails LLM for filtering.
-**Zero Shot Prompting with DSPy**
-The author introduces the concept of Zero Shot prompting with DSPy, providing a Python code snippet to illustrate how DSPy facilitates interaction with an LLM to answer questions. The code demonstrates how to subclass `dspy.Module`, set up a language model module, and write a `forward()` method that processes inputs and returns outputs. The process is shown to be LLM-agnostic, emphasizing the ease of use and flexibility of DSPy.
+#### Introduction
+The article "Building an AI Assistant with DSPy," published on March 7, 2024, discusses the challenges of prompt engineering with Large Language Models (LLMs) and introduces DSPy, a high-level programming framework designed to simplify the development of AI assistants by automating the process of writing and tuning prompts for LLMs. The author expresses frustration with the current state of LLM-based application development, which often involves cumbersome prompt engineering, and proposes DSPy as a solution that allows developers to focus on building agent pipelines programmatically without directly dealing with prompts.
+#### Main Content
+##### Disadvantages of Prompt Engineering
+The author begins by highlighting the limitations and frustrations associated with prompt engineering, including its brittleness and the unappealing necessity to coax desired responses from LLMs through flattery or bribery. This sets the stage for the introduction of DSPy as a tool that abstracts away the complexities of prompt engineering, allowing developers to leverage LLMs more effectively and efficiently.
+##### Concept of an AI Assistant
+An AI assistant is defined as a computer program that aids humans in completing tasks by streamlining workflows through information retrieval, document analysis, form filling, function calling, and error identification. The author chooses the card game bridge as a use case to demonstrate the development of an AI assistant with DSPy, emphasizing that the principles applied can be generalized to other domains.
+##### Agent Framework
+The article describes an agent framework where backend services are invoked via agents built using LLMs. This framework allows for decoupling and specialization, with agents capable of reasoning, searching, and performing non-textual work, while a fluent and coherent LLM fronts the entire framework, handling intents and routing them appropriately.
+##### Zero Shot Prompting with DSPy
+The author introduces DSPy's approach to zero-shot prompting, showcasing how to build a simple module that queries an LLM for information about the game of bridge. This section includes a Python code snippet demonstrating the creation of a `ZeroShot` class that inherits from `dspy.Module` and uses `dspy.Predict` to send a prompt to an LLM and receive a response. The process is described as LLM-agnostic, emphasizing DSPy's flexibility in working with different LLMs.
 ```python
 class ZeroShot(dspy.Module):
   """
@@ -19,18 +21,9 @@ class ZeroShot(dspy.Module):
   def forward(self, question):
     return self.prog(question="In the game of bridge, " + question)
 ```
-The article then shows how to initialize DSPy with an LLM and invoke the module to get a response, highlighting the simplicity of changing LLMs within DSPy.
-```python
-gemini = dspy.Google("models/gemini-1.0-pro",
-api_key=api_key,
-temperature=temperature)
-dspy.settings.configure(lm=gemini, max_tokens=1024)
-module = ZeroShot()
-response = module("What is Stayman?")
-print(response)
-```
-**Text Extraction and RAG**
-Further elaborating on DSPy's capabilities, the author discusses text extraction using LLMs for entity extraction, providing another Python code snippet as an example. The article also mentions DSPy's built-in support for various retrievers, including ChromaDB, and how these can be integrated into the AI assistant's workflow.
+The article further illustrates how to configure DSPy with an LLM and invoke the `ZeroShot` module to get a response to a query about Stayman, a bridge bidding convention.
+##### Text Extraction
+DSPy's capabilities extend beyond simple LLM calls to include entity extraction. The author presents another Python code snippet for a module that extracts bridge-related terms from a question. This example highlights DSPy's ability to represent module signatures as Python classes and its concise, readable syntax.
 ```python
 class Terms(dspy.Signature):
   """
@@ -53,34 +46,12 @@ class FindTerms(dspy.Module):
     )
     return prediction.terms
 ```
-**Orchestration and Optimizer**
-The article concludes with a discussion on orchestrating the various agent modules using another Python code snippet and introduces the concept of optimizing the entire pipeline using DSPy's teleprompter (soon to be renamed Optimizer). This optimization process is data-driven, based on example data, and aims to fine-tune the prompts for improved performance.
-```python
-class AdvisorSignature(dspy.Signature):
-  definitions = dspy.InputField(format=str)  # function to call on input to make it a string
-  bidding_system = dspy.InputField(format=str) # function to call on input to make it a string
-  question = dspy.InputField()
-  answer = dspy.OutputField()
-class BridgeBiddingAdvisor(dspy.Module):
-  """
-  Functions as the orchestrator. All questions are sent to this module.
-  """
-  def __init__(self):
-    super().__init__()
-    self.find_terms = FindTerms()
-    self.definitions = Definitions()
-    self.prog = dspy.ChainOfThought(AdvisorSignature, n=3)
-  def forward(self, question):
-    terms = self.find_terms(question)
-    definitions = [self.definitions(term) for term in terms]
-    bidding_system = bidding_rag(question)
-    prediction = self.prog(definitions=definitions,
-                           bidding_system=bidding_system,
-                           question="In the game of bridge, " + question,
-                           max_tokens=-1024)
-    return prediction.answer
-```
-The article presents a compelling case for the use of DSPy in building AI assistants, emphasizing its ability to abstract away the complexities of prompt engineering and LLM interaction, thereby allowing developers to focus on the logic and functionality of their applications.
+##### Retrieval-Augmented Generation (RAG) and Orchestration
+The article briefly mentions DSPy's built-in support for various retrievers, including ChromaDB, and the orchestration of agent modules within a DSPy-based AI assistant. The orchestration process involves invoking agent modules in a specific sequence to fulfill user queries or tasks.
+##### Optimizer
+DSPy's optimizer feature is introduced, which allows for the automatic tuning of prompts based on example data. This feature is exemplified through the use of a `teleprompt.LabeledFewShot` class that compiles an optimized version of an orchestrator module using training data. The author compares the outputs of the original and optimized pipelines, demonstrating the effectiveness of DSPy's optimization in improving response accuracy.
+#### Conclusion
+The article concludes with an endorsement of DSPy as a powerful tool for developing AI assistants without the need for manual prompt engineering. The author's examples, ranging from simple query responses to complex orchestration and optimization of agent modules, illustrate DSPy's versatility and potential to streamline the development of LLM-based applications. The article encourages further exploration of DSPy and its applications in various domains.
 #### Links:
   - [Open in app - rsci.app.link](https://rsci.app.link/?%24canonical_url=https%3A%2F%2Fmedium.com%2Fp%2F2e1e749a1a95&%7Efeature=LoOpenInAppButton&%7Echannel=ShowPostUnderCollection&source=---two_column_layout_nav----------------------------------)
   - [DSPy+github.com stanfordnlp dspy](https://github.com/stanfordnlp/dspy)

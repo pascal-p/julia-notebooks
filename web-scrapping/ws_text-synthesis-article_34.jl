@@ -52,8 +52,8 @@ const LLM_PARAMS = Dict{Symbol, Union{String, Real}}(
 const INSTRUCT_PROMPT = """Generate a comprehensive and detailed section-by-section synthesis of the following article (delimited by triple backticks) about "$(TOPIC)".
 
 Important:
-- Please ignore any web links provided in the excerpt and refrain from commenting on them, as they will be addressed separately at a later stage. Consequently, do not include a "Links" section.
-- Render all code blocks, as marked by "```code" and "```", exactly once. For Python code ensure proper formatting by using an indent of two space characters and adding one empty line to separate function, method, or class definitions.
+- Ignore any web links provided in the excerpt and refrain from commenting on them, as they will be addressed separately at a later stage. Consequently, do not include a "Links" section.
+- Render all code blocks, as marked by "```code" and "```", exactly once. For Python code ensure proper formatting by using an indent of two space characters and an empty line to clearly separate function, method, or class definitions.
 
 Here is the excerpt:
 """;
