@@ -12,6 +12,7 @@ begin
 	using Gumbo
 	using Cascadia
 	using OpenAI
+	using URIs
 	# using AbstractTrees
 	# using Dates
 
@@ -209,7 +210,7 @@ md"""
 """
 
 # ╔═╡ c4f7a724-fe95-45cb-94af-656cc5fbebb5
-Markdown.parse(join(synthesis, "\n"))
+#Markdown.parse(join(synthesis, "\n"))
 
 # ╔═╡ fe39ac9a-88fc-4b35-9e91-e4d93b2187b3
 md"""
@@ -233,6 +234,7 @@ Gumbo = "708ec375-b3d6-5a57-a7ce-8257bf98657a"
 HTTP = "cd3eb016-35fb-5094-929b-558a96fad6f3"
 OpenAI = "e9f21f70-7185-4079-aca2-91159181367c"
 PlutoUI = "7f904dfe-b85e-4ff6-b463-dae2292396a8"
+URIs = "5c2747f8-b7ea-4ff2-ba2e-563bfd36b1d4"
 
 [compat]
 Cascadia = "~1.0.2"
@@ -240,6 +242,7 @@ Gumbo = "~0.8.2"
 HTTP = "~1.10.1"
 OpenAI = "~0.9.0"
 PlutoUI = "~0.7.54"
+URIs = "~1.5.1"
 """
 
 # ╔═╡ 00000000-0000-0000-0000-000000000002
@@ -248,7 +251,7 @@ PLUTO_MANIFEST_TOML_CONTENTS = """
 
 julia_version = "1.10.2"
 manifest_format = "2.0"
-project_hash = "362c25656f7bf23fff2103f2e87b5b440956ebf6"
+project_hash = "593918d2e0ff3666f874016d84790ad0e37a2f1a"
 
 [[deps.AbstractPlutoDingetjes]]
 deps = ["Pkg"]

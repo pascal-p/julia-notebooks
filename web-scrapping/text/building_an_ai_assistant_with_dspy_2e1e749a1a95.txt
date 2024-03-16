@@ -208,17 +208,13 @@ Learn how to play bridge here:
 Writer for
 articles are personal observations and not investment advice.
  Links:
- - ("https://rsci.app.link/?%24canonical_url=https%3A%2F%2Fmedium.com%2Fp%2F2e1e749a1a95&%7Efeature=LoOpenInAppButton&%7Echannel=ShowPostUnderCollection&source=---two_column_layout_nav----------------------------------", "Open in app")
  - ("https://github.com/stanfordnlp/dspy", "DSPy")
  - ("https://github.com/lakshmanok/lakblogs/tree/main/bridge_bidding_advisor", "entire code is on GitHub")
  - ("https://github.com/lakshmanok/lakblogs/blob/main/bridge_bidding_advisor/bidding_advisor.py", "bidding_advisor.py")
  - ("https://github.com/lakshmanok/lakblogs/tree/main/bridge_bidding_advisor", "code in GitHub")
  - ("https://github.com/lakshmanok/lakblogs/blob/main/bridge_bidding_advisor/bidding_advisor.py", "bidding_advisor.py")
- - ("https://medium.com/tag/machine-learning?source=post_page-----2e1e749a1a95---------------machine_learning-----------------", "")
- - ("https://medium.com/tag/prompt-engineering?source=post_page-----2e1e749a1a95---------------prompt_engineering-----------------", "")
- - ("https://medium.com/tag/large-language-models?source=post_page-----2e1e749a1a95---------------large_language_models-----------------", "")
- - ("https://medium.com/tag/bridge?source=post_page-----2e1e749a1a95---------------bridge-----------------", "")
- - ("https://medium.com/tag/programming?source=post_page-----2e1e749a1a95---------------programming-----------------", "")
- - ("https://medium.statuspage.io/?source=post_page-----2e1e749a1a95--------------------------------", "")
- - ("https://speechify.com/medium?source=post_page-----2e1e749a1a95--------------------------------", "")
- - ("https://medium.com/business?source=post_page-----2e1e749a1a95--------------------------------", "")
+ - ("https://medium.com/tag/machine-learning?source=post_page-----2e1e749a1a95---------------machine_learning-----------------", "machine_learning")
+ - ("https://medium.com/tag/prompt-engineering?source=post_page-----2e1e749a1a95---------------prompt_engineering-----------------", "prompt_engineering")
+ - ("https://medium.com/tag/large-language-models?source=post_page-----2e1e749a1a95---------------large_language_models-----------------", "large_language_models")
+ - ("https://medium.com/tag/bridge?source=post_page-----2e1e749a1a95---------------bridge-----------------", "bridge")
+ - ("https://medium.com/tag/programming?source=post_page-----2e1e749a1a95---------------programming-----------------", "programming")
