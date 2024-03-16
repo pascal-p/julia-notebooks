@@ -12,8 +12,7 @@ begin
 	using Gumbo
 	using Cascadia
 	using OpenAI
-	# using AbstractTrees
-	# using Dates
+	using URIs
 
 	PlutoUI.TableOfContents(indent=true, depth=4, aside=true)
 end

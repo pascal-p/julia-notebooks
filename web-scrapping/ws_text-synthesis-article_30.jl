@@ -11,7 +11,8 @@ begin
 	using HTTP
 	using Gumbo
 	using Cascadia
-	using OpenAI
+        using OpenAI
+        using URIs
 	# using AbstractTrees
 	# using Dates
 
