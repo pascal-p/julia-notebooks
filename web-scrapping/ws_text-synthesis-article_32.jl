@@ -39,12 +39,22 @@ const URL = "https://paul-bruffett.medium.com/llm-auto-prompt-chaining-609243298
 # ╔═╡ 797e6deb-e014-4609-b0d4-7f3ec670cb1c
 const TOPIC = "LLM (Large Language Models) auto-prompt"
 
+# ╔═╡ 7df1d566-a7a8-4a9d-a477-2e2fea683e27
+const LLM_PARAMS = Dict{Symbol, Union{String, Real}}(
+	:max_tokens => 4096,
+	:model => "gpt-4-turbo-preview",
+	:temperature => 0.2,
+	:seed => 117,
+)
+
 # ╔═╡ 2f4ae40f-a1ab-470b-a1b7-a04fec353b0e
-const INSTRUCT_PROMPT = """Generate a comprehensive and detailed synthesis, section by section, of the following excerpt (delimited by triple backticks) about $(TOPIC).
+const INSTRUCT_PROMPT = """Generate a comprehensive and detailed section-by-section synthesis of the following article (delimited by triple backticks) about "$(TOPIC)". In particular, include all the examples with their associated output code blocks.
 
 Important:
-- Please ignore and abstain from any comment about the web links for the reference as they will be handled differently later, i.e no "Links" section. 
-- If provided in the excerpt then render all code blocks, as delimited by "```code" and "```", once. 
+- Ignore any web links provided in the excerpt and refrain from commenting on them, as they will be addressed separately at a later stage. Consequently, do not include a "Links" section.
+- Render all code blocks, as delimited by "```code" and "```", verbatim, in full, and exactly once, including the code explanation from the original article. 
+  - For the Python code blocks, apply proper formatting by using an indent of two space characters and vertical spacing between logical units such as loops, functions, methods and classes... 
+  - The output code blocks which represent program outputs must be rendered pre-formatted. 
 
 Here is the excerpt:
 """;
@@ -52,8 +62,19 @@ Here is the excerpt:
 # ╔═╡ ba4e4c0f-2835-4a76-a9d4-7d7ba02becb2
 println(INSTRUCT_PROMPT)
 
+# ╔═╡ 808c115f-57f6-499d-9c3b-b3dca7279508
+# for some reason SYS_PROMPT as defined `support/utils.jl` is not entierly followed by the LLM.
+# therefore shorten it amd move section about code block isnto USER_PROMPT...
+# ..and redefining `SYS_PROMPT` as `_SYS_PROMPT`
+
+_SYS_PROMPT = """You are a smart AI research assistant tasked with analyzing and synthesizing articles. You are thorough and deliberate in your approach before drafting your answers. You excel at organizing the provided articles into coherent sections, with introductions and conclusions that highlight the main ideas, reasoning, and contributions.
+
+Proceed methodically, step by step, ensuring that the synthesis is accurately structured into coherent sections, capturing every fact, key point, acronym, example, and explanation. Always begin with a section detailing the article's title, publication date, author, and link (when such information is available). Preserve all the original sections from the article for high fidelity. Aim for a synthesis that is exhaustive, without overlooking any significant information.
+
+Your style is formal, logical, and precise. Refrain from making comments about your synthesis. You value consistency and completeness. You format the synthesis with Markdown, clearly separating sections, subsections, lists etc..."""
+
 # ╔═╡ 27bf4bd5-e50f-4266-9b67-2dec9e3ece3e
-println(SYS_PROMPT)
+println(_SYS_PROMPT)
 
 # ╔═╡ 68c8922f-0cb2-41d9-9efe-3ed7a00dd76f
 const OUTFILE = split(URL, "/")[end:end] |>
@@ -102,7 +123,7 @@ rroot |> propertynames, tag(rroot.parent)
 # traverse_article_structure(rroot; selector="p.pw-post-body-paragraph")
 
 # ╔═╡ 67fd72dc-5540-440d-a8f3-8324914553b8
-text = extract_content(
+text = extract_content( 
 	rroot;
 	selectors=["div.ch.bg.fy.fz.ga.gb"],  # selectors=["p.pw-post-body-paragraph"],
 	verbose=true,
@@ -129,7 +150,7 @@ md_title = extract_content(
 # ╔═╡ 72d4f892-2bd2-43af-b71e-5252a666ce0c
 md = extract_content(
 	rroot; 
-	selectors=[".hz.ia"],
+	selectors=[".hz.ia"], 
 	verbose=false,
 	only_tags=[:div, :p, :span, :a]
 )  # other metadata
@@ -163,14 +184,18 @@ md"""
 """
 
 # ╔═╡ e2ffe835-65dc-4c85-aa9a-d98867da2ff5
- synthesis = make_timed_chat_request(
+synthesis = make_timed_chat_request(
+	 _SYS_PROMPT,
 	 INSTRUCT_PROMPT,
 	 full_text;
-	 max_tokens=4096,
-	 model="gpt-4-turbo-preview",
-	 temperature=0.2,
-	 seed=117,
+	 LLM_PARAMS...
 )
+## rather than default, which uses `SYS_PROMPT`
+# synthesis = make_timed_chat_request(
+# 	 INSTRUCT_PROMPT,
+# 	 full_text;
+# 	 LLM_PARAMS...
+# )
 
 # ╔═╡ 9b661918-23b6-46fb-9af1-53454d750d5f
 synthesis_links = string(
@@ -224,6 +249,7 @@ Gumbo = "708ec375-b3d6-5a57-a7ce-8257bf98657a"
 HTTP = "cd3eb016-35fb-5094-929b-558a96fad6f3"
 OpenAI = "e9f21f70-7185-4079-aca2-91159181367c"
 PlutoUI = "7f904dfe-b85e-4ff6-b463-dae2292396a8"
+URIs = "5c2747f8-b7ea-4ff2-ba2e-563bfd36b1d4"
 
 [compat]
 Cascadia = "~1.0.2"
@@ -231,6 +257,7 @@ Gumbo = "~0.8.2"
 HTTP = "~1.10.1"
 OpenAI = "~0.9.0"
 PlutoUI = "~0.7.54"
+URIs = "~1.5.1"
 """
 
 # ╔═╡ 00000000-0000-0000-0000-000000000002
@@ -239,7 +266,7 @@ PLUTO_MANIFEST_TOML_CONTENTS = """
 
 julia_version = "1.10.2"
 manifest_format = "2.0"
-project_hash = "362c25656f7bf23fff2103f2e87b5b440956ebf6"
+project_hash = "593918d2e0ff3666f874016d84790ad0e37a2f1a"
 
 [[deps.AbstractPlutoDingetjes]]
 deps = ["Pkg"]
@@ -628,8 +655,10 @@ version = "17.4.0+2"
 # ╠═b61d20de-c1dc-4f88-9266-1062dd9d5cd8
 # ╠═f4c27df9-bbc1-4498-b7a0-42da0d049199
 # ╠═797e6deb-e014-4609-b0d4-7f3ec670cb1c
+# ╠═7df1d566-a7a8-4a9d-a477-2e2fea683e27
 # ╠═2f4ae40f-a1ab-470b-a1b7-a04fec353b0e
 # ╠═ba4e4c0f-2835-4a76-a9d4-7d7ba02becb2
+# ╟─808c115f-57f6-499d-9c3b-b3dca7279508
 # ╠═27bf4bd5-e50f-4266-9b67-2dec9e3ece3e
 # ╠═68c8922f-0cb2-41d9-9efe-3ed7a00dd76f
 # ╠═2e10b0e3-66ac-4507-ad7b-a19089b85308

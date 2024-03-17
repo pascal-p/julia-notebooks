@@ -285,11 +285,7 @@ DSPy offers an interesting framework for applying some traditional machine learn
 --
 Enterprise Architect specializing in data and analytics.
  Links:
- - ("https://rsci.app.link/?%24canonical_url=https%3A%2F%2Fmedium.com%2Fp%2F60924329833f&%7Efeature=LoOpenInAppButton&%7Echannel=ShowPostUnderUser&source=---two_column_layout_nav----------------------------------", "Open in app")
  - ("https://github.com/stanfordnlp/dspy", "DSPy offers a framework")
+ - ("https://medium.com/tag/llmops?source=post_page-----60924329833f---------------llmops-----------------", "llmops")
  - ("https://github.com/paulbruffett/DSPy/blob/main/DSPy%20Intro.ipynb", "this notebook")
- - ("https://medium.com/tag/llm?source=post_page-----60924329833f---------------llm-----------------", "")
- - ("https://medium.com/tag/llmops?source=post_page-----60924329833f---------------llmops-----------------", "")
- - ("https://medium.statuspage.io/?source=post_page-----60924329833f--------------------------------", "")
- - ("https://speechify.com/medium?source=post_page-----60924329833f--------------------------------", "")
- - ("https://medium.com/business?source=post_page-----60924329833f--------------------------------", "")
+ - ("https://medium.com/tag/llm?source=post_page-----60924329833f---------------llm-----------------", "llm")
