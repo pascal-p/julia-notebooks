@@ -78,7 +78,7 @@ function extract_links(
   root;
   selectors=["a"], verbose=true,
   restrict_to=["github", "LinkedIn"],
-  excluding_regex=r"signin\?|policy\.medium\.com|followers\?|help\.medium|medium.com/(?:\?source|search\?|@)|work\-at\-medium|OpenInApp|com/about"i,
+  excluding_regex=r"signin\?|policy\.medium\.com|followers\?|help\.medium|medium.com/(?:\?source|search\?|@)|work\-at\-medium|OpenInApp|com/about"i, # medium spec
   filtering_regex=r"^(?:layout_nav|global_nav|topnav|post_header|_footer|Follow|Sign in|[a-f0-9]+|/[a-z0-9]*)$"i, # for filtering link title (mostly irrelevant to the article)
   only_tags=[:a]
 )::Vector{Tuple{String, String}}
@@ -87,16 +87,22 @@ function extract_links(
   sel_vec = _get_selectors(root, selectors)
   for element ∈ sel_vec
     if hasproperty(element, :attributes)
-      if match(join(restrict_to, "|") |> p -> Regex(p, "i"), element.attributes["href"]) !== nothing
-        link_ref = element.attributes["href"]
+      link_ref = element.attributes["href"]
+      match(r"^https?://", link_ref) === nothing && continue  # must start with http[s]://
+
+      if match(join(restrict_to, "|") |> p -> Regex(p, "i"), link_ref) !== nothing
         link_title = dft(element.children, only_tags)
+        match(r"https?://"i, link_title) !== nothing && continue # ignore title which contains URI(s)
         uri = URIs.URI(link_ref)
 
         if length(link_title) == 0 || lowercase(link_title) == "open in app"
           # ex. uri.query == "source=post_page-----cfe30cc73908---------------dspy-----------------"
           # get `dspy`
           for uri_part ∈ [uri.query, uri.path]
-            link_title = filter(s -> length(s) > 0, split(uri_part, '-'))[end]
+            _ary = filter(s -> length(s) > 0, split(uri_part, '-'))
+            link_title = length(_ary) > 0 ? _ary[end] : ""
+
+            match(r"https?://|^about|^/"i, link_title) !== nothing && (link_title = "") # ignore title which contains URI(s),. or about or ^/
             length(link_title) == 0 && continue
 
             # is the title acceptable? filter out navigation links...
@@ -120,7 +126,7 @@ function extract_links(
   filter(
     tupl -> match(excluding_regex, tupl[1]) === nothing,
     links
-  )
+  ) |> Set |> collect
 end
 
 _get_selectors(root, selectors::Vector) = vcat((eachmatch(Selector(selector), root) for selector ∈ selectors)...)
