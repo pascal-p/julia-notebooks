@@ -1,0 +1,150 @@
+- Title: 
+
+Inside DSPy: The New Language Model Programming Framework You Need to Know About
+September 4, 2023
+Share this post
+- Author and date: Last Updated on November 6, 2023 by
+Editorial Team
+Originally published on
+Towards AI
+.
+thesequence.substack.com
+The universe of language model programming(LMP) frameworks has been expanding rapidly on the last few months. Frameworks such as LangChain or LlamaIndex have certainly achieved relevant levels of adoption within the LLM community and Microsoft’s Semantic Kernel is boosting an impressive set of capabilities. Recently,
+a new alternative known as DSPy
+came into the scene with a unique approach to LMP.
+DSPy was created by Stanford University researchers with the goal of providing improved abstractions for different LMP tasks. DSPy prioritizes programming over prompting in an attempt to enable the foundation to create more sophisticated LMP apps. Part of the current set of limitations of LLMs is that they are not very effective at tasks such as control logic such as loops or conditional statements, and they also require fundamentally different constructs for tasks such as fine-tuning or knowledge-augmentation. DSPy attempts to tackle these problems with a programming-centric approach.
+The experience and principles of DSPy shows some ressemble with PyTorch in the
+deep learning
+space. When building
+deep learning
+apps using PyTorch, data scientists model a given neural network and use declarative layers or optimizers to incorporate a desired logic. Similarly, DSPy includes building blocks such as ChainOfThought or Retrieve and compiles the program, optimizing the prompts based on specific metrics. While this might feel like a new approach in LMP, the approach is quite traditional.
+DSPy prioritizes programming over prompting tasks, unifying strategies for both prompting and fine-tuning language models (LMs). The framework enhances these techniques with reasoning and tool/retrieval augmentation, all conveyed through a concise collection of Pythonic operations that are composable and capable of learning.
+Within DSPy’s framework, there exist composable and declarative modules designed to guide LLMs, following a familiar Pythonic structure. Notably, DSPy introduces an automatic compiler that educates LLMs on executing declarative stages within a program. This compiler internally traces the program’s execution and subsequently devises high-quality prompts suitable for larger LMs, or even trains automatic finetuning for smaller LMs, imparting knowledge of the task’s intricacies.
+DSPy functions as a comprehensive solution for intricate tasks involving language models (LMs) and retrieval models (RMs), DSPy harmonizes approaches for both prompting and fine-tuning LMs, while also accommodating methods for reasoning and tool/retrieval augmentation. Through DSPy, these methodologies are encapsulated by a compact ensemble of Pythonic modules, which facilitate composability and learning.
+DSPy’s framework is enabled by its provision of composable and declarative modules, structured in a manner familiar to Python users. This advancement elevates “prompting techniques” such as chain-of-thought and self-reflection from manual string manipulation tactics to versatile modular procedures capable of adapting to diverse tasks.
+Notably, DSPy introduces an automatic compiler, imparting LMs with the capability to execute declarative steps outlined in a program. The DSPy compiler methodically traces the program’s execution, yielding well-crafted prompts suitable for large-scale LMs, and it can also train automatic finetuning for smaller LMs. This empowers these models to internalize the task’s procedural nuances.
+Importantly, the DSPy compiler operates without the need for manual labels for intermediary steps within a program. This stands in contrast to the conventional practice of “prompt engineering” relying on ad hoc string manipulation techniques. Instead, DSPy opens the door to exploring a structured realm of modular and trainable components, providing a systematic approach that replaces brittle manual processes.
+The DSPy programming experience is based on two fundamental constructs: Signatures and Teleprompters.
+Within the realm of DSPy, when tasks are allocated to LMs, specificity in behavior is expressed through Signatures. A Signature encapsulates a declarative representation of an input/output behavioral pattern associated with a DSPy module.
+Unlike expending effort on guiding an LLM through sub-tasks, Signatures empower DSPy users to elucidate the nature of the sub-task. Subsequently, the DSPy compiler takes on the responsibility of devising intricate prompts tailored for a large LM or fine-tuning a smaller LLM, all in line with the specified Signature, the provided data, and the existing pipeline.
+A Signature comprises three fundamental constituents:
+The following code illustrates a signature based on the ChainOfThought module with quite a few controls:
+Compilation is at the center of the DSPy experience.
+Compiling hinges on three pivotal factors: a potentially compact
+training data
+set, a validation metric, and the selection of a teleprompter from DSPy’s repertoire. These teleprompters, embedded within DSPy, are potent optimizers capable of mastering the art of formulating impactful prompts tailored to any program’s modules. (The “tele-” prefix in “teleprompter” implies “at a distance,” referencing the automatic nature of prompting.)
+Remarkably, DSPy’s demands for labeling are notably modest. Consider an example retrieve augmented generation(RAG) pipeline: even a handful of instances containing questions and their human-annotated answers could suffice. Even when encompassing multiple intricate stages, as exemplified in the basic RAG model comprising context retrieval, a chain of thought, and the ultimate answer, labels are only mandated for the initial query and the final response. DSPy ingeniously extrapolates intermediate labels necessary to support the entire pipeline. Should modifications be made to the pipeline structure, the bootstrapped data will dynamically evolve to align with the altered setup.
+An instance of the RAG training set could be structured as follows:
+following that, articulating validation criteria is imperative. This logic imposes constraints on program behavior or module performance. For instance, a validation function for RAG might involve a check as depicted:
+Distinct teleprompter options come with varied trade-offs related to cost optimization versus quality enhancement. In the context of RAG, a choice could be the straightforward BootstrapFewShot teleprompter. This involves initializing the teleprompter itself with a custom validation function (such as my_rag_validation_logic) and subsequently conducting compilation against a designated training set (my_rag_trainset).
+When utilizing the compiled RAG instance, it ushers in a phase of invoking the LM with intricate prompts. These prompts incorporate concise demonstrations of chain-of-thought retrieval-augmented question answering, all tailored to the unique dataset in use.
+DSPy is still in super early stages but already highlights quite a few promising ideas. A simple and consistent programming model that resembles the PyTorch experience and a modular experience allows LMP developers to build quite sophisticated experiences. I hope that DSPy evolves from this initial stage to a stack that can match LangChain and LlamaIndex because a lot of the ideas of the framework are definitely needed in the LMP space.
+Join thousands of data leaders
+on the
+AI newsletter
+. Join over 80,000 subscribers and keep up to date with the latest developments in AI. From research to projects and ideas. If you are building an
+AI startup
+, an AI-related product, or a service, we invite you to consider becoming a
+sponsor
+.
+Published via
+Towards AI
+- Link: https://towardsai.net/p/machine-learning/inside-dspy-the-new-language-model-programming-framework-you-need-to-know-about
+Main:
+Originally published on
+.
+The universe of language model programming(LMP) frameworks has been expanding rapidly on the last few months. Frameworks such as LangChain or LlamaIndex have certainly achieved relevant levels of adoption within the LLM community and Microsoft’s Semantic Kernel is boosting an impressive set of capabilities. Recently,
+came into the scene with a unique approach to LMP.
+DSPy was created by Stanford University researchers with the goal of providing improved abstractions for different LMP tasks. DSPy prioritizes programming over prompting in an attempt to enable the foundation to create more sophisticated LMP apps. Part of the current set of limitations of LLMs is that they are not very effective at tasks such as control logic such as loops or conditional statements, and they also require fundamentally different constructs for tasks such as fine-tuning or knowledge-augmentation. DSPy attempts to tackle these problems with a programming-centric approach.
+The experience and principles of DSPy shows some ressemble with PyTorch in the
+space. When building
+apps using PyTorch, data scientists model a given neural network and use declarative layers or optimizers to incorporate a desired logic. Similarly, DSPy includes building blocks such as ChainOfThought or Retrieve and compiles the program, optimizing the prompts based on specific metrics. While this might feel like a new approach in LMP, the approach is quite traditional.
+DSPy
+DSPy prioritizes programming over prompting tasks, unifying strategies for both prompting and fine-tuning language models (LMs). The framework enhances these techniques with reasoning and tool/retrieval augmentation, all conveyed through a concise collection of Pythonic operations that are composable and capable of learning.
+Within DSPy’s framework, there exist composable and declarative modules designed to guide LLMs, following a familiar Pythonic structure. Notably, DSPy introduces an automatic compiler that educates LLMs on executing declarative stages within a program. This compiler internally traces the program’s execution and subsequently devises high-quality prompts suitable for larger LMs, or even trains automatic finetuning for smaller LMs, imparting knowledge of the task’s intricacies.
+DSPy functions as a comprehensive solution for intricate tasks involving language models (LMs) and retrieval models (RMs), DSPy harmonizes approaches for both prompting and fine-tuning LMs, while also accommodating methods for reasoning and tool/retrieval augmentation. Through DSPy, these methodologies are encapsulated by a compact ensemble of Pythonic modules, which facilitate composability and learning.
+DSPy’s framework is enabled by its provision of composable and declarative modules, structured in a manner familiar to Python users. This advancement elevates “prompting techniques” such as chain-of-thought and self-reflection from manual string manipulation tactics to versatile modular procedures capable of adapting to diverse tasks.
+Notably, DSPy introduces an automatic compiler, imparting LMs with the capability to execute declarative steps outlined in a program. The DSPy compiler methodically traces the program’s execution, yielding well-crafted prompts suitable for large-scale LMs, and it can also train automatic finetuning for smaller LMs. This empowers these models to internalize the task’s procedural nuances.
+Importantly, the DSPy compiler operates without the need for manual labels for intermediary steps within a program. This stands in contrast to the conventional practice of “prompt engineering” relying on ad hoc string manipulation techniques. Instead, DSPy opens the door to exploring a structured realm of modular and trainable components, providing a systematic approach that replaces brittle manual processes.
+The DSPy programming experience is based on two fundamental constructs: Signatures and Teleprompters.
+I. Signatures: Crafting LLM Behavior
+Within the realm of DSPy, when tasks are allocated to LMs, specificity in behavior is expressed through Signatures. A Signature encapsulates a declarative representation of an input/output behavioral pattern associated with a DSPy module.
+Unlike expending effort on guiding an LLM through sub-tasks, Signatures empower DSPy users to elucidate the nature of the sub-task. Subsequently, the DSPy compiler takes on the responsibility of devising intricate prompts tailored for a large LM or fine-tuning a smaller LLM, all in line with the specified Signature, the provided data, and the existing pipeline.
+A Signature comprises three fundamental constituents:
+The following code illustrates a signature based on the ChainOfThought module with quite a few controls:
+```code
+class
+
+GenerateSearchQuery
+(dspy.Signature):
+
+"""Write a simple search query that will help answer a complex question."""
+context = dspy.InputField(desc=
+"may contain relevant facts"
+)
+question = dspy.InputField()
+query = dspy.OutputField()
+### inside your program's __init__ function
+self.generate_answer = dspy.ChainOfThought(GenerateSearchQuery)
+```
+
+II. Enabling Program Optimization via dspy.teleprompt.
+Compilation is at the center of the DSPy experience.
+Compiling hinges on three pivotal factors: a potentially compact
+set, a validation metric, and the selection of a teleprompter from DSPy’s repertoire. These teleprompters, embedded within DSPy, are potent optimizers capable of mastering the art of formulating impactful prompts tailored to any program’s modules. (The “tele-” prefix in “teleprompter” implies “at a distance,” referencing the automatic nature of prompting.)
+Remarkably, DSPy’s demands for labeling are notably modest. Consider an example retrieve augmented generation(RAG) pipeline: even a handful of instances containing questions and their human-annotated answers could suffice. Even when encompassing multiple intricate stages, as exemplified in the basic RAG model comprising context retrieval, a chain of thought, and the ultimate answer, labels are only mandated for the initial query and the final response. DSPy ingeniously extrapolates intermediate labels necessary to support the entire pipeline. Should modifications be made to the pipeline structure, the bootstrapped data will dynamically evolve to align with the altered setup.
+An instance of the RAG training set could be structured as follows:
+```code
+my_rag_trainset
+= [
+dspy.Example(
+question=
+"Which award did Gary Zukav's first book receive?"
+,
+answer=
+"National Book Award"
+),
+...
+]
+```
+
+following that, articulating validation criteria is imperative. This logic imposes constraints on program behavior or module performance. For instance, a validation function for RAG might involve a check as depicted:
+```code
+def
+validate_context_and_answer
+(example, pred, trace=None):
+answer_match = example.answer.
+lower
+() == pred.answer.
+lower
+()
+context_match =
+any
+((pred.answer.
+lower
+() in c) for c in pred.context)
+return answer_match and context_match
+```
+
+Distinct teleprompter options come with varied trade-offs related to cost optimization versus quality enhancement. In the context of RAG, a choice could be the straightforward BootstrapFewShot teleprompter. This involves initializing the teleprompter itself with a custom validation function (such as my_rag_validation_logic) and subsequently conducting compilation against a designated training set (my_rag_trainset).
+```code
+from
+dspy.teleprompt
+import
+BootstrapFewShot
+teleprompter = BootstrapFewShot(metric=my_rag_validation_logic)
+compiled_rag = teleprompter.
+compile
+(RAG(), trainset=my_rag_trainset)
+```
+
+When utilizing the compiled RAG instance, it ushers in a phase of invoking the LM with intricate prompts. These prompts incorporate concise demonstrations of chain-of-thought retrieval-augmented question answering, all tailored to the unique dataset in use.
+DSPy is still in super early stages but already highlights quite a few promising ideas. A simple and consistent programming model that resembles the PyTorch experience and a modular experience allows LMP developers to build quite sophisticated experiences. I hope that DSPy evolves from this initial stage to a stack that can match LangChain and LlamaIndex because a lot of the ideas of the framework are definitely needed in the LMP space.
+on the
+. Join over 80,000 subscribers and keep up to date with the latest developments in AI. From research to projects and ideas. If you are building an
+, an AI-related product, or a service, we invite you to consider becoming a
+.
+Published via
+ Links:
+ - ("https://github.com/stanfordnlp/dspy", "a new alternative known as DSPy")
+ - ("https://towardsai.net/", "Towards AI")
