@@ -19,11 +19,21 @@ Your style is formal, logical, and precise. Refrain from making comments about y
 # Moreover, you meticulously extract and render all pertinent external links and references (including but not limited to GitHub repositories) cited within the source article.
 # Your synthesis is formatted in Markdown to maintain a clear and organized presentation.
 
+function make_timed_chat_request(sys_prompt::String, instruct_prompt::String, data::String; kwargs...)
+  timeit(
+    make_openai_request_chat,
+    sys_prompt,
+    instruct_prompt,  # aka user_prompt
+    data;
+    kwargs...
+  )
+end
+
 function make_timed_chat_request(instruct_prompt::String, data::String; kwargs...)
   timeit(
     make_openai_request_chat,
     SYS_PROMPT,
-    instruct_prompt,
+    instruct_prompt,  # aka user_prompt
     data;
     kwargs...
   )
