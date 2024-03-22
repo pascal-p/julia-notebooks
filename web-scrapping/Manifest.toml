@@ -55,9 +55,9 @@ version = "1.1.0+0"
 
 [[deps.ConcurrentUtilities]]
 deps = ["Serialization", "Sockets"]
-git-tree-sha1 = "9c4708e3ed2b799e6124b5673a712dda0b596a9b"
+git-tree-sha1 = "6cbbd4d241d7e6579ab354737f4dd95ca43946e1"
 uuid = "f0e56b4a-5159-44fe-b623-3e5288b988bb"
-version = "2.3.1"
+version = "2.4.1"
 
 [[deps.Configurations]]
 deps = ["ExproniconLite", "OrderedCollections", "TOML"]
@@ -115,9 +115,9 @@ version = "0.8.4"
 
 [[deps.FuzzyCompletions]]
 deps = ["REPL"]
-git-tree-sha1 = "c8d37d615586bea181063613dccc555499feb298"
+git-tree-sha1 = "40ec72c57559a4473961bbcd12c96bcd4c2aaab4"
 uuid = "fb4132e2-a121-4a70-b8a1-d5b831dcdcc2"
-version = "0.5.3"
+version = "0.5.4"
 
 [[deps.Gumbo]]
 deps = ["AbstractTrees", "Gumbo_jll", "Libdl"]
@@ -133,9 +133,9 @@ version = "0.10.2+0"
 
 [[deps.HTTP]]
 deps = ["Base64", "CodecZlib", "ConcurrentUtilities", "Dates", "ExceptionUnwrapping", "Logging", "LoggingExtras", "MbedTLS", "NetworkOptions", "OpenSSL", "Random", "SimpleBufferStream", "Sockets", "URIs", "UUIDs"]
-git-tree-sha1 = "db864f2d91f68a5912937af80327d288ea1f3aee"
+git-tree-sha1 = "995f762e0182ebc50548c434c171a5bb6635f8e4"
 uuid = "cd3eb016-35fb-5094-929b-558a96fad6f3"
-version = "1.10.3"
+version = "1.10.4"
 
 [[deps.Hyperscript]]
 deps = ["Test"]
@@ -448,9 +448,9 @@ deps = ["InteractiveUtils", "Logging", "Random", "Serialization"]
 uuid = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [[deps.TranscodingStreams]]
-git-tree-sha1 = "3caa21522e7efac1ba21834a03734c57b4611c7e"
+git-tree-sha1 = "14389d51751169994b2e1317d5c72f7dc4f21045"
 uuid = "3bb67fe8-82b1-5028-8e26-92a6c54297fa"
-version = "0.10.4"
+version = "0.10.6"
 weakdeps = ["Random", "Test"]
 
     [deps.TranscodingStreams.extensions]
