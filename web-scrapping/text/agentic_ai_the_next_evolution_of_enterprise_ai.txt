@@ -1,0 +1,157 @@
+- Title: How agentic AI is driving the next evolution of enterprise AI
+- Author and date: Blog / February 15, 2024
+Margo Poda, Content Marketing Manager
+- Link: https://www.moveworks.com/us/en/resources/blog/agentic-ai-the-next-evolution-of-enterprise-ai
+Main:
+Agentic AI is more than just automation — it has the potential to create a sea change in how we work.
+In the past year alone, AI has become increasingly important to enterprise operations, delivering more and more value across functions such as process automation, content generation, and data-driven insights.
+However, many AI deployments have been narrow in scope, focusing on augmenting specific tasks rather than radically reimagining work.
+Enter agentic AI — an evolution in artificial intelligence defined by enhanced autonomy, decision-making capabilities, and adaptability.
+Unlike conventional AI systems that are rigidly programmed for specific tasks, agentic AI can understand and interpret complex and nuanced context and goals, allowing for more sophisticated interactions and decision-making processes.
+In this blog, we will explore the emergence of agentic AI and its potential to redefine enterprise AI, starting by:
+Defining agentic AI and distinguishing it from conventional AI systems
+Tracing the key innovations that have enabled the rise of agentic AI
+Analyzing the potential benefits and drawbacks of implementing agentic AI
+Examining how agentic AI could transform the enterprise
+Discussing sectors and use cases where agentic AI could provide significant advantages
+Exploring what the future could look like with continued advancement of agentic AI
+Understanding agentic AI
+Agentic AI refers to AI systems designed to autonomously pursue complex goals and workflows with limited direct human supervision.
+Agentic AI exhibits autonomous decision-making, planning, and adaptive execution to complete multi-step processes.
+At its core, agentic AI aims to operate more like a human employee — understanding context and instructions in natural language, setting appropriate goals, reasoning through subtasks, and adapting decisions and actions based on changing conditions.
+The critical capabilities of agentic AI include:
+Autonomy
+: The ability to take goal-directed actions with minimal human oversight
+Reasoning
+: Contextual decision-making to make judgment calls and weigh tradeoffs
+Adaptable planning
+: Dynamic adjustment of goals and plans based on changing conditions
+Language understanding
+: Comprehending and following natural language instructions
+Workflow optimization
+: Fluidly moving between subtasks and applications to complete processes efficiently
+Together, these features enable agentic AI to operate autonomously, proactively, and intelligently, increasing its ability to perform complex workflows across the enterprise.
+How agentic AI differs from traditional AI
+Conventional AI is typically programmed to augment specific repetitive or routine tasks.
+While valuable, this narrow AI lacks the bigger-picture understanding and judgment needed for complex workflows.
+In contrast, agentic AI leverages innovations like:
+(LLMs) that comprehend nuanced human speech
+to train complex models
+to enable deep learning
+The ability to
+These key innovations allow agentic AI to set autonomous goals, plan, reason, and adapt when tackling complex objectives across dynamic environments.
+Agentic AI represents a seismic shift.
+With it, enterprise AI tools, like
+, can leverage nuanced language understanding to interpret instructions more accurately while proactively moving between subtasks to complete workflows and making context-aware decisions, reacting intelligently as conditions change. This is to say that agentic architecture unlocks new frontiers of automation, efficiency, and optimized operations.
+The evolution of agentic AI systems
+Conversational AI has rapidly evolved from simple
+to intelligent copilots that can understand language and autonomously make decisions.
+Early
+relied on basic pattern matching and prompted responses within narrow, pre-defined domains. These systems lacked deeper language comprehension and could only handle simple queries.
+As conversational models have been trained on exponentially more data, their plausibly human responses across a wide range of prompts have drastically improved. Large language models like
+demonstrate strong generative abilities to produce natural-sounding content.
+However, enterprise-wide use cases require more than just well-thought-out responses —
+enterprises need AI agents that can reliably manage complex goals and workflows.
+This demand has driven the emergence of agentic capabilities like autonomous goal-setting, reasoning, decision-making, robust language understanding, and the ability to connect with enterprise systems using plugins.
+These agentic capabilities unlock a new generation of enterprise AI solutions — including
+. These tools are being designed to operate without constant human oversight across varied domains. In this way, agentic systems interpret instructions more accurately, set subgoals to accomplish multi-step tasks, and make adaptive choices adjusting to real-time developments, enabling reliable automation of convoluted business objectives.
+Industry leaders in agentic AI
+demonstrates a multi-agent framework that simplifies building workflows and applications with LLMs. It features specialized agents that can be configured with different LLMs and enables seamless human interaction.
+showcases an open-source modular agent that can understand natural language, reason to formulate plans, and execute actions. It is trained on a diverse, unified dataset covering different interactive tasks.
+has been architected with autonomous goal-setting, reasoning, planning, and execution powered by an agentic architecture and plug-in integrations. This approach enables the Moveworks Copilot to reliably automate complex business workflows with minimal oversight across systems.
+These and other innovations showcase the rapid evolution of agentic systems that can productively operate with minimal supervision across dynamic domains.
+Unpacking the pros and cons of agentic AI in the enterprise
+Agentic AI promises to bring big productivity benefits to companies. But businesses need to be careful when using this new technology.
+While there is power in these systems’ abilities to set their own goals and make decisions independently, this autonomy can lead to two major risks:
+First, these systems rely on statistical models that don't always capture rare edge cases. So, they can suggest actions that seem sensible but actually cause problems. Without oversight, flawed recommendations could lead to critical operational issues.
+Second, the complex reasoning these systems use to set goals and make choices is difficult for people to understand. Their thinking process can be opaque, and this lack of transparency makes it hard to audit or trust the AI.
+To use agentic AI responsibly, it is best if companies do the following:
+Require explanations from the AI to make its reasoning transparent.
+Give humans oversight powers to validate the AI's goals and decisions.
+Test the AI extensively to catch potential flaws and edge cases.
+Implement controls and steering mechanisms so the AI's autonomy is constrained.
+With good design and safeguards, companies can benefit from agentic AI's productivity while minimizing risks from its autonomy. The key is balancing powerful AI capabilities with responsible oversight and transparency.
+Agentic AI and its potential impact on enterprises
+The limitations of conventional AI systems mean they cannot reliably achieve complex objectives or operate independently across diverse environments. People are still required to heavily oversee their work.
+Agentic AI promises to radically reshape organizational workflows, roles, and relationships. As AI assistants gain advanced reasoning and planning abilities, they unlock the capacity to take on responsibilities previously reserved for humans.
+Agentic AI promises to unlock new benefits for enterprises:
+Increased efficiency
+by automating complex workflows end-to-end by connecting to external systems and tools
+Freed up employee time
+from mundane tasks for higher impact work
+Optimized operations
+that dynamically respond to shifting conditions
+Within IT departments, agentic AI could automate up to most service desk tickets through self-service resolutions. Help desks would shift from performing repetitive tasks like password resets and device provisions to managing intelligent automation.
+For HR, agents could own end-to-end onboarding and offboarding processes, seamlessly completing workflows spanning dozens of systems with zero human involvement. HRBPs would be freed to focus on strategic priorities and employee engagement.
+Across functions like facilities, finance, marketing, and more, agentic AI could optimize operations in real time. Agentic copilots can adjust goals, adapt plans, and handle exceptions as conditions change without continuous oversight.
+Agentic AI also has the potential to redefine the relationship between humans and AI at work. Rather than replacing employees, digital coworkers would augment human abilities and handle routine work so employees can focus on high-judgment responsibilities.
+Exploring use cases where agentic AI could be highly beneficial
+Certain sectors and industries stand to gain immense value from deploying agentic AI systems:
+: IT teams handle a constant barrage of employee requests and issues. Agentic AI could field common repetitive tickets, freeing IT staff to focus on complex tasks. Autonomous helpers can provide reminders, diagnose issues, search through systems, and take actions based on contextual awareness — greatly reducing resolution times and enhancing employee productivity.
+: HR teams juggle numerous workflows like onboarding, payroll, and benefits management. Agentic AI can take over administrative subtasks, following complex workflows while proactively providing guidance, enabling HR staff to spend more time on strategic initiatives and human interactions.
+Customer service
+: Customer service centers handle large volumes of customer inquiries across channels. Agentic AI can serve as a conversational assistant on web chats and phone calls, understanding requests and walking through solutions while escalating complex issues. This improves experiences and resolution times.
+Fraud monitoring
+: Banks deal with huge transaction volumes and need to detect potential fraud. Agentic AI can continuously monitor account activity patterns to flag anomalous transactions in real time. With 24/7 autonomous oversight, banks can cut fraud losses and minimize false positives.
+Diagnostics
+: In healthcare, doctors must synthesize patient symptoms, medical history, and diagnostic results to identify issues. Agentic AI can assist by analyzing all available data to highlight risks, explain its logic, and suggest preventative actions to improve outcomes.
+Across these use cases and many more, agentic AI promises immense productivity gains, optimized operations, and enhanced human abilities by reliably automating intricate workflows.
+Agentic AI offers a new framework for enterprise AI
+Since the launch of ChatGPT in the Fall of 2023, even basic AI chatbots have started to showcase the raw power of foundation models. With prompting and fine-tuning, they can provide plausible responses across domains. However, reliability remains limited — and performance depends heavily on prompt formulation and training data. While useful for simple applications, additional components are required to tackle complex, mission-critical enterprise workflows.
+This is where enterprise-grade agentic AI comes in — moving beyond basic prompting to autonomous planning, reasoning, and execution. To tackle complex business workflows, additional components are required beyond basic prompting:
+Planning and reasoning
+: Strategically setting subgoals and devising optimal workflows to accomplish complex business objectives.
+Plugins and actions
+: Modular components can take operational steps across systems and execute plans.
+Contextual memory
+: Maintaining awareness of prior interactions and states to offer the best path forward.
+Multimodality
+: Combining modalities like text, voice, and vision for a richer understanding.
+Governance guardrails
+: Ensuring privacy, compliance, transparency, and human oversight of autonomous systems.
+By combining an agentic architecture with these elements, enterprise AI assistants can reliably automate intricate processes from end to end with minimal oversight, unlocking new possibilities for transforming workflows.
+Customizing enterprise agentic AI
+Custom plugins, data connections, and models can further expand an agentic copilot's possibilities:
+Integrations
+: Connecting new data sources and business systems.
+Knowledge resources
+: Ingesting documents, knowledge bases, and other content.
+Specialized models
+: Configuring different LLMs tuned for specific roles.
+Steerability
+: Controlling responses and tuning behavior for an enterprise environment.
+As capabilities compound, so do agentic systems' use cases and value. The key is combining the right building blocks for each organization's needs. Carefully selecting the right custom components for each organization's needs allows agentic AI to address more scenarios with higher accuracy and reliability.
+The future is agentic AI
+As agentic AI proliferates, it will fundamentally reshape how enterprises operate. Leading organizations will assemble virtual workforces blending employees and AI copilots that interact via speech, images, and text to manage workflows, provide services, and execute transactions.
+Architecturally, enterprises can leverage modular platforms to build assistants combining pre-trained models like GPT-4 with customized plugins, executors, and reasoning engines. Copilots may orchestrate activities across departments and systems to fulfill objectives.
+As capabilities advance, delegating narrow tasks will shift to delegating entire workflows to AI.
+The question will evolve from “What can we do with AI?” to “What should we do with AI next?”.
+At Moveworks, we recognize agentic AI's immense potential. By combining autonomous goal-setting, reasoning, planning, and execution with a modular plugin architecture, our copilot can reliably interpret instructions and complete multi-step processes across systems with minimal oversight.
+Agentic AI promises to redefine roles and enhance human-AI collaboration. As assistants handle routine work reliably, humans can focus on higher judgment tasks. With thoughtful implementation, agentic AI can usher in a new era of empowered productivity.
+Learn more about the
+that powers our employee support Copilot.
+Table of contents
+ Links:
+ - ("https://www.moveworks.com/us/en/resources/blog/moveworks-next-gen-copilot", "copilot")
+ - ("https://www.moveworks.com/us/en/resources/blog/what-is-an-ai-copilot", "AI copilots")
+ - ("https://www.moveworks.com/us/en/platform/moveworks-ai", "ai")
+ - ("https://www.moveworks.com/us/en/platform/ai-copilot", "copilot")
+ - ("https://www.moveworks.com/us/en/platform/ai-analytics", "analytics")
+ - ("https://www.moveworks.com/us/en/platform/approval-workflow", "workflow")
+ - ("https://www.moveworks.com/us/en/platform/creator-studio", "studio")
+ - ("https://www.moveworks.com/us/en/solutions/self-service", "service")
+ - ("https://www.moveworks.com/us/en/solutions/ai-for-engineering", "engineering")
+ - ("https://www.moveworks.com/us/en/platform/internal-communication", "communication")
+ - ("https://www.moveworks.com/us/en/platform/ai-workflow-automation", "automation")
+ - ("https://www.moveworks.com/us/en/resources/blog/large-language-models-strengths-and-weaknesses", "Large language models")
+ - ("https://www.moveworks.com/us/en/resources/blog/what-is-gpt-4-and-why-is-it-better-than-gpt-3", "GPT-4")
+ - ("https://www.moveworks.com/us/en/resources/blog/introducing-moveworks-llm-movelm", "Massive datasets")
+ - ("https://www.moveworks.com/us/en/platform/creator-studio", "connect and interact with other systems")
+ - ("https://www.moveworks.com/us/en/platform/data-lookup", "lookup")
+ - ("https://www.moveworks.com/us/en/resources/blog/moveworks-achieves-low-latency-with-nvidia-tensorrt-llm", "Scalable computing power")
+ - ("https://www.moveworks.com/us/en/resources/events/2023-moveworks-live", "live")
+ - ("https://www.moveworks.com/us/en/resources/blog/what-is-conversational-ai", "conversational AI")
+ - ("https://www.moveworks.com/us/en/platform/moveworks-ai", "Moveworks’ AI")
+ - ("https://www.moveworks.com/us/en/solutions/cost-reduction", "reduction")
+ - ("https://www.moveworks.com/us/en/resources/blog/chatbot-vs-conversational-ai", "chatbots")
+ - ("https://www.moveworks.com/us/en/resources/events/moveworks-global", "global")
