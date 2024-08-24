@@ -42,7 +42,7 @@ const URL = "https://..."
 const TOPIC = "LLM (Large Language Models) and <to change>"
 
 # ╔═╡ 7df1d566-a7a8-4a9d-a477-2e2fea683e27
-const LLM_PARAMS = Dict{Symbol, Union{String, Real}}(
+const LLM_PARAMS = Dict{Symbol, Union{String, Real, LLM_Model}}(
 	:max_tokens => 8192,
 	:model => DMODELS["gpt-4o-2024-08-06"],
 	:temperature => 0.2,
