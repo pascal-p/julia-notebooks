@@ -1,0 +1,359 @@
+- Title: Automating Prompt Engineering with DSPy and Haystack
+- Author and date: One of the most frustrating parts of building gen-AI applications is the manual process of optimising prompts. In a
+publication
+made by LinkedIn earlier this year, they described what they learned after deploying an agentic RAG application. One of the main challenges was obtaining consistent quality. They spent 4 months tweaking various parts of the application, including prompts, to mitigate issues such as hallucination.
+DSPy is an open-source library that tries to parameterise prompts so that it becomes an optimisation problem. The
+original paper
+calls prompt engineering “brittle and unscalable” and compares it to “hand-tuning the weights for a classifier”.
+Haystack
+is an open-source library to build LLM applications, including RAG pipelines. It is platform-agnostic and offers a large number of integrations with different LLM providers, search databases and more. It also has its own
+evaluation metrics
+.
+In this article, we will briefly go over the internals of DSPy, and show how it can be used to teach an LLM to prefer more concise answers when answering questions over an academic medical dataset.
+This
+article
+from TDS provides a great in-depth exploration of DSPy. We will be summarising and using some of their examples.
+In order to build a LLM application that can be optimised, DSPy offers two main abstractions:
+and
+. A signature is a way to define the input and output of a system that interacts with LLMs. The signature is translated internally into a prompt by DSPy.
+When using the DSPy
+module (more on this later), this signature is turned into the following prompt:
+Then, DSPy also has
+which define the “predictors” that have parameters that can be optimised, such as the selection of few-shot examples. The simplest module is
+which does not modify the signature. Later in this article we will use the module
+which asks the LLM to provide reasoning.
+Things start to get interesting once we try to optimise a module (or as DSPy calls it “compiling” a module). When optimising a module, you typically need to specify 3 things:
+When using the
+or the
+modules, DSPy searches through the training set and selects the best examples to add to the prompt as few-shot examples. In the case of RAG, it can also include the context that was used to get the final response. It calls these examples “demonstrations”.
+You also need to specify the type of
+optimiser
+you want to use to search through the parameter space. In this article, we use the
+optimiser. How does this algorithm work internally? It is actually very simple and the paper provides some simplified pseudo-code:
+The search algorithm goes through every training input in the
+, gets a prediction and then checks whether it “passes” the metric by looking at
+. If the metric passes, then the examples are added to the
+of the compiled program.
+The entire code can be found in this
+cookbook with associated colab
+, so we will only go through some of the most important steps here. For the example, we use a
+dataset
+derived from the
+PubMedQA dataset
+(both under the MIT license). It has questions based on abstracts of medical research papers and their associated answers. Some of the answers provided can be quite long, so we will be using DSPy to “teach” the LLM to prefer more concise answers, while keeping the accuracy of the final answer high.
+After adding the first 1000 examples to an in-memory document store (which can be replaced by any number of
+retrievers
+), we can now build our RAG pipeline:
+Let’s try it out!
+The answer to the above question:
+We can see how the answers tend to be very detailed and long.
+We start by creating a DSPy signature of the input and output fields:
+As we can see, we already specify in our description that we are expecting a short answer.
+Then, we create a DSPy module that will be later compiled:
+We are using the Haystack retriever previously defined to search the documents in the document store
+. The prediction step is done with the DSPy module
+which teaches the LM to think step-by-step before committing to the response.
+During compilation, the prompt that will be optimised to look like this:
+Finally, we have to define the metrics that we would like to optimise. The evaluator will have two parts:
+Our evaluation dataset is composed of 20 training examples and 50 examples in the devset.
+If we evaluate the current naive RAG pipeline with the code below, we get an average score of 0.49.
+Looking at some examples can give us some intuition on what the score is doing:
+But
+As we can see from the examples, if the answer is too short, it gets a low score because its similarity with the ground truth answer drops.
+We then compile the RAG pipeline with DSPy:
+After we do this and re-evaluate the compiled pipeline, the score is now 0.69!
+Now it’s time to get the final optimised prompt and add it into our Haystack pipeline.
+We can see the few-shot examples selected by DSPy by looking at the
+field in the
+object:
+There are 2 types of examples provided in the final prompt: few-shot examples and bootstrapped demos, like in the prompt shown above. The few-shot examples are question-answer pairs:
+Whereas the bootstrapped demo has the full trace of the LLM, including the context and reasoning provided (in the
+field below):
+All we need to do now is extract these examples found by DSPy and insert them in our Haystack pipeline:
+Our new pipeline becomes:
+Let’s check the same question we tried before.
+Question:
+Before:
+After:
+Job done!
+In this post, we have used DSPy to optimise the prompt used in a Haystack RAG pipeline. We have done so by using a custom metric based on Haystack’s evaluation framework that penalised the LLM for long answers while keeping the similarity with the correct answer high. With this approach, we have managed to improve our performance by almost 40% without having to do any manual prompt engineering.
+- Link: https://towardsdatascience.com/automating-prompt-engineering-with-dspy-and-haystack-926a637a3f43
+Main:
+Automating Prompt Engineering with DSPy and Haystack
+Teach your LLM how to talk through examples
+·
+Published in
+·
+9 min read
+·
+Jun 7, 2024
+--
+One of the most frustrating parts of building gen-AI applications is the manual process of optimising prompts. In a
+made by LinkedIn earlier this year, they described what they learned after deploying an agentic RAG application. One of the main challenges was obtaining consistent quality. They spent 4 months tweaking various parts of the application, including prompts, to mitigate issues such as hallucination.
+DSPy is an open-source library that tries to parameterise prompts so that it becomes an optimisation problem. The
+calls prompt engineering “brittle and unscalable” and compares it to “hand-tuning the weights for a classifier”.
+is an open-source library to build LLM applications, including RAG pipelines. It is platform-agnostic and offers a large number of integrations with different LLM providers, search databases and more. It also has its own
+.
+In this article, we will briefly go over the internals of DSPy, and show how it can be used to teach an LLM to prefer more concise answers when answering questions over an academic medical dataset.
+Quick overview of DSPy
+This
+from TDS provides a great in-depth exploration of DSPy. We will be summarising and using some of their examples.
+In order to build a LLM application that can be optimised, DSPy offers two main abstractions:
+and
+. A signature is a way to define the input and output of a system that interacts with LLMs. The signature is translated internally into a prompt by DSPy.
+```code
+class Emotion(dspy.Signature):
+# Describe the task
+"""Classify emotions in a sentence."""
+
+sentence = dspy.InputField()
+# Adding description to the output field
+sentiment = dspy.OutputField(desc="Possible choices: sadness, joy, love, anger, fear, surprise.")
+```
+
+When using the DSPy
+module (more on this later), this signature is turned into the following prompt:
+```code
+Classify emotions in a sentence.
+---
+Follow the following format.
+Sentence: ${sentence}
+Sentiment: Possible choices: sadness, joy, love, anger, fear, surprise.
+---
+Sentence:
+```
+
+Then, DSPy also has
+which define the “predictors” that have parameters that can be optimised, such as the selection of few-shot examples. The simplest module is
+which does not modify the signature. Later in this article we will use the module
+which asks the LLM to provide reasoning.
+Things start to get interesting once we try to optimise a module (or as DSPy calls it “compiling” a module). When optimising a module, you typically need to specify 3 things:
+the module to be optimised,
+a training set, which might have labels,
+and some evaluation metrics.
+When using the
+or the
+modules, DSPy searches through the training set and selects the best examples to add to the prompt as few-shot examples. In the case of RAG, it can also include the context that was used to get the final response. It calls these examples “demonstrations”.
+You also need to specify the type of
+you want to use to search through the parameter space. In this article, we use the
+optimiser. How does this algorithm work internally? It is actually very simple and the paper provides some simplified pseudo-code:
+```code
+class SimplifiedBootstrapFewShot ( Teleprompter ) :
+def __init__ ( self , metric = None ) :
+self . metric = metric
+def compile ( self , student , trainset , teacher = None ) :
+teacher = teacher if teacher is not None else student
+compiled_program = student . deepcopy ()
+# Step 1. Prepare mappings between student and teacher Predict modules .
+# Note : other modules will rely on Predict internally .
+assert student_and_teacher_have_compatible_predict_modules ( student , teacher )
+name2predictor , predictor2name = map_predictors_recursively ( student , teacher )
+
+# Step 2. Bootstrap traces for each Predict module .
+# We ’ll loop over the training set . We ’ll try each example once for simplicity .
+for example in trainset :
+if we_found_enough_bootstrapped_demos () : break
+
+# turn on compiling mode which will allow us to keep track of the traces
+with dspy . setting . context ( compiling = True ) :
+# run the teacher program on the example , and get its final prediction
+# note that compiling = True may affect the internal behavior here
+prediction = teacher (** example . inputs () )
+
+# get the trace of the all interal Predict calls from teacher program
+predicted_traces = dspy . settings . trace
+
+# if the prediction is valid , add the example to the traces
+if self . metric ( example , prediction , predicted_traces ) :
+for predictor , inputs , outputs in predicted_traces :
+d = dspy . Example ( automated = True , ** inputs , ** outputs )
+predictor_name = self . predictor2name [id( predictor ) ]
+compiled_program [ predictor_name ]. demonstrations . append ( d )
+
+return compiled_program
+```
+
+The search algorithm goes through every training input in the
+, gets a prediction and then checks whether it “passes” the metric by looking at
+. If the metric passes, then the examples are added to the
+of the compiled program.
+Let’s create a custom Haystack pipeline
+The entire code can be found in this
+, so we will only go through some of the most important steps here. For the example, we use a
+derived from the
+(both under the MIT license). It has questions based on abstracts of medical research papers and their associated answers. Some of the answers provided can be quite long, so we will be using DSPy to “teach” the LLM to prefer more concise answers, while keeping the accuracy of the final answer high.
+After adding the first 1000 examples to an in-memory document store (which can be replaced by any number of
+), we can now build our RAG pipeline:
+```code
+from haystack.components.retrievers.in_memory import InMemoryBM25Retriever
+from haystack.components.generators import OpenAIGenerator
+from haystack.components.builders import PromptBuilder
+from haystack import Pipeline
+retriever = InMemoryBM25Retriever(document_store, top_k=3)
+generator = OpenAIGenerator(model="gpt-3.5-turbo")
+template = """
+Given the following information, answer the question.
+Context:
+{% for document in documents %}
+{{ document.content }}
+{% endfor %}
+Question: {{question}}
+Answer:
+"""
+prompt_builder = PromptBuilder(template=template)
+rag_pipeline = Pipeline()
+rag_pipeline.add_component("retriever", retriever)
+rag_pipeline.add_component("prompt_builder", prompt_builder)
+rag_pipeline.add_component("llm", generator)
+rag_pipeline.connect("retriever", "prompt_builder.documents")
+rag_pipeline.connect("prompt_builder", "llm")
+```
+
+Let’s try it out!
+```code
+question = "What effects does ketamine have on rat neural stem cells?"
+response = rag_pipeline.run({"retriever": {"query": question}, "prompt_builder": {"question": question}})
+print(response["llm"]["replies"][0])
+```
+
+The answer to the above question:
+We can see how the answers tend to be very detailed and long.
+Use DSPy to get more concise answers
+We start by creating a DSPy signature of the input and output fields:
+```code
+class GenerateAnswer(dspy.Signature):
+"""Answer questions with short factoid answers."""
+context = dspy.InputField(desc="may contain relevant facts")
+question = dspy.InputField()
+answer = dspy.OutputField(desc="short and precise answer")
+```
+
+As we can see, we already specify in our description that we are expecting a short answer.
+Then, we create a DSPy module that will be later compiled:
+```code
+class RAG(dspy.Module):
+def __init__(self):
+super().__init__()
+self.generate_answer = dspy.ChainOfThought(GenerateAnswer)
+# this makes it possible to use the Haystack retriever
+def retrieve(self, question):
+results = retriever.run(query=question)
+passages = [res.content for res in results['documents']]
+return Prediction(passages=passages)
+def forward(self, question):
+context = self.retrieve(question).passages
+prediction = self.generate_answer(context=context, question=question)
+return dspy.Prediction(context=context, answer=prediction.answer)
+```
+
+We are using the Haystack retriever previously defined to search the documents in the document store
+. The prediction step is done with the DSPy module
+which teaches the LM to think step-by-step before committing to the response.
+During compilation, the prompt that will be optimised to look like this:
+Finally, we have to define the metrics that we would like to optimise. The evaluator will have two parts:
+: The semantic answer similarity metric is a score between 0 and 1 that computes the similarity between the given output and the actual output.
+We will apply a penalty for answers that are longer than 20 words that will grow proportionally to the number of words up to a maximum of 0.5.
+```code
+from haystack.components.evaluators import SASEvaluator
+sas_evaluator = SASEvaluator()
+sas_evaluator.warm_up()
+def mixed_metric(example, pred, trace=None):
+semantic_similarity = sas_evaluator.run(ground_truth_answers=[example.answer], predicted_answers=[pred.answer])["score"]
+n_words=len(pred.answer.split())
+long_answer_penalty=0
+if 20<n_words<40:
+long_answer_penalty = 0.025 * (n_words - 20)
+elif n_words>=40:
+long_answer_penalty = 0.5
+return semantic_similarity - long_answer_penalty
+```
+
+Our evaluation dataset is composed of 20 training examples and 50 examples in the devset.
+If we evaluate the current naive RAG pipeline with the code below, we get an average score of 0.49.
+Looking at some examples can give us some intuition on what the score is doing:
+But
+As we can see from the examples, if the answer is too short, it gets a low score because its similarity with the ground truth answer drops.
+We then compile the RAG pipeline with DSPy:
+```code
+from dspy.teleprompt import BootstrapFewShot
+optimizer = BootstrapFewShot(metric=mixed_metric)
+compiled_rag = optimizer.compile(RAG(), trainset=trainset)
+```
+
+After we do this and re-evaluate the compiled pipeline, the score is now 0.69!
+Now it’s time to get the final optimised prompt and add it into our Haystack pipeline.
+Getting the final prompt-optimised pipeline
+We can see the few-shot examples selected by DSPy by looking at the
+field in the
+object:
+```code
+compiled_rag.predictors()[0].demos
+```
+
+There are 2 types of examples provided in the final prompt: few-shot examples and bootstrapped demos, like in the prompt shown above. The few-shot examples are question-answer pairs:
+```code
+Example({'question': 'Does increased Syk phosphorylation lead to overexpression of TRAF6 in peripheral B cells of patients with systemic lupus erythematosus?', 'answer': 'Our results suggest that the activated Syk-mediated TRAF6 pathway leads to aberrant activation of B cells in SLE, and also highlight Syk as a potential target for B-cell-mediated processes in SLE.'})
+```
+
+Whereas the bootstrapped demo has the full trace of the LLM, including the context and reasoning provided (in the
+field below):
+```code
+Example({'augmented': True, 'context': ['Chronic rhinosinusitis (CRS) …', 'Allergic airway …', 'The mechanisms and ….'], 'question': 'Are group 2 innate lymphoid cells ( ILC2s ) increased in chronic rhinosinusitis with nasal polyps or eosinophilia?', 'rationale': 'produce the answer. We need to consider the findings from the study mentioned in the context, which showed that ILC2 frequencies were associated with the presence of nasal polyps, high tissue eosinophilia, and eosinophil-dominant CRS.', 'answer': 'Yes, ILC2s are increased in chronic rhinosinusitis with nasal polyps or eosinophilia.'})
+```
+
+All we need to do now is extract these examples found by DSPy and insert them in our Haystack pipeline:
+```code
+static_prompt = lm.inspect_history(n=1).rpartition("---\n")[0]
+```
+
+Our new pipeline becomes:
+```code
+from haystack.components.retrievers.in_memory import InMemoryBM25Retriever
+from haystack.components.generators import OpenAIGenerator
+from haystack.components.builders import PromptBuilder, AnswerBuilder
+from haystack import Pipeline
+template = static_prompt+"""
+---
+Context:
+{% for document in documents %}
+«{{ document.content }}»
+{% endfor %}
+Question: {{question}}
+Reasoning: Let's think step by step in order to
+"""
+new_prompt_builder = PromptBuilder(template=template)
+new_retriever = InMemoryBM25Retriever(document_store, top_k=3)
+new_generator = OpenAIGenerator(model="gpt-3.5-turbo")
+answer_builder = AnswerBuilder(pattern="Answer: (.*)")
+optimized_rag_pipeline = Pipeline()
+optimized_rag_pipeline.add_component("retriever", new_retriever)
+optimized_rag_pipeline.add_component("prompt_builder", new_prompt_builder)
+optimized_rag_pipeline.add_component("llm", new_generator)
+optimized_rag_pipeline.add_component("answer_builder", answer_builder)
+optimized_rag_pipeline.connect("retriever", "prompt_builder.documents")
+optimized_rag_pipeline.connect("prompt_builder", "llm")
+optimized_rag_pipeline.connect("llm.replies", "answer_builder.replies")
+```
+
+Let’s check the same question we tried before.
+Question:
+Before:
+After:
+Job done!
+A few words of conclusion
+In this post, we have used DSPy to optimise the prompt used in a Haystack RAG pipeline. We have done so by using a custom metric based on Haystack’s evaluation framework that penalised the LLM for long answers while keeping the similarity with the correct answer high. With this approach, we have managed to improve our performance by almost 40% without having to do any manual prompt engineering.
+ Links:
+ - ("https://github.com/deepset-ai/haystack-cookbook/blob/main/notebooks/prompt_optimization_with_dspy.ipynb", "cookbook with associated colab")
+ - ("https://medium.com/tag/retrieval-augmented-gen?source=post_page-----926a637a3f43---------------retrieval_augmented_gen-----------------", "retrieval_augmented_gen")
+ - ("https://medium.com/tag/ai?source=post_page-----926a637a3f43---------------ai-----------------", "ai")
+ - ("https://www.linkedin.com/blog/engineering/generative-ai/musings-on-building-a-generative-ai-product", "publication")
+ - ("https://github.com/pubmedqa/pubmedqa", "PubMedQA dataset")
+ - ("https://medium.com/tag/haystack?source=post_page-----926a637a3f43---------------haystack-----------------", "haystack")
+ - ("https://medium.com/towards-data-science/prompt-like-a-data-scientist-auto-prompt-optimization-and-testing-with-dspy-ff699f030cb7", "article")
+ - ("https://huggingface.co/datasets/vblagoje/PubMedQA_instruction/viewer/default/train?row=0", "dataset")
+ - ("https://unsplash.com/@markuswinkler?utm_source=medium&utm_medium=referral", "Markus Winkler")
+ - ("https://unsplash.com/?utm_source=medium&utm_medium=referral", "Unsplash")
+ - ("https://arxiv.org/abs/2310.03714", "original paper")
+ - ("https://github.com/deepset-ai/haystack", "Haystack")
+ - ("https://medium.com/tag/llm?source=post_page-----926a637a3f43---------------llm-----------------", "llm")
+ - ("https://medium.com/tag/hands-on-tutorials?source=post_page-----926a637a3f43---------------hands_on_tutorials-----------------", "hands_on_tutorials")
