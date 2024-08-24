@@ -127,7 +127,7 @@ rroot |> propertynames, tag(rroot.parent)
 # ╔═╡ 67fd72dc-5540-440d-a8f3-8324914553b8
 text = extract_content( 
 	rroot;
-	selectors=["div.ch.bg.fy.fz.ga.gb"],  # selectors=["p.pw-post-body-paragraph"],
+	selectors=["div.ci.bh.fz.ga.gb.gc"],  # selectors=["p.pw-post-body-paragraph"],
 	verbose=true,
 	only_tags=[:div, :p, :h1, :h2, :h3, :li, :ul, :ol, :span, :pre]  # include :pre for code snipet
 )
@@ -152,7 +152,7 @@ md_title = extract_content(
 # ╔═╡ 72d4f892-2bd2-43af-b71e-5252a666ce0c
 md = extract_content(
 	rroot; 
-	selectors=[".hz.ia"], 
+	selectors=["p.pw-post-body-paragraph"], # [".hz.ia"], 
 	verbose=false,
 	only_tags=[:div, :p, :span, :a]
 )  # other metadata
