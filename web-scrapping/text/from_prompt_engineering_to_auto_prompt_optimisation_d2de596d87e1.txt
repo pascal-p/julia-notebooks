@@ -1,0 +1,9 @@
+- Title: From Prompt Engineering to Auto Prompt Optimisation
+- Author and date: 
+- Link: https://medium.com/@philippkai/from-prompt-engineering-to-auto-prompt-optimisation-d2de596d87e1
+Main:
+
+ Links:
+ - ("https://arxiv.org/abs/2309.03409", "Large Language Models as Optimizers")
+ - ("https://arxiv.org/pdf/2309.03409.pdf", "Large Language Models as Optimizers")
+ - ("https://github.com/philikai/FromPromptEngineeringToAutoPromptOptimisation", "GitHub")
