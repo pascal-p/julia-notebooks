@@ -2,6 +2,7 @@
 - **Author:** Sourajit Roy Chowdhury
 - **Publication Date:** September 27, 2023
 - **Link:** [Medium Article](https://sourajit16-02-93.medium.com/text-summarization-unleashed-novice-to-maestro-with-llms-and-instant-code-solutions-8d26747689c4)
+
 ---
 
 
@@ -17,7 +18,8 @@ This article explores various LLM-based summarization techniques, including:
 - **Abstractive Summarization**
 - **Cluster-Based Summarization**
 
-**Additionally, the author provides instant code solutions integrated into their repository, offering hands-on enthusiasts the opportunity to apply these concepts directly. The article begins by addressing challenges related to text length in summarization, followed by a comparison of extractive and abstractive methods, and culminates in strategies for efficient text summarization using LLMs.**
+
+*Additionally, the author provides instant code solutions integrated into their repository, offering hands-on enthusiasts the opportunity to apply these concepts directly. The article begins by addressing challenges related to text length in summarization, followed by a comparison of extractive and abstractive methods, and culminates in strategies for efficient text summarization using LLMs.*
 
 ---
 
@@ -45,6 +47,7 @@ Text summarization can be broadly categorized based on the length of the text be
 - Achieving accurate and coherent summaries.
 - Avoiding biases in the summarization process.
 - Requiring sophisticated algorithms and techniques to handle diverse types of content effectively.
+
 ---
 
 
@@ -77,7 +80,7 @@ Summarization methods can be fundamentally divided into two approaches: extracti
   - More complex and computationally intensive, often requiring advanced language understanding.
 
 
-**Both methods aim to simplify lengthy information, making it more digestible for readers, but they differ significantly in their approach and implementation.**
+*Both methods aim to simplify lengthy information, making it more digestible for readers, but they differ significantly in their approach and implementation.*
 
 ---
 
@@ -87,12 +90,12 @@ Summarization methods can be fundamentally divided into two approaches: extracti
 The article outlines a comprehensive design and architecture tailored to handle different text lengths, categorizing texts into "short-form," "medium-sized," and "long-form." The provided code fully adheres to this architecture, ensuring practical applicability.
 
 #### Short-Form Text Summarization
-- **Classification:** 
+- **Classification:**
   - "Short" texts are defined as those that fit within the context length of the employed LLM, such as OpenAI’s GPT-3.5 and GPT-4.
-  
+
 - **Process:**
   - Summarizing short texts is generally straightforward but may sometimes fail to encapsulate the core essence entirely.
-  
+
 - **Technique: Chain Of Density (CoD):**
   - **Developed By:** Salesforce team and co-authors.
   - **Functionality:** Utilizes CoD prompts to identify and convey the primary theme of the text, resulting in concise and dense summaries.
@@ -108,13 +111,14 @@ The article outlines a comprehensive design and architecture tailored to handle 
 #### Medium-Sized Text Summarization
 - **Classification:**
   - Defined based on a flexible token threshold within the code. Texts exceeding this threshold are categorized as "long-form," while those below are "medium-sized."
+
 - **Challenges:**
   - Input texts that surpass the LLM’s context window necessitate segmentation or "chunking" to fit within processing limits.
+
 - **Process:**
   1. **Chunking:**
      - Utilizes a custom text splitter tailored to divide the text based on sentence or paragraph terminations.
      - Transforms the large text into smaller, manageable segments that fit within the LLM’s context window.
-  
   2. **Map-Reduce Technique:**
      - **Map Phase:**
        - **Functionality:** Processes each chunk to generate extractive summaries.
@@ -124,14 +128,15 @@ The article outlines a comprehensive design and architecture tailored to handle 
            1. Extracts crucial keywords, phrases, and entities using Chain of Thought (CoT) prompting.
            2. Generates an extractive summary based on the identified keywords and entities.
        - **Flexibility:** Users can modify the code to experiment with abstractive summarization in the map phase.
-     
+
      - **Reduce Phase:**
        - **Functionality:** Consolidates all individual extractive summaries into a final, condensed summary using Langchain’s reduce chain.
        - **Outcome:** A comprehensive summary that blends both extractive and abstractive techniques.
-  
+
   3. **Optional Further Condensation:**
      - The generated summary can be processed through the CoD prompt for additional condensation.
      - **Caution:** Further reduction may lead to some loss of information, which is a natural consequence of summarization.
+
 - **Summary:**
   - Medium-sized texts are effectively summarized using a Map-Reduce approach, leveraging extractive summarization in the map phase and consolidation in the reduce phase to produce accurate and coherent summaries.
 
@@ -140,28 +145,26 @@ The article outlines a comprehensive design and architecture tailored to handle 
 - **Challenges:**
   - Summarizing extensive texts, such as a 200-page book, poses significant challenges.
   - Direct application of the Map-Reduce technique may lead to runtime errors and inaccuracies, and it increases processing time and costs.
-  
+
 - **Realistic Expectation:**
   - Condensing large volumes of content will inevitably result in some data loss, akin to any book summary that involves selective information retention.
+
 - **Process:**
   1. **Chunking:**
      - Similar to the medium-sized summarization process but with larger segments to accommodate the vastness of the text.
-  
   2. **Text Embedding:**
      - **Functionality:** Converts text chunks into numerical vectors that represent their semantic meanings.
      - **Purpose:** Facilitates understanding of relationships and similarities between different texts, aiding in effective processing.
-  
   3. **Clustering:**
      - **Functionality:** Organizes embeddings into clusters based on similarities without predefined guidance.
      - **Outcome:** Groups similar text chunks together, forming multiple clusters.
      - **Example:** Categorizing books in a library by genre.
-  
   4. **Selecting Representative Chunks:**
      - From each cluster, the top 'k' chunks that best encapsulate the central theme are selected.
      - **Parameter:** 'k' can be adjusted (e.g., 1, 2, 3) based on the desired level of summary condensation.
-  
   5. **Map-Reduce Approach:**
      - Applied to the representative chunks, similar to the medium-sized summarization process, to generate the final summary.
+
 - **Performance Improvement Suggestions:**
   - **Text Chunking Methods:** Experiment with diverse chunking techniques to improve segmentation quality.
   - **Prompt Engineering:** Optimize prompts to tailor outputs to specific summarization needs.
@@ -169,20 +172,15 @@ The article outlines a comprehensive design and architecture tailored to handle 
   - **Clustering Algorithms:** Explore different clustering algorithms and fine-tune hyper-parameters to determine the optimal number of clusters.
   - **Representative Chunks ('k' Value):** Adjust the 'k' value to determine the number of representative chunks effectively capturing each cluster's essence.
   - **Configurable Parameters:** Fine-tune various parameters within the code to enhance summarization performance.
+
 - **Conclusion:**
   - Long-form summarization is achieved by clustering similar text chunks and summarizing representative segments. This approach balances efficiency with the comprehensiveness of the final summary, making it feasible to handle extensive texts without excessive processing time or errors.
----
-
-
-### References
-
-*Note: As per the user's instruction, any web links provided in the original excerpt have been intentionally omitted from this synthesis.*
 
 ---
 
 ### Summary
 
-This article by Sourajit Roy Chowdhury provides an in-depth exploration of text summarization using Large Language Models (LLMs) such as OpenAI's GPT-3.5 and GPT-4. It categorizes summarization tasks based on text length—short-form, medium-sized, and long-form—and delves into the specific challenges and techniques associated with each category. 
+This article by _Sourajit Roy Chowdhury_ provides an in-depth exploration of text summarization using Large Language Models (LLMs) such as OpenAI's GPT-3.5 and GPT-4. It categorizes summarization tasks based on text length—short-form, medium-sized, and long-form. It then addresses the specific challenges and techniques associated with each category.
 
 Key summarization techniques covered include:
 - **Extractive Summarization:** Selecting and combining existing text segments to form a summary.
@@ -191,7 +189,8 @@ Key summarization techniques covered include:
 - **Chain Of Thought (CoT):** Extracting keywords and entities to inform summarization.
 - **Map-Reduce:** A framework for handling medium-sized and long-form texts by breaking them down into manageable chunks, summarizing each, and then consolidating the results.
 - **Cluster-Based Summarization:** Organizing text chunks into clusters based on semantic similarity to identify representative segments for summarization.
-The article emphasizes the importance of sophisticated algorithms and continuous experimentation to achieve accurate, coherent, and valuable summaries. Additionally, it provides practical code solutions to implement these techniques, encouraging readers to engage hands-on with the provided resources to master text summarization using LLMs.
+
+_The article emphasizes the importance of sophisticated algorithms and continuous experimentation to achieve accurate, coherent, and valuable summaries. Additionally, it provides practical code solutions to implement these techniques, encouraging readers to engage hands-on with the provided resources to master text summarization using LLMs._
 
 #### Links:
   - [GitHub repository - github.com](https://github.com/ritun16/llm-text-summarization.git)
