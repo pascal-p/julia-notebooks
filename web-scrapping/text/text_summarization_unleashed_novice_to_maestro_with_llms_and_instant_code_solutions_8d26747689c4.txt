@@ -1,0 +1,95 @@
+- Title: 🖹Text Summarization Unleashed: Novice to Maestro with LLMs and Instant Code Solutions (Python 🐍 + Langchain 🔗 + OpenAI 🦾)
+
+- Author and date: sourajit roy chowdhury
+·
+Follow
+12 min read
+·
+Sep 27, 2023
+
+- Link: https://sourajit16-02-93.medium.com/text-summarization-unleashed-novice-to-maestro-with-llms-and-instant-code-solutions-8d26747689c4
+
+Main:
+🖹Text Summarization Unleashed: Novice to Maestro with LLMs and Instant Code Solutions (Python 🐍 + Langchain 🔗 + OpenAI 🦾)
+·
+12 min read
+·
+Sep 27, 2023
+--
+For those eager to dive straight into the code, it’s available on my
+. However, I’d advise taking a moment to read through this article for a comprehensive understanding before diving in. The README file provides a comprehensive guide on how to use the codes without any hassle.
+Introduction
+Text summarization is a cornerstone application of Natural Language Processing (NLP). While it may seem like a straightforward task on the surface, the complexity of determining what information to retain and what to omit can make it quite intricate. The essence of text summarization lies in condensing a given input text but still maintaining its pivotal information and overarching context.
+Over the past decade, the NLP domain has witnessed remarkable advancements, making tasks like text summarization more attainable. Enter the era of Large Language Models (LLMs) such as ChatGPT. These LLMs have in many ways simplified the text summarization process, though it remains nuanced and is not as trivial as one might initially believe. The evolution of LLMs has paved the way for a shift from supervised training specifically for summarization to techniques that require no explicit training, often termed as zero-shot summarization.
+In this article, I will include various LLM based summarization techniques, ranging from Chain-Of-Density (CoD) and Chain-Of-Thought (CoT) to methodologies like Map-Reduce, Extractive and Abstractive summarization, and cluster-based summarization. For hands-on enthusiasts, these concepts are readily available and integrated into my
+for your convenience.
+Initially, we’ll delve into the challenges posed by the length of the text in summarization. This will be followed by a comparison between extractive and abstractive summarization methods. Subsequently, we’ll dive deep into how we can tackle everything to do an efficient any text summarization.
+Difference and Challenges between large and small text summarization in NLP
+Text summarization can be broadly categorized into two: large text summarization and small text summarization. The former deals with lengthy documents like research papers or lengthy articles, aiming to condense vast amounts of information into concise summaries. Challenges here include ensuring the final summary retains core ideas and doesn’t overlook significant details. On the other hand, small text summarization focuses on shorter texts, like tweets or brief news snippets. The main challenge is capturing essence without making the summary overly redundant or too similar to the original. Regardless of the size, achieving an accurate, coherent, and non-biased summary requires sophisticated algorithms and techniques.
+Imagine packing for a trip. You’re given a small suitcase, and you have to decide what’s essential. If you’re packing for a weekend, it’s easier. But what if it’s a month-long trip? Similarly, when summarizing, packing all the contextual information from a lengthy document into a short summary is challenging. For instance, if our summary is limited to just 10 sentences, determining what’s crucial becomes more complex with a 10,000-word document compared to a 1000-word one. Large text summarization, which tackles extensive documents, grapples with this difficulty, while small text summarization, focusing on concise texts, faces the challenge of not making the summary overly repetitive. Both demand intricate algorithms to produce summaries that are concise, coherent, and valuable in today’s information-heavy digital landscape.
+Extractive vs Abstractive Summarization
+: This is like creating a highlight reel. The system pulls out keywords or entire sentences or phrases directly from the source text and stitches them together to form a summary. Imagine reading a book and underlining important sentences. Later, you just read the underlined parts. That’s extractive summarization.
+: From the sentence “
+” an extractive summary might be: “
+”
+: Here, the system comprehends the text and rephrases it, producing a new, shorter version that conveys the main ideas, but in a condensed form. It’s like reading a book and then explaining the plot in your own words to your friends.
+: From the same sentence above, an abstractive summary might be: “
+”
+While extractive methods focus on selecting existing content, abstractive techniques generate new content, making them potentially more versatile but also more complex. Both approaches aim to simplify lengthy information, making it digestible for readers.
+Let’s delve into addressing the previously mentioned challenges, scenarios and craft a system rooted in LLM that efficiently and optimally distills summaries from any text.
+I’ll outline the design and architecture, categorizing texts based on their lengths: “short-form texts”, “medium-sized texts” and “long-form texts”.
+Design and Architecture
+While the design and architecture may seem daunting initially, we’ll delve deep into each summarization type to comprehend their intricacies and their interconnections. The code on my
+fully adheres to this architecture.
+Short-Form Text Summarization
+A natural initial question might be: how exactly do we categorize a text as short or long? Admittedly, there isn’t a rigid definition. However, for the purposes of this article, I classify “short” texts as those that comfortably fit within the context length of the LLM in use. For reference, the code I’ve shared employs OpenAI’s GPT3.5 and GPT4 as the primary LLMs.
+Summarizing short texts, which align with the LLM’s context window, is relatively straightforward in many instances. However, they occasionally fall short in encapsulating the core essence and significance of the entire content. A notable enhancement in this domain comes from a technique pioneered by the Salesforce team and their co-authors. Termed the Chain Of Density (CoD) prompting method, this approach adeptly pinpoints and conveys the primary theme of the provided text, resulting in a concise and dense summary.
+According to the paper, an optimal summary should provide detailed, entity-focused content without being too complex. To explore this balance, the research introduces the“Chain of Density” (CoD) prompt for GPT-4. Initially, GPT-4 creates a basic summary, which is then refined by adding important entities without making it longer. Summaries from CoD are more abstract and combined, and show less lead bias than those from a standard GPT-4 prompt. A study using 100 CNN DailyMail articles revealed that humans favor denser GPT-4 summaries over those from a regular prompt and find them nearly as dense as summaries written by humans. This indicates a balance between the depth of information and ease of reading. I’ll provide the relevant paper in the reference section for those interested in a deeper dive.
+To put it simply, the uppermost horizontal block of our discussed architecture simply receives the input text, channels it through the CoD prompt, and subsequently delivers the summary. It’s as straightforward as that.
+Medium-Sized Text Summarization
+Defining “medium-sized” text also lacks a strict definition. I’ve set a threshold based on a certain number of tokens (think of these as words for simplicity’s sake). Texts exceeding this threshold are categorized as long-form, while those beneath it are considered medium-sized. The code allows flexibility in adjusting this token threshold to suit your needs.
+The challenge intensifies when the input text exceeds the LLM’s context window. Let’s turn our attention to the central horizontal block of the discussed architecture.
+Let’s break the block into below steps:
+Intuitively, when dealing with lengthy texts, we need to segment or “chunk” the content to ensure it fits within the LLM’s context window for processing. While the Langchain framework offers various text-splitting mechanisms, I’ve incorporated my own tailored text splitter/chunker. This tool divides the text based on sentence or paragraph terminations. You’re encouraged to integrate any text splitting method or even craft your own custom function by modifying the code. Ultimately, through chunking, we transform a single expansive input text into several smaller segments, each comfortably fitting within the LLM’s context window.
+While the term may sound sophisticated, its underlying principle is straightforward. Those acquainted with the Langchain framework will recognize the Map chain concept. However, it’s not exclusive to LLM or Langchain. At its core, this technique is central to large data management, typically operating alongside the ‘reduce’ function, giving rise to the term “MapReduce.” I’ll explain both these concepts in the context of LLM summarization. Let me explain how map operates.
+It takes a list of data and converts it into another list of data, where individual data elements are broken down into key/value pairs.
+Think of the process of categorizing books in a library by their genre.
+A list of books (e.g., [Harry Potter, A Brief History of Time, The Great Gatsby])
+Assign each book to a category (e.g., Fantasy, Science, Fiction).
+In our scenario, the Map chain operates conventionally. The input list of data fed into this chain comprises the segmented texts we derived in our initial chunking step. Within the Map chain, the prompt processes each chunk, generating extractive summaries for every individual segment of text. To understand, the Map chain outputting a key/value duo: the ‘key’ denotes the individual input text chunk, while the ‘value’ symbolizes its corresponding extractive summary.
+As discussed in the Map section, the resulting output for each text segment is termed as an extractive summary. Later, these individual extractive summaries will be synthesized to craft a final, comprehensive summary — a blend of both extractive and abstractive techniques. My choice to employ extractive summarization in the map phase over abstractive summarization is rooted in experimentation. The former consistently demonstrated superior results in shaping the final summary. However, users are encouraged to tweak the code within the map chain to potentially produce individual abstractive summaries.
+It’s noteworthy to mention that I haven’t employed Langchain’s map chain in its default state. Instead, I’ve used two distinct chains, orchestrating them sequentially to fashion a customized map chain.The first chain within this sequential chain extracts crucial keywords, phrases, and entities, leveraging the Chain of Thought (CoT) prompting technique. Subsequently, the second chain utilizes these identified keywords and entities to generate an extractive summary for that specific text segment. This experimental, sequenced custom map chain works better than the singular, predefined map chain. As always, users are welcome to adjust the code to suit their requirements or hypotheses.
+Now, its time to understand reduce chain. But first, let me explain how reduce operates.
+It takes a list of data and converts it into another list of data, where individual data elements are broken down into key/value pairs.
+Counting the number of books in each category from our previous map example.
+Count the number of books in each category.
+In our scenario, the reduce chain operates exactly. The input to reduce chain becomes the output from the map step. Which is all the individual extractive summaries. Now we have to consolidate (reduce) all the extractive summaries into a final condense summary. I have blindly used the langchain’s reduce chain and it works fantastic.
+Thus far, we’ve addressed and generated summaries for medium-sized texts that don’t fit within the LLM’s context window. Should you wish to further compress the generated summary, you can process it through the CoD prompt for additional condensation. However, be mindful that this will inevitably lead to some loss of information, which is a logical consequence of further reduction.
+Long-Form Text Summarization
+The most challenging part comes when we have to deal with a vast amount of texts such as, summarizing a 200 pages book. Directly employing the previously discussed map-reduce technique is feasible, but it’s likely to be riddled with exceptions/errors in runtime and inaccuracies before yielding a satisfactory summary. Additionally, this approach would significantly increase the processing time, making the summarization not only time-consuming but also potentially costly. So, how do we navigate this situation?
+But, before we dive into the solution, it’s essential to set a realistic expectation: condensing vast amounts of content will inevitably result in some data loss. But then again, isn’t every book summary inherently an exercise in selective information retention?
+Let’s break the block into below steps:
+The process is same as what we outlined for medium-sized text summarization. The primary distinction lies in the size of the individual chunks; for more voluminous texts, we’d create more sizable segments during the chunking operation.
+Text embedding is quite common in NLP, but just to recap in short. It turns texts into numbers (vectors) so that computers can understand and work with them. Texts with similar meanings get vectors that are close together, and texts with different meanings get vectors that are further apart. This allows computers to understand relationships and similarities between different texts, making it easier for them to process language tasks.
+Clustering is also common to any machine learning based system. Clustering helps in organizing a large set of data into smaller groups (or clusters) based on their similarities, even when we don’t provide any specific guidance on how to group them. So, in our case we will cluster the above vectors (embeddings) of the text chunks. So, the embeddings having similar features will form a cluster together. Finally we will get multiple clusters. I will try to give an easy example of clustering which will help in understanding the next concept.
+Given the sheer volume, we can’t process all chunks in the same manner we did with the map-reduce technique for medium-sized texts. Instead, we first organize these chunks into groups or ‘clusters’. From each cluster, we then select the top ‘k’ chunks that best encapsulate the central theme or essence of that particular cluster. Once we’ve identified these representative chunks from every cluster, we can proceed similarly to the map-reduce approach we employed for medium-sized texts. (top-k, here k=1,2,3 etc…)
+As highlighted at the outset, the complete code is available in the
+. For ease of use, the README file provides a step-by-step guide. While the provided solution is robust, there’s always room for improvement. I encourage enthusiasts to modify and refine the code to further enhance the quality of the generated summaries. Here are some suggestions to elevate the performance:
+Experimenting with diverse text chunking methods can improve the quality of the segmented texts, leading to superior intermediate summaries and, in turn, a refined final summary.
+Invest time in prompt engineering and optimization to tailor the outputs to your specific needs.
+Experiment with a range of embedding models. Additionally, consider fine-tuning these models using your dataset to better grasp its nuances and diversity.
+Explore different clustering algorithms. Additionally, tuning the hyper-parameters of your chosen model to discern the optimal cluster count.
+Adjust the value of ‘k’ (as discussed in the “Best Embeddings” section) to determine the number of representative chunks.
+Lastly, there are several configurable parameters within the code that you can fine-tune for optimal results.
+Remember, the key to achieving an exceptional summary often lies in continuous experimentation and iteration.
+References
+👍
+👉
+✔️
+⭐
+
+ Links:
+ - ("https://github.com/ritun16/llm-text-summarization.git", "GitHub repository")
+ - ("https://arxiv.org/pdf/2309.04269.pdf", "Chain of Density paper")
+ - ("https://python.langchain.com/docs/use_cases/summarization", "Langchain tutorial")
+ - ("https://github.com/ritun16/llm-text-summarization.git", "summarization.git")

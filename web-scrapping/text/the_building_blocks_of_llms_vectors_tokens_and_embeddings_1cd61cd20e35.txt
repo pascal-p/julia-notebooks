@@ -1,0 +1,121 @@
+- Title: The Building Blocks of LLMs: Vectors, Tokens and Embeddings
+- Author and date: Vectors play a crucial role in the functioning of LLMs and generative AI. To understand their significance, it’s essential to grasp what vectors are and how they are generated and utilized in LLMs.
+In mathematics and physics, a vector is an object that has both magnitude and direction. It can be represented geometrically as a directed line segment, where the length of the line indicates the magnitude, and the arrow points in the direction of the vector. Vectors are fundamental in representing quantities that can’t be fully described by a single number — such as force, velocity or displacement — and which have both magnitude and direction.
+In the realm of LLMs, vectors are used to represent text or data in a numerical form that the model can understand and process. This representation is known as an embedding. Embeddings are high-dimensional vectors that capture the semantic meaning of words, sentences or even entire documents. The process of converting text into embeddings allows LLMs to perform various natural language processing tasks, such as text generation, sentiment analysis and more.
+Since machines only understand numbers, data such as text and images is converted into vectors. The vector is the only format that is understood by neural networks and transformer architectures.
+Operations on vectors, such as a dot product, help us discover whether two vectors are identical or different. At a high level, this forms the basis for performing similarity search on vectors stored in memory or in specialized vector databases.
+The code snippet below introduces the basic idea of a vector. As you can see, it is a simple one-dimensional array:
+While the vector shown above has no association with text, it does convey the idea. Tokens, which we explore in the next section, are the mechanism to represent text in vectors.
+Tokens are the basic units of data processed by LLMs. In the context of text, a token can be a word, part of a word (subword), or even a character — depending on the tokenization process.
+When text is passed through a tokenizer, it encodes the input based on a specific scheme and emits specialized vectors that can be understood by the LLM. The encoding scheme is highly dependent on the LLM. The tokenizer may decide to convert each word and a part of the word into a vector, which is based on the encoding. When a token is passed through a decoder, it can be easily translated into text again.
+It’s common to refer to the context length of LLMs as one of the key differentiating factors. Technically, it maps to the ability of the LLM to accept a specific number of tokens as input and generate another set of tokens as output. The tokenizer is responsible for encoding the prompt (input) into tokens and the response (output) back into text.
+The below code snippets explain how text is converted into tokens for an open model like Llama 2 and a commercial model such as GPT-4. These are based on the transformers module from Hugging Face and Tiktoken from OpenAI.
+If tokens are vector representations of text, embeddings are tokens with semantic context. They represent the meaning and context of the text. If tokens are encoded or decoded by a tokenizer, an embeddings model is responsible for generating text embeddings in the form of a vector. Embeddings are what allow LLMs to understand the context, nuance and subtle meanings of words and phrases. They are the result of the model learning from vast amounts of text data, and encode not just the identity of a token but its relationships with other tokens.
+Through embeddings, LLMs achieve a deep understanding of language, enabling tasks like sentiment analysis, text summarization and question answering with nuanced comprehension and generation capabilities. They are the entry point to the LLM, but they are also used outside of the LLM to convert text into vectors while retaining the semantic context. When text is passed through an embedding model, a vector is produced that contains the embeddings. Below are examples from an open source embedding model, sentence-transformers/all-MiniLM-L6-v2, as well as OpenAI’s model, text-embedding-3-small.
+Tokens are the linguistic units, while vectors are the mathematical representations of these units. Every token is mapped to a vector in the LLM’s processing pipeline.
+All embeddings are vectors, but not all vectors are embeddings. Embeddings are vectors that have been specifically trained to capture deep semantic relationships.
+The transition from tokens to embeddings represents the movement from a discrete representation of language to a nuanced, continuous and contextually aware semantic space.
+- Link: https://medium.com/@cloudswarup/the-building-blocks-of-llms-vectors-tokens-and-embeddings-1cd61cd20e35
+Main:
+The Building Blocks of LLMs: Vectors, Tokens and Embeddings
+·
+6 min read
+·
+Apr 9, 2024
+--
+Vectors: The Language of Machines
+Vectors play a crucial role in the functioning of LLMs and generative AI. To understand their significance, it’s essential to grasp what vectors are and how they are generated and utilized in LLMs.
+In mathematics and physics, a vector is an object that has both magnitude and direction. It can be represented geometrically as a directed line segment, where the length of the line indicates the magnitude, and the arrow points in the direction of the vector. Vectors are fundamental in representing quantities that can’t be fully described by a single number — such as force, velocity or displacement — and which have both magnitude and direction.
+In the realm of LLMs, vectors are used to represent text or data in a numerical form that the model can understand and process. This representation is known as an embedding. Embeddings are high-dimensional vectors that capture the semantic meaning of words, sentences or even entire documents. The process of converting text into embeddings allows LLMs to perform various natural language processing tasks, such as text generation, sentiment analysis and more.
+Since machines only understand numbers, data such as text and images is converted into vectors. The vector is the only format that is understood by neural networks and transformer architectures.
+Operations on vectors, such as a dot product, help us discover whether two vectors are identical or different. At a high level, this forms the basis for performing similarity search on vectors stored in memory or in specialized vector databases.
+The code snippet below introduces the basic idea of a vector. As you can see, it is a simple one-dimensional array:
+```code
+import numpy as np
+
+# Creating a vector from a list
+vector = np.array([1, 2, 3])
+print("Vector:", vector)
+
+# Vector addition
+vector2 = np.array([4, 5, 6])
+sum_vector = vector + vector2
+print("Vector addition:", sum_vector)
+
+# Scalar multiplication
+scalar = 2
+scaled_vector = vector * scalar
+print("Scalar multiplication:", scaled_vector)
+```
+
+While the vector shown above has no association with text, it does convey the idea. Tokens, which we explore in the next section, are the mechanism to represent text in vectors.
+Tokens: The Building Blocks of LLMs
+Tokens are the basic units of data processed by LLMs. In the context of text, a token can be a word, part of a word (subword), or even a character — depending on the tokenization process.
+When text is passed through a tokenizer, it encodes the input based on a specific scheme and emits specialized vectors that can be understood by the LLM. The encoding scheme is highly dependent on the LLM. The tokenizer may decide to convert each word and a part of the word into a vector, which is based on the encoding. When a token is passed through a decoder, it can be easily translated into text again.
+It’s common to refer to the context length of LLMs as one of the key differentiating factors. Technically, it maps to the ability of the LLM to accept a specific number of tokens as input and generate another set of tokens as output. The tokenizer is responsible for encoding the prompt (input) into tokens and the response (output) back into text.
+The below code snippets explain how text is converted into tokens for an open model like Llama 2 and a commercial model such as GPT-4. These are based on the transformers module from Hugging Face and Tiktoken from OpenAI.
+```code
+from transformers import AutoTokenizer
+
+model = "meta-llama/Llama-2-7b-chat-hf"
+tokenizer = AutoTokenizer.from_pretrained(model,token="HF_TOKEN")
+
+text = "Apple is a fruit"
+
+token = tokenizer.encode(text)
+print(token)
+
+decoded_text = tokenizer.decode(token)
+print(decoded_text)
+```
+
+```code
+import tiktoken
+
+tokenizer=tiktoken.encoding_for_model("gpt-4")
+
+text = "Apple is a fruit"
+
+token=tokenizer.encode(text)
+print(token)
+
+decoded_text = tokenizer.decode(token)
+print(decoded_text)
+```
+
+Embeddings: The Semantic Space
+If tokens are vector representations of text, embeddings are tokens with semantic context. They represent the meaning and context of the text. If tokens are encoded or decoded by a tokenizer, an embeddings model is responsible for generating text embeddings in the form of a vector. Embeddings are what allow LLMs to understand the context, nuance and subtle meanings of words and phrases. They are the result of the model learning from vast amounts of text data, and encode not just the identity of a token but its relationships with other tokens.
+Through embeddings, LLMs achieve a deep understanding of language, enabling tasks like sentiment analysis, text summarization and question answering with nuanced comprehension and generation capabilities. They are the entry point to the LLM, but they are also used outside of the LLM to convert text into vectors while retaining the semantic context. When text is passed through an embedding model, a vector is produced that contains the embeddings. Below are examples from an open source embedding model, sentence-transformers/all-MiniLM-L6-v2, as well as OpenAI’s model, text-embedding-3-small.
+```code
+from sentence_transformers import SentenceTransformer
+
+sentences = ["Apple is a fruit", "Car is a vehicle"]
+
+model = SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')
+embeddings = model.encode(sentences)
+
+print(len(embeddings[0]))
+
+print(embeddings)
+```
+
+```code
+from openai import OpenAI
+
+client = OpenAI(api_key="OPENAI_API_KEY")
+
+model="text-embedding-3-small"
+sentences = ["Apple is a fruit", "Car is a vehicle"]
+
+embeddings=client.embeddings.create(input = sentences, model=model).data[0].embedding
+
+print(len(embeddings))
+
+print(embeddings)
+```
+
+Comparison and Interaction
+Tokens are the linguistic units, while vectors are the mathematical representations of these units. Every token is mapped to a vector in the LLM’s processing pipeline.
+All embeddings are vectors, but not all vectors are embeddings. Embeddings are vectors that have been specifically trained to capture deep semantic relationships.
+The transition from tokens to embeddings represents the movement from a discrete representation of language to a nuanced, continuous and contextually aware semantic space.
+ Links:
