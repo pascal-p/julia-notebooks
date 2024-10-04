@@ -32,14 +32,14 @@ md"""
 1. Web extraction
 1. Synthesis
 
-ref. "https://dreamypujara.medium.com/quiet-star-helping-language-models-think-before-they-speak-ace4081ef18a"
+ref. "Transforming Small Language Models: How rStar Achieved a 411% Accuracy Boost Without Fine-Tuning"
 """
 
 # ╔═╡ f4c27df9-bbc1-4498-b7a0-42da0d049199
-const URL = "https://dreamypujara.medium.com/quiet-star-helping-language-models-think-before-they-speak-ace4081ef18a"
+const URL = "https://medium.com/@amisha.p/transforming-small-language-models-how-rstar-achieved-a-411-accuracy-boost-without-fine-tuning-d74472c1052f"
 
 # ╔═╡ 797e6deb-e014-4609-b0d4-7f3ec670cb1c
-const TOPIC = """Quiet-STaR, a novel approach which encourages LLMs to develop a form of “inner monologue” i.e. rationales in order to improve their reasoning abilities."""
+const TOPIC = """rStar: mutual reasoning makes smaller language models (SLMs) stronger problem-solvers"""
 
 # ╔═╡ 7df1d566-a7a8-4a9d-a477-2e2fea683e27
 const LLM_PARAMS = Dict{Symbol, Union{String, Real, LLM_Model}}(
@@ -70,19 +70,8 @@ Here is the excerpt:
 println(INSTRUCT_PROMPT)
 
 # ╔═╡ 808c115f-57f6-499d-9c3b-b3dca7279508
-# for some reason SYS_PROMPT as defined `support/utils.jl` is not entirely followed by the LLM.
-# therefore shorten it and move section about code block into USER_PROMPT...
-# ..and redefining `SYS_PROMPT` as `_SYS_PROMPT`
-
-_SYS_PROMPT = """You are a smart AI research assistant tasked with analyzing and synthesizing articles. You are thorough and deliberate in your approach before drafting your answers. You excel at organizing the provided articles into coherent sections, with introductions and conclusions that highlight the main ideas, reasoning, and contributions.
-
-Proceed methodically, step by step, ensuring that the synthesis is accurately structured into coherent sections, capturing every fact, key point, acronym, example, and explanation. Always begin with a section detailing the article's title, publication date, author, and link (when such information is available). Preserve all the original sections from the article for high fidelity. Aim for a synthesis that is exhaustive, without overlooking any significant information.
-
-Your style is formal, logical, and precise. Refrain from making comments about your synthesis. You value consistency and completeness. You format the synthesis with Markdown, clearly separating sections, subsections, lists etc..."""
-
-# ╔═╡ 27bf4bd5-e50f-4266-9b67-2dec9e3ece3e
-# No sys prompt for o1 models (for now, Sep. 2024)
-# println(_SYS_PROMPT)
+# Not use but kept for API compatibility
+_SYS_PROMPT = ""
 
 # ╔═╡ 68c8922f-0cb2-41d9-9efe-3ed7a00dd76f
 const OUTFILE = split(URL, "/")[end:end] |>
@@ -950,7 +939,6 @@ version = "0.2.2+0"
 # ╠═2f4ae40f-a1ab-470b-a1b7-a04fec353b0e
 # ╠═ba4e4c0f-2835-4a76-a9d4-7d7ba02becb2
 # ╟─808c115f-57f6-499d-9c3b-b3dca7279508
-# ╠═27bf4bd5-e50f-4266-9b67-2dec9e3ece3e
 # ╠═68c8922f-0cb2-41d9-9efe-3ed7a00dd76f
 # ╠═2e10b0e3-66ac-4507-ad7b-a19089b85308
 # ╠═077c29e0-f912-44aa-ac3a-633b12318fb0
