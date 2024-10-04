@@ -1,0 +1,597 @@
+- Title: Beyond Model Size: The Future of LLM Optimisation
+- Author and date: Two notable research papers published this month have revealed how optimising test-time computation can significantly enhance Large Language Model (LLM) performance without additional training. ‘
+Scaling LLM Test-Time Compute Optimally can be More Effective than Scaling Model Parameters
+’ by Snell et al. from UC Berkeley and Google DeepMind, and ‘
+Let Me Speak Freely? A Study on the Impact of Format Restrictions on Performance of Large Language Models
+’ by Tam et al. from Appier AI Research and National Taiwan University, challenge the conventional approach that higher-quality responses necessarily require scaling up LLM parameters and waiting for larger, more powerful foundation models.
+Test-time compute, also known as inference compute, refers to the computational resources used when an LLM generates responses to prompts. Unlike training compute, which is used to create and refine the model itself, test-time compute is applied each time the model is used. The research shows that by strategically allocating these computational resources during inference, organisations can extract more value from their existing language models without incurring the substantial costs associated with larger-scale training.
+This approach offers several potential benefits for businesses:
+The findings are particularly relevant for businesses designing their Retrieval-Augmented Generation (RAG) pipelines and individuals refining their prompt engineering strategies. By optimising test-time compute, it’s possible to significantly boost the effectiveness of existing LLMs across various applications, such as content localisation and transcreation in a business setting.
+Below, I will explore and illustrate all eight strategies and examine how these strategies can be applied in prompt engineering and RAG pipelines. Finally, I will discuss real-world examples observable in advanced search GPT solutions like Perplexity.ai. Understanding and implementing these test-time compute strategies could be a game-changer for organisations looking to maximise the potential of their AI investments.
+In the following sections, I will explore each of the eight innovative strategies that leverage test-time compute to significantly improve LLM responses. For each strategy, I will:
+These strategies represent the forefront of LLM optimisation techniques, offering powerful approaches for enhancing model performance in applied contexts without the need for ever larger models and context windows.
+Best-of-N sampling is a technique where an LLM generates multiple independent responses (N) to a given prompt. A verifier (e.g., a Process Reward Model or PRM) then selects the best response from these candidates. This method leverages parallel computation to explore a wider range of potential answers, increasing the likelihood of finding a high-quality response.
+where:
+Imagine asking 10 different people to solve a maths problem independently. A maths teacher then checks all the different approaches and answers and picks the best one. For example:
+The human or an automated system evaluates the responses based on clarity, correctness, and any other relevant criteria.
+In this approach, the RAG pipeline leverages multiple retrieved documents or passages to generate diverse responses. By selecting the best response based on quality or relevance, the system increases the likelihood of providing an accurate and informative answer to the user’s query:
+Sequential Revisions is a method where an LLM generates an initial response and then iteratively revises it. Each revision is conditioned on previous attempts, allowing the model to learn from and improve upon its past outputs.
+where:
+Picture a student writing an essay draft, then reviewing and improving it multiple times based on their previous versions. For example:
+The human or an automated system continues this process by iterating, providing feedback and requesting specific improvements or additions with each revision.
+In this approach, the RAG pipeline iteratively refines its query based on the previous response, allowing it to focus on aspects that may have been missed or inadequately addressed in earlier iterations. This can lead to more comprehensive and accurate responses, especially for complex queries that require multiple pieces of information:
+Beam Search is a heuristic search algorithm that explores multiple promising paths simultaneously at each step of the generation process. It maintains a set of “beams” (partial solutions) and expands them in parallel, keeping only the top-scoring candidates based on a verifier (e.g., a PRM). This approach strikes a balance between exploration (considering diverse possibilities) and exploitation (focusing on the most likely paths).
+where:
+Imagine cooking a complex meal, starting with a broad idea:
+The human or an automated system continues this process, iterating, branching out from the most promising partial solutions at each step, guided by the verifier’s scores.
+This approach allows the RAG pipeline to explore multiple retrieval and generation paths, potentially uncovering better responses that might be missed by a single-path approach. Conduct the beam search entirely in natural language and only the final selected path to structured format if needed.
+Lookahead Search extends the Beam Search approach by simulating future steps before making decisions about which paths to pursue. At each step, it evaluates potential future states to obtain a better estimate of the overall solution quality.
+where:
+In a chess game, a player thinks several moves ahead, imagining possible scenarios before deciding on their current move.
+Continue this process, always asking the AI to consider the implications of each choice on future plans.
+Hybrid Approaches combine multiple test-time compute strategies to leverage their complementary strengths and mitigate their individual weaknesses. This allows for more robust and adaptable systems that can handle a wider range of tasks and queries.
+where:
+Imagine a writing contest where multiple authors each write and revise their own stories over several rounds. A judge then selects the best final story from all the authors, combining the strengths of individual writing and revision processes.
+Hybrid approaches offer flexibility in adapting to diverse queries and tasks, enhancing robustness by mitigating individual strategy weaknesses, and the potential for achieving higher quality outputs through the synergistic combination of different strategies. However, they can also be more complex to implement and maintain, potentially requiring more computational resources, and often require careful tuning to find the optimal balance between component strategies. To align with insights on format restrictions, it’s recommended to prioritise natural language processing throughout the hybrid approach, only applying structured formatting as a final post-processing step if required.
+Compute-Optimal Scaling involves adaptively choosing the best test-time compute strategy based on the estimated difficulty or complexity of the task at hand. This approach aims to optimise the use of available compute resources by allocating more resources to challenging tasks and less to simpler ones.
+where:
+Think of a student who uses flashcards for easy topics, group study sessions for moderately difficult subjects,and one-on-one tutoring for the most challenging concepts. The student adapts their learning strategy based on the perceived difficulty of the material.
+Incorporating insights on format restrictions, compute-optimal scaling can further adapt its approach by considering task complexity to determine not only the compute strategy but also the formatting approach. For simpler tasks, where structured output might be advantageous, the system can directly generate responses in the desired format. However, for complex tasks requiring more intricate reasoning, the focus should be on leveraging the LLM’s natural language capabilities, with the option to apply structured formatting as a final post-processing step (seperate prompt) if necessary.
+Process Reward Model (PRM) Guided Search uses a learned reward model to provide feedback and guidance during the generation process. The PRM evaluates intermediate steps or partial solutions, steering the LLM towards more promising directions and improving the overall quality of the final output.
+where:
+Imagine a cooking show where a professional chef tastes and scores each step of a contestant’s dish preparation, guiding them towards better choices throughout the cooking process.
+At each step, you (acting as the PRM) guide the AI towards the correct solution by providing feedback and asking for the next step.
+Majority Voting is a straightforward yet effective approach that involves generating multiple responses to a given query or prompt and then selecting the most common or frequent answer as the final output. This method relies on the assumption that the “wisdom of the crowd” often leads to a more accurate or reliable result.
+where:
+Think of a game show where the contestant can “ask the audience” for help. The most popular answer from the audience is often the correct one.
+In practice, the best results often come from combining multiple approaches and fine-tuning them for specific use cases. As the field of generative AI continues to evolve, we can expect to see even more sophisticated applications of these strategies in prompt engineering and RAG pipelines.
+When I was reading the papers, I had to think about how these test-time compute strategies are already informing cutting-edge real-world AI applications such as
+perplexity.ai
+, the innovative search engine that leverages sophisticated LLM techniques to provide more accurate and contextually relevant results. While I cannot be 100% confident, this is how I see
+perplexity.ai
+incorporating some of these strategies as a way to elaborate on the approaches and the synergies.
+Perplexity.a
+i’s use of a sliding window technique for evaluating fixed-length language models would demonstrate a practical application of principles similar to Beam Search and Lookahead Search.
+The sliding window approach can be conceptualised as exploring multiple “beams” of context simultaneously. Each position of the window acts as a beam, allowing the model to make predictions based on different contextual information. This method provides a more nuanced exploration of the input space, similar to how beam search explores multiple partial solutions.
+By providing more preceding tokens for each prediction, the sliding window effectively implements a form of lookahead. This is analogous to how lookahead search simulates future steps to make better decisions. In the case of the sliding window, the “future” context is actually additional past context, which helps the model make more informed predictions about the next token.
+Perplexity.ai
+’s use of efficient sampling techniques, particularly importance sampling, would demonstrate an advanced application of the Best-of-N Sampling strategy.
+Instead of generating N complete responses and selecting the best one,
+perplexity.ai
+applies the sampling principle at the data selection stage. By carefully choosing a subset of the test data and weighting samples based on their relevance, this approach achieves a more efficient and targeted evaluation. The weighting mechanism in importance sampling can be seen as an implicit form of the verifier used in Best-of-N sampling.
+The hierarchical or multi-level complexity computation employed by
+perplexity.ai
+would share core principles with the Compute-Optimal Scaling approach.
+By computing complexity at different levels of language structure, this method effectively adapts its computational strategy based on the scale and complexity of the language being evaluated. This is conceptually similar to how compute-optimal scaling adjusts its approach based on estimated problem difficulty.
+While not a direct test-time compute strategy, optimised hardware utilisation in
+perplexity.ai
+would enable more efficient implementation of all strategies, particularly Hybrid Approaches.
+By distributing computations across different hardware types (CPUs, GPUs, specialised AI chips) running different LLMs, p
+erplexity.ai
+would effectively implement a form of hybrid approach at both hardware and model level. This would allow for optimal execution of various test-time compute strategies, potentially running different strategies in parallel or switching between them based on the current needs of the task.
+The likely implementation of these inference compute strategies in
+perplexity.ai
+highlights several key synergies:
+These synergies demonstrate how combining multiple test-time compute strategies can lead to more powerful and flexible systems. By leveraging the strengths of different approaches, advanced AI solutions like
+perplexity.ai
+can achieve superior performance across a wide range of tasks and query types. As we continue to push the boundaries of LLM capabilities, we can expect to see more sophisticated and better integrated implementations of these inference compute strategies emerging.
+The research by Snell et al. and Tam et al. presents a compelling case for rethinking LLM progress beyond the current mantra of ‘bigger is better’. Snell et al.’s work highlights the potential for substantial performance gains for existing and smaller LLMs by focusing on test-time compute approaches, offering businesses a path to improved LLM capabilities without the need for costly model (re)training. For instance, a customer service chatbot could utilise Best-of-N Sampling to generate diverse responses and select the most appropriate one, enhancing user satisfaction without requiring a larger model.
+Tam et al.’s findings on the trade-offs associated with structured output underscore the importance of carefully considering the adverse impact on reasoning capabilities when imposing format restrictions. While structured output might be crucial for data integration as part of a localisation workflow involving relational databases, preserving the LLM’s ability to perform nuanced reasoning on complex linguistic queries remains paramount. The solution could be a simple two-stage approach: first allowing the model to reason in natural language, then converting the output to a structured format (e.g.,adding a translation memory in .xml format) as a post-processing step.
+Both data scientists and AI practitioners will play an important role in realising the full potential of these advancements. Careful selection and combination of test-time compute strategies will have to be tailored to specific task requirements and resource constraints. The development of robust evaluation metrics that accurately capture the trade-off between performance and efficiency will be crucial in guiding the optimal allocation of compute resources. The seamless integration of these test-time compute optimisation strategies into existing LLM pipelines, while ensuring scalability and cost-effectiveness, presents a significant challenge and opportunity for the future.
+It’s important to strike the right balance between the computational cost of these strategies at inference time and the performance gains they offer. This trade-off is particularly crucial in a business context where token budgets can be a limiting factor. The optimal balance may involve considering the cost of training (or using) larger models against the inference costs of employing sophisticated test-time compute strategies. Ultimately, for end-users paying for the tokens required to run these more elaborate inference approaches, cost-efficiency is paramount. It is perhaps no surprise that
+Anthropic
+, a leading LLM provider, earlier in the week announced a new feature called
+Prompt Caching
+, designed to improve efficiency by up to 90% and reduce latency by up to 85% for long and complex prompts.
+Looking ahead, I anticipate even more sophisticated hybrid strategies, potentially guided by machine learning meta-optimisers. These future systems may dynamically adapt their compute strategies in real-time, responding to the evolving nature of tasks and available resources. I foresee the emergence of hardware-optimised approaches and integrated development environments that streamline the implementation of these strategies in particular on edge devices. The ongoing innovation in test-time compute optimisation for LLMs promises a future where these powerful models are not only more capable but also more efficient, accessible, and responsibly deployed.
+Snell, C., Lee, J., Xu, K., & Kumar, A. (2024). Scaling LLM test-time compute optimally can be more effective than scaling model parameters. arXiv.
+https://arxiv.org/abs/2408.03314
+Tam, Z. R., Wu, C.-K., Tsai, Y.-L., Lin, C.-Y.,
+Lee, H.-Y., & Chen, Y.-N. (2024). Let me speak freely? A study on the impact of format restrictions on performance of large language models. arXiv.
+https://arxiv.org/abs/2408.02442
+- Link: https://medium.com/@haberlah/beyond-model-size-the-future-of-llm-optimisation-af7564daff29
+Main:
+Beyond Model Size: The Future of LLM Optimisation
+·
+20 min read
+·
+Aug 18, 2024
+--
+Two notable research papers published this month have revealed how optimising test-time computation can significantly enhance Large Language Model (LLM) performance without additional training. ‘
+’ by Snell et al. from UC Berkeley and Google DeepMind, and ‘
+’ by Tam et al. from Appier AI Research and National Taiwan University, challenge the conventional approach that higher-quality responses necessarily require scaling up LLM parameters and waiting for larger, more powerful foundation models.
+Test-time compute, also known as inference compute, refers to the computational resources used when an LLM generates responses to prompts. Unlike training compute, which is used to create and refine the model itself, test-time compute is applied each time the model is used. The research shows that by strategically allocating these computational resources during inference, organisations can extract more value from their existing language models without incurring the substantial costs associated with larger-scale training.
+This approach offers several potential benefits for businesses:
+Improving model performance without the need for expensive retraining or larger models.
+Enabling models to perform better on specific tasks or domains without altering the base model.
+Allowing for performance improvements that can be implemented across various applications and use cases.
+The findings are particularly relevant for businesses designing their Retrieval-Augmented Generation (RAG) pipelines and individuals refining their prompt engineering strategies. By optimising test-time compute, it’s possible to significantly boost the effectiveness of existing LLMs across various applications, such as content localisation and transcreation in a business setting.
+Below, I will explore and illustrate all eight strategies and examine how these strategies can be applied in prompt engineering and RAG pipelines. Finally, I will discuss real-world examples observable in advanced search GPT solutions like Perplexity.ai. Understanding and implementing these test-time compute strategies could be a game-changer for organisations looking to maximise the potential of their AI investments.
+Strategies for Optimising LLM Performance at Inference Time
+In the following sections, I will explore each of the eight innovative strategies that leverage test-time compute to significantly improve LLM responses. For each strategy, I will:
+Provide a concise explanation of the concept
+Present a mathematical representation where applicable
+Explain the approach using a relatable analogy
+Discuss practical applications in prompt engineering and RAG pipelines
+These strategies represent the forefront of LLM optimisation techniques, offering powerful approaches for enhancing model performance in applied contexts without the need for ever larger models and context windows.
+1. Best-of-N Sampling
+Best-of-N sampling is a technique where an LLM generates multiple independent responses (N) to a given prompt. A verifier (e.g., a Process Reward Model or PRM) then selects the best response from these candidates. This method leverages parallel computation to explore a wider range of potential answers, increasing the likelihood of finding a high-quality response.
+```code
+P(best) = 1 - (1 - p)^N
+```
+
+where:
+‘p’ is the probability of generating a correct response in a single attempt
+’N’ is the number of independent responses generated
+Imagine asking 10 different people to solve a maths problem independently. A maths teacher then checks all the different approaches and answers and picks the best one. For example:
+The human or an automated system evaluates the responses based on clarity, correctness, and any other relevant criteria.
+Generate multiple prompts with slight variations for the same task.
+Use the LLM to generate responses for each prompt variant.
+Select the best response based on a predefined criterion or a separate evaluation model.
+Retrieve ’N’ relevant documents or passages for a given query.
+Generate responses using each retrieved item as context.
+Select the best response using a quality metric or relevance score.
+In this approach, the RAG pipeline leverages multiple retrieved documents or passages to generate diverse responses. By selecting the best response based on quality or relevance, the system increases the likelihood of providing an accurate and informative answer to the user’s query:
+```code
+def best_of_n_rag(query, n=5):
+documents = retrieve_top_n_documents(query, n)
+responses = []
+for doc in documents:
+prompt = f"Given the context: {doc}\nAnswer the query: {query}"
+responses.append(generate_response(prompt))
+return select_best_response(responses)
+```
+
+2. Sequential Revisions
+Sequential Revisions is a method where an LLM generates an initial response and then iteratively revises it. Each revision is conditioned on previous attempts, allowing the model to learn from and improve upon its past outputs.
+```code
+Q(t) = Q_max - (Q_max - Q_0) * e^(-λt)
+```
+
+where:
+‘Q(t)’ is the quality at revision ‘t’
+‘Q_max’ is the maximum achievable quality
+‘Q_0’ is the initial quality
+‘λ’ is the rate of improvement
+Picture a student writing an essay draft, then reviewing and improving it multiple times based on their previous versions. For example:
+The human or an automated system continues this process by iterating, providing feedback and requesting specific improvements or additions with each revision.
+Start with an initial prompt and generate a response
+Analyse the response and provide feedback to guide further refinement
+Iterate this process, improving the output with each revision, incorporating the feedback to tailor the response to specific needs or criteria
+```code
+def enhanced_sequential_revisions(query, max_revisions=3):
+response = generate_initial_response(query)
+for _ in range(max_revisions):
+response = revise_response(response)  # Revise the response iteratively
+if structured_output_required():
+return convert_to_structured_format(response)
+return response
+```
+
+Start with an initial retrieval and response generation.
+Analyse the response and use it to refine the retrieval query or context selection.
+Iterate this process, improving the relevance and quality of the retrieved information and generated response in each step.
+In this approach, the RAG pipeline iteratively refines its query based on the previous response, allowing it to focus on aspects that may have been missed or inadequately addressed in earlier iterations. This can lead to more comprehensive and accurate responses, especially for complex queries that require multiple pieces of information:
+```code
+def sequential_revision_rag(initial_query, max_iterations=3):
+query = initial_query
+for i in range(max_iterations):
+# Retrieve relevant documents
+documents = retrieve_documents(query)
+
+# Generate a response based on the retrieved documents
+context = concatenate_documents(documents)
+response = generate_response(query, context)
+
+# Analyze the response and refine the query
+query = refine_query(initial_query, response)
+
+# Check if the response is satisfactory
+if is_response_satisfactory(response):
+break
+
+return response
+def refine_query(initial_query, previous_response):
+refinement_prompt = f"""
+Based on the initial query: "{initial_query}"
+And the previous response: "{previous_response}"
+Generate a refined query that addresses any gaps or inaccuracies in the previous response.
+"""
+return generate_refined_query(refinement_prompt)
+def is_response_satisfactory(response):
+# Implement logic to determine if the response meets quality criteria
+pass
+```
+
+3. Beam Search
+Beam Search is a heuristic search algorithm that explores multiple promising paths simultaneously at each step of the generation process. It maintains a set of “beams” (partial solutions) and expands them in parallel, keeping only the top-scoring candidates based on a verifier (e.g., a PRM). This approach strikes a balance between exploration (considering diverse possibilities) and exploitation (focusing on the most likely paths).
+```code
+B(t) = top_k(expand(B(t-1)))
+```
+
+where:
+‘B(t)’ is the set of beams at step ‘t’
+‘top_k’ selects the ‘k’ highest-scoring candidates
+‘expand’ generates all possible next steps from the current beams
+Imagine cooking a complex meal, starting with a broad idea:
+The human or an automated system continues this process, iterating, branching out from the most promising partial solutions at each step, guided by the verifier’s scores.
+Generate multiple prompt variations at each step.
+Evaluate the quality of responses for each prompt.
+Keep the top-k most promising prompts and continue refining them.
+Retrieve multiple sets of documents for the initial query.
+Generate responses using each set of documents.
+Keep the top-k most promising document-response pairs.
+Refine the query based on these top responses and repeat the process.
+```code
+def beam_search_prompting(initial_prompt, beam_width=3, max_depth=3):
+prompts = [initial_prompt]
+for depth in range(max_depth):
+candidates = []
+for prompt in prompts:
+variations = generate_prompt_variations(prompt, beam_width)
+responses = [generate_response(var) for var in variations]
+candidates.extend(zip(variations, responses))
+
+prompts = select_top_k_prompts(candidates, k=beam_width)
+
+return select_best_prompt(prompts)
+def generate_prompt_variations(prompt, n):
+# Generate n variations of the given prompt
+pass
+def select_top_k_prompts(candidates, k):
+# Select the k best prompts based on response quality
+pass
+def select_best_prompt(prompts):
+# Select the overall best prompt
+pass
+```
+
+This approach allows the RAG pipeline to explore multiple retrieval and generation paths, potentially uncovering better responses that might be missed by a single-path approach. Conduct the beam search entirely in natural language and only the final selected path to structured format if needed.
+4. Lookahead Search
+Lookahead Search extends the Beam Search approach by simulating future steps before making decisions about which paths to pursue. At each step, it evaluates potential future states to obtain a better estimate of the overall solution quality.
+```code
+V(s) = max(R(s), γ * max(V(s')))
+```
+
+where:
+‘V(s)’ is the value of state ‘s’
+‘R(s)’ is the immediate reward of state ‘s’
+‘γ’ is the discount factor (controls the importance of future rewards)
+‘s’’ are the possible future states reachable from ‘s’
+In a chess game, a player thinks several moves ahead, imagining possible scenarios before deciding on their current move.
+Continue this process, always asking the AI to consider the implications of each choice on future plans.
+Generate multiple prompt variations.
+For each variation, simulate a few steps ahead by generating follow-up prompts and responses.
+Choose the initial prompt that leads to the best projected outcome.
+```code
+def lookahead_prompting(initial_prompt, lookahead_depth=2, num_variations=3):
+variations = generate_prompt_variations(initial_prompt, num_variations)
+best_prompt = None
+best_score = float('-inf')
+
+for prompt in variations:
+score = simulate_prompt_chain(prompt, depth=lookahead_depth)
+if score > best_score:
+best_prompt = prompt
+best_score = score
+
+return best_prompt
+def simulate_prompt_chain(prompt, depth):
+# Simulate a chain of prompts and responses, return a score
+pass
+```
+
+Retrieve an initial set of documents.
+For each document, simulate a few steps of query refinement and document retrieval.
+Choose the initial document that leads to the best projected outcome.
+```code
+def lookahead_rag(query, lookahead_depth=2, num_docs=3):
+initial_docs = retrieve_documents(query, k=num_docs)
+best_doc = None
+best_score = float('-inf')
+
+for doc in initial_docs:
+score = simulate_rag_chain(query, doc, depth=lookahead_depth)
+if score > best_score:
+best_doc = doc
+best_score = score
+
+return generate_response(query, best_doc)
+def simulate_rag_chain(query, doc, depth):
+# Simulate a chain of RAG steps, return a score
+pass
+```
+
+5. Hybrid Approaches
+Hybrid Approaches combine multiple test-time compute strategies to leverage their complementary strengths and mitigate their individual weaknesses. This allows for more robust and adaptable systems that can handle a wider range of tasks and queries.
+```code
+E[H] = max(E[S1], E[S2], ..., E[Sn])
+```
+
+where:
+‘E[H]’ is the expected performance of the hybrid approach
+‘E[Si]’ is the expected performance of the i-th strategy
+Imagine a writing contest where multiple authors each write and revise their own stories over several rounds. A judge then selects the best final story from all the authors, combining the strengths of individual writing and revision processes.
+Combine different strategies, such as Best-of-N, Sequential Revisions, and Beam Search.
+Use different strategies at different stages of the prompt refinement process.
+```code
+def hybrid_prompting(initial_query, n_initial=5, beam_width=3, max_revisions=2):
+# Step 1: Best-of-N for initial prompts
+initial_prompts = generate_diverse_prompts(initial_query, n=n_initial)
+initial_responses = [generate_response(prompt) for prompt in initial_prompts]
+best_initial = select_best_response(initial_responses)
+# Step 2: Beam Search for prompt refinement
+refined_prompts = beam_search_prompts(best_initial, width=beam_width)
+# Step 3: Sequential Revisions for final improvements
+final_prompt = sequential_revise_prompt(refined_prompts[0], max_revisions=max_revisions)
+return final_prompt
+def generate_diverse_prompts(query, n):
+# Generate n diverse prompts based on the query
+pass
+def beam_search_prompts(prompt, width):
+# Perform beam search to refine the prompt
+pass
+def sequential_revise_prompt(prompt, max_revisions):
+# Sequentially revise the prompt
+pass
+```
+
+Combine different retrieval strategies, query refinement techniques, and response generation methods.
+Adapt the strategy based on the complexity of the query or the quality of initial results.
+```code
+def hybrid_rag(query, n_initial=5, beam_width=3, max_revisions=2):
+# Step 1: Best-of-N for initial document retrieval
+initial_docs = retrieve_diverse_documents(query, n=n_initial)
+initial_responses = [generate_response(query, doc) for doc in initial_docs]
+best_initial = select_best_response(initial_responses)
+# Step 2: Beam Search for context refinement
+refined_contexts = beam_search_contexts(query, best_initial, width=beam_width)
+# Step 3: Sequential Revisions for final response generation
+final_response = sequential_revise_response(query, refined_contexts[0], max_revisions=max_revisions)
+return final_response
+def retrieve_diverse_documents(query, n):
+# Retrieve n diverse documents relevant to the query
+pass
+def beam_search_contexts(query, initial_context, width):
+# Perform beam search to refine the context
+pass
+def sequential_revise_response(query, context, max_revisions):
+# Sequentially revise the response
+pass
+```
+
+Hybrid approaches offer flexibility in adapting to diverse queries and tasks, enhancing robustness by mitigating individual strategy weaknesses, and the potential for achieving higher quality outputs through the synergistic combination of different strategies. However, they can also be more complex to implement and maintain, potentially requiring more computational resources, and often require careful tuning to find the optimal balance between component strategies. To align with insights on format restrictions, it’s recommended to prioritise natural language processing throughout the hybrid approach, only applying structured formatting as a final post-processing step if required.
+6. Compute-Optimal Scaling
+Compute-Optimal Scaling involves adaptively choosing the best test-time compute strategy based on the estimated difficulty or complexity of the task at hand. This approach aims to optimise the use of available compute resources by allocating more resources to challenging tasks and less to simpler ones.
+```code
+S* = argmax_S (P(correct|S, d) / C(S))
+```
+
+where:
+‘S*’ is the optimal strategy
+‘P(correct|S, d)’ is the probability of getting a correct answer given strategy S and difficulty d
+‘C(S)’ is the computational cost of strategy S
+Think of a student who uses flashcards for easy topics, group study sessions for moderately difficult subjects,and one-on-one tutoring for the most challenging concepts. The student adapts their learning strategy based on the perceived difficulty of the material.
+Assess the complexity of the task or query.
+Choose the appropriate prompting strategy model and model size based on the assessed complexity.
+Use allocated computational resources accordingly.
+```code
+def compute_optimal_prompting(query):
+complexity = assess_query_complexity(query)
+
+if complexity == 'low':
+return simple_prompt_strategy(query)
+elif complexity == 'medium':
+return beam_search_prompting(query, beam_width=3, max_depth=2)
+else:  # high complexity
+return hybrid_prompting(query, n_initial=5, beam_width=3, max_revisions=2)
+def assess_query_complexity(query):
+# Implement logic to assess query complexity
+# This could be based on query length, presence of specific keywords, etc.
+pass
+def simple_prompt_strategy(query):
+# Implement a simple prompting strategy for low-complexity queries
+pass
+```
+
+Estimate the difficulty of the query or the expected complexity of the required information.
+Adjust the retrieval depth, context length, and response generation strategy accordingly.
+```code
+def compute_optimal_rag(query):
+difficulty = estimate_query_difficulty(query)
+
+if difficulty == 'easy':
+return simple_rag(query)
+elif difficulty == 'moderate':
+return beam_search_rag(query, beam_width=3, max_depth=2)
+else:  # difficult
+return hybrid_rag(query, n_initial=5, beam_width=3, max_revisions=2)
+def estimate_query_difficulty(query):
+# Implement logic to estimate query difficulty
+# This could be based on query complexity, domain specificity, etc.
+pass
+def simple_rag(query):
+# Implement a simple RAG strategy for easy queries
+pass
+```
+
+Incorporating insights on format restrictions, compute-optimal scaling can further adapt its approach by considering task complexity to determine not only the compute strategy but also the formatting approach. For simpler tasks, where structured output might be advantageous, the system can directly generate responses in the desired format. However, for complex tasks requiring more intricate reasoning, the focus should be on leveraging the LLM’s natural language capabilities, with the option to apply structured formatting as a final post-processing step (seperate prompt) if necessary.
+7. Process Reward Model (PRM) Guided Search
+Process Reward Model (PRM) Guided Search uses a learned reward model to provide feedback and guidance during the generation process. The PRM evaluates intermediate steps or partial solutions, steering the LLM towards more promising directions and improving the overall quality of the final output.
+```code
+R(s, a, s') = f(φ(s, a, s'))
+```
+
+where:
+‘R’ is the reward
+‘s’ is the current state
+‘a’ is the action taken
+‘s’’ is the next state
+‘φ’ is a feature function that extracts relevant information from the states and action
+‘f’ is a learned reward function that maps the features to a reward value
+Imagine a cooking show where a professional chef tastes and scores each step of a contestant’s dish preparation, guiding them towards better choices throughout the cooking process.
+At each step, you (acting as the PRM) guide the AI towards the correct solution by providing feedback and asking for the next step.
+Train a reward model to evaluate the quality of prompts or responses.
+Use this model to guide the selection and refinement of prompts.
+```code
+def prm_guided_prompting(query, n_candidates=10, n_iterations=3):
+candidates = generate_initial_prompts(query, n_candidates)
+
+for _ in range(n_iterations):
+responses = [generate_response(prompt) for prompt in candidates]
+scores = reward_model.evaluate(responses)
+best_candidates = select_top_k(candidates, scores, k=n_candidates//2)
+candidates = best_candidates + generate_variations(best_candidates, n_candidates//2)
+
+return select_best(candidates, reward_model)
+def generate_initial_prompts(query, n):
+# Generate n initial prompt candidates
+pass
+def generate_variations(prompts, n):
+# Generate n variations of the given prompts
+pass
+class RewardModel:
+def evaluate(self, responses):
+# Evaluate the quality of the responses
+pass
+reward_model = RewardModel()
+```
+
+Train a reward model to evaluate the relevance and quality of retrieved documents and generated responses.
+Use this model to guide the document retrieval and response generation process.
+```code
+def prm_guided_rag(query, n_docs=10, n_iterations=3):
+documents = retrieve_initial_documents(query, n_docs)
+
+for _ in range(n_iterations):
+contexts = [create_context(doc) for doc in documents]
+responses = [generate_response(query, context) for context in contexts]
+scores = reward_model.evaluate(responses, query)
+best_docs = select_top_k(documents, scores, k=n_docs//2)
+documents = best_docs + retrieve_similar_documents(best_docs, n_docs//2)
+
+best_context = create_context(select_best(documents, reward_model))
+return generate_response(query, best_context)
+def retrieve_initial_documents(query, n):
+# Retrieve n initial relevant documents
+pass
+def create_context(document):
+# Create a context from the document for response generation
+pass
+def retrieve_similar_documents(documents, n):
+# Retrieve n documents similar to the given documents
+pass
+class RewardModel:
+def evaluate(self, responses, query):
+# Evaluate the quality and relevance of the responses
+pass
+reward_model = RewardModel()
+```
+
+8. Majority Voting
+Majority Voting is a straightforward yet effective approach that involves generating multiple responses to a given query or prompt and then selecting the most common or frequent answer as the final output. This method relies on the assumption that the “wisdom of the crowd” often leads to a more accurate or reliable result.
+```code
+P(correct) = Σ (k=⌊N/2⌋+1 to N) C(N,k) * p^k * (1-p)^(N-k)
+```
+
+where:
+‘N’ is the number of votes
+‘p’ is the probability of each vote being correct
+‘C(N, k)’ is the binomial coefficient (number of ways to choose k items from a set of N)
+‘⌊N/2⌋+1’ represents the minimum number of votes needed for a majority
+Think of a game show where the contestant can “ask the audience” for help. The most popular answer from the audience is often the correct one.
+Generate multiple prompts and their corresponding responses.
+Identify common elements or themes across the responses.
+Construct a final response based on the most frequent or consistent information.
+```code
+def majority_voting_prompting(query, n_prompts=5, n_responses_per_prompt=3):
+prompts = generate_diverse_prompts(query, n_prompts)
+all_responses = []
+
+for prompt in prompts:
+responses = [generate_response(prompt) for _ in range(n_responses_per_prompt)]
+all_responses.extend(responses)
+
+return aggregate_responses(all_responses)
+def generate_diverse_prompts(query, n):
+# Generate n diverse prompts based on the query
+pass
+def aggregate_responses(responses):
+# Implement logic to identify common elements and construct a final response
+# This could involve techniques like text summarization or extractive methods
+pass
+```
+
+Retrieve multiple sets of documents and generate responses for each set.
+Identify common information or answers across the responses.
+Construct a final response based on the most consistently retrieved information.
+```code
+def majority_voting_rag(query, n_retrievals=5, n_docs_per_retrieval=3):
+all_responses = []
+
+for _ in range(n_retrievals):
+documents = retrieve_documents(query, n_docs_per_retrieval)
+context = create_context(documents)
+response = generate_response(query, context)
+all_responses.append(response)
+
+return aggregate_responses(all_responses)
+def retrieve_documents(query, n):
+# Retrieve n relevant documents for the query
+pass
+def create_context(documents):
+# Create a context from the documents for response generation
+pass
+def aggregate_responses(responses):
+# Implement logic to identify common information and construct a final response
+# This could involve techniques like text summarization or answer fusion
+pass
+```
+
+In practice, the best results often come from combining multiple approaches and fine-tuning them for specific use cases. As the field of generative AI continues to evolve, we can expect to see even more sophisticated applications of these strategies in prompt engineering and RAG pipelines.
+Applications in Search GPT
+When I was reading the papers, I had to think about how these test-time compute strategies are already informing cutting-edge real-world AI applications such as
+, the innovative search engine that leverages sophisticated LLM techniques to provide more accurate and contextually relevant results. While I cannot be 100% confident, this is how I see
+incorporating some of these strategies as a way to elaborate on the approaches and the synergies.
+Sliding Window Approach: Enhancing Context for Predictions
+i’s use of a sliding window technique for evaluating fixed-length language models would demonstrate a practical application of principles similar to Beam Search and Lookahead Search.
+The sliding window approach can be conceptualised as exploring multiple “beams” of context simultaneously. Each position of the window acts as a beam, allowing the model to make predictions based on different contextual information. This method provides a more nuanced exploration of the input space, similar to how beam search explores multiple partial solutions.
+By providing more preceding tokens for each prediction, the sliding window effectively implements a form of lookahead. This is analogous to how lookahead search simulates future steps to make better decisions. In the case of the sliding window, the “future” context is actually additional past context, which helps the model make more informed predictions about the next token.
+Efficient Sampling: Optimising Data Selection
+’s use of efficient sampling techniques, particularly importance sampling, would demonstrate an advanced application of the Best-of-N Sampling strategy.
+Instead of generating N complete responses and selecting the best one,
+applies the sampling principle at the data selection stage. By carefully choosing a subset of the test data and weighting samples based on their relevance, this approach achieves a more efficient and targeted evaluation. The weighting mechanism in importance sampling can be seen as an implicit form of the verifier used in Best-of-N sampling.
+Hierarchical Computation: Adaptive Evaluation Strategies
+The hierarchical or multi-level complexity computation employed by
+would share core principles with the Compute-Optimal Scaling approach.
+By computing complexity at different levels of language structure, this method effectively adapts its computational strategy based on the scale and complexity of the language being evaluated. This is conceptually similar to how compute-optimal scaling adjusts its approach based on estimated problem difficulty.
+Optimised Hardware Utilisation: Enabling Efficient Hybrid Approaches
+While not a direct test-time compute strategy, optimised hardware utilisation in
+would enable more efficient implementation of all strategies, particularly Hybrid Approaches.
+By distributing computations across different hardware types (CPUs, GPUs, specialised AI chips) running different LLMs, p
+would effectively implement a form of hybrid approach at both hardware and model level. This would allow for optimal execution of various test-time compute strategies, potentially running different strategies in parallel or switching between them based on the current needs of the task.
+Synergies Between Approaches
+The likely implementation of these inference compute strategies in
+highlights several key synergies:
+The combination of sliding window techniques with efficient sampling allows for both broad context consideration and focused, relevant data selection.
+The hierarchical computation approach, when combined with optimised hardware and model utilisation, enables the system to dynamically allocate computational resources based on task complexity.
+The use of importance sampling alongside sliding window techniques strikes a balance between exploring diverse contexts and exploiting the most relevant information.
+The integration of efficient sampling with optimised hardware utilisation allows the system to handle large-scale tasks while maintaining computational efficiency.
+These synergies demonstrate how combining multiple test-time compute strategies can lead to more powerful and flexible systems. By leveraging the strengths of different approaches, advanced AI solutions like
+can achieve superior performance across a wide range of tasks and query types. As we continue to push the boundaries of LLM capabilities, we can expect to see more sophisticated and better integrated implementations of these inference compute strategies emerging.
+The Future of LLM Optimisation
+The research by Snell et al. and Tam et al. presents a compelling case for rethinking LLM progress beyond the current mantra of ‘bigger is better’. Snell et al.’s work highlights the potential for substantial performance gains for existing and smaller LLMs by focusing on test-time compute approaches, offering businesses a path to improved LLM capabilities without the need for costly model (re)training. For instance, a customer service chatbot could utilise Best-of-N Sampling to generate diverse responses and select the most appropriate one, enhancing user satisfaction without requiring a larger model.
+Tam et al.’s findings on the trade-offs associated with structured output underscore the importance of carefully considering the adverse impact on reasoning capabilities when imposing format restrictions. While structured output might be crucial for data integration as part of a localisation workflow involving relational databases, preserving the LLM’s ability to perform nuanced reasoning on complex linguistic queries remains paramount. The solution could be a simple two-stage approach: first allowing the model to reason in natural language, then converting the output to a structured format (e.g.,adding a translation memory in .xml format) as a post-processing step.
+Both data scientists and AI practitioners will play an important role in realising the full potential of these advancements. Careful selection and combination of test-time compute strategies will have to be tailored to specific task requirements and resource constraints. The development of robust evaluation metrics that accurately capture the trade-off between performance and efficiency will be crucial in guiding the optimal allocation of compute resources. The seamless integration of these test-time compute optimisation strategies into existing LLM pipelines, while ensuring scalability and cost-effectiveness, presents a significant challenge and opportunity for the future.
+It’s important to strike the right balance between the computational cost of these strategies at inference time and the performance gains they offer. This trade-off is particularly crucial in a business context where token budgets can be a limiting factor. The optimal balance may involve considering the cost of training (or using) larger models against the inference costs of employing sophisticated test-time compute strategies. Ultimately, for end-users paying for the tokens required to run these more elaborate inference approaches, cost-efficiency is paramount. It is perhaps no surprise that
+, a leading LLM provider, earlier in the week announced a new feature called
+, designed to improve efficiency by up to 90% and reduce latency by up to 85% for long and complex prompts.
+Looking ahead, I anticipate even more sophisticated hybrid strategies, potentially guided by machine learning meta-optimisers. These future systems may dynamically adapt their compute strategies in real-time, responding to the evolving nature of tasks and available resources. I foresee the emergence of hardware-optimised approaches and integrated development environments that streamline the implementation of these strategies in particular on edge devices. The ongoing innovation in test-time compute optimisation for LLMs promises a future where these powerful models are not only more capable but also more efficient, accessible, and responsibly deployed.
+References
+Snell, C., Lee, J., Xu, K., & Kumar, A. (2024). Scaling LLM test-time compute optimally can be more effective than scaling model parameters. arXiv.
+Tam, Z. R., Wu, C.-K., Tsai, Y.-L., Lin, C.-Y.,
+Lee, H.-Y., & Chen, Y.-N. (2024). Let me speak freely? A study on the impact of format restrictions on performance of large language models. arXiv.
+ Links:
+ - ("https://arxiv.org/pdf/2408.03314", "Scaling LLM Test-Time Compute Optimally can be More Effective than Scaling Model Parameters")
+ - ("https://arxiv.org/pdf/2408.03314", "Snell et al. (2024)")
+ - ("https://arxiv.org/pdf/2408.02442", "Let Me Speak Freely? A Study on the Impact of Format Restrictions on Performance of Large Language Models")
