@@ -23,7 +23,7 @@ end
 include("./support/utils.jl")
 
 # ╔═╡ b61d20de-c1dc-4f88-9266-1062dd9d5cd8
-include("./support/ws_extractors.jl")
+include("./support/ws_extractors.jl");
 
 # ╔═╡ c94c972e-a75f-11ee-153c-771e07689f95
 md"""
@@ -52,8 +52,8 @@ const LLM_PARAMS = Dict{Symbol, Union{String, Real, LLM_Model}}(
 
 # ╔═╡ 2f4ae40f-a1ab-470b-a1b7-a04fec353b0e
 # No code block in this article, thus specific instruction about code block extraction and rendering can be omitted. Instead ask LLM to be thorough in the synthesis
-# no need to invoke step by step - CoT approach with o1 nmodels
-# might have some issue with formatting and long title which are more like remarks!
+# no need to invoke step by step - CoT approach with o1 models
+# might have some issue with formatting...
 
 const INSTRUCT_PROMPT = """Generate a comprehensive and detailed section by section synthesis of the following article (delimited by triple backticks) about "$(TOPIC)".
 
@@ -62,8 +62,22 @@ Important:
 - Ensure that the synthesis is accurately structured into coherent sections, capturing every fact, key point, acronym, example, and explanation. Always begin with a section detailing the article's title, publication date, author, and link (when such information is available). Preserve all the original sections from the article for high fidelity. Aim for a synthesis that is exhaustive, without overlooking any significant information.
 - Keep section title short (less than 15 words, longer than this eitther shorten it or make it a comment with bold emphasis).
 - Avoid making comment while rendering the final synthesis.
+- Format your output using markdown, making sure the title sections are separated from their contents by at least one empty line before the content and one empty line after the content - see example below.
+- Itemize the first section about title, author, ...
 
-Here is the excerpt:
+Example of markdown section (delimited by triple backticks uniquely to clarify the boundaries - you do not to need to produce those backticks in your output):
+```
+## Section
+
+The content paragraph...
+
+## Another section
+
+Another content paragraph...
+
+```
+
+And now here is the excerpt:
 """;
 
 # ╔═╡ ba4e4c0f-2835-4a76-a9d4-7d7ba02becb2
@@ -89,17 +103,28 @@ const MD_FILEPATH = string(
         replace(OUTFILE, ".txt" => "-$(LLM_PARAMS[:model].name).md")
 )
 
+# ╔═╡ e4e8ad7f-7ce3-489e-be50-3b04da063c44
+begin
+        full_text = nothing
+        if isfile(TXT_FILEPATH)
+                open(TXT_FILEPATH, "r") do fh
+                        full_text = readlines(fh) |>
+                                a -> join(a, "")
+                end
+        end
+end
+
 # ╔═╡ 96f81b71-da5b-469b-80a6-a9b436491b61
-@time req = HTTP.get(URL)
+isnothing(full_text) && (@time req = HTTP.get(URL))
 
 # ╔═╡ 67f54eb2-d985-4a57-a3f4-0d10ae033104
-propertynames(req)
+isnothing(full_text) && propertynames(req)
 
 # ╔═╡ 4c25bfae-6f3f-4389-b4bf-adc706e64bc8
-req.status
+isnothing(full_text) && req.status
 
 # ╔═╡ 2402d947-3e04-4495-9e92-1f59b171dcc8
-parsed_doc = Gumbo.parsehtml(String(req.body));
+isnothing(full_text) && (parsed_doc = Gumbo.parsehtml(String(req.body)));
 
 # ╔═╡ dc32f9b1-b270-40a5-9067-4dad5bed40fa
 md"""
@@ -111,73 +136,85 @@ First we need to locate the node of interest...
 """
 
 # ╔═╡ 78389e7c-e6a5-4bd2-9274-d1a2c68a4920
-rroot = parsed_doc.root[2].children[1].children[1];
+isnothing(full_text) && (rroot = parsed_doc.root[2].children[1].children[1]);
 
 # ╔═╡ f496d90f-b390-442e-b809-86e4c19f34e6
-rroot |> propertynames, tag(rroot.parent)
+isnothing(full_text) && (rroot |> propertynames, tag(rroot.parent))
 
 # ╔═╡ 8fdfb225-1475-483e-a81a-5a450b5b0dbd
 # traverse_article_structure(rroot; selector="p.pw-post-body-paragraph")
 
 # ╔═╡ 67fd72dc-5540-440d-a8f3-8324914553b8
-text = extract_content(
+text = isnothing(full_text) ? extract_content(
         rroot;
         # selectors=["div.ch.bg.fy.fz.ga.gb"],
         selectors=["div.gn.go.gp.gq.gr"],
         verbose=true,
         only_tags=[:div, :p, :h1, :h2, :h3, :li, :ul, :ol, :span, :pre]  # include :pre for code snipet
-)
+) : ""
 
 # ╔═╡ f1dd1b92-b841-414b-8cca-d3bcdda675dd
 md"""
 #### Get the content
 
 - article's content
-- code snipets
+- code snipets (if present)
 - web links
 """
 
 # ╔═╡ 8fe89775-2853-49e4-885a-f3bdb1e792db
-md_title = extract_content(
+md_title = isnothing(full_text) ? extract_content(
         rroot;
         selectors=[".pw-post-title", "div.hv.hw"],  # good selector for the title, but may  miss author!
         # selectors=["div.ci.bh"]
         verbose=true,
         only_tags=[:h1, :h2],
-)  # Title
+) : ""  # Title
 
 # ╔═╡ 72d4f892-2bd2-43af-b71e-5252a666ce0c
 # metadata: author, date
-md = extract_content(
+md = isnothing(full_text) ? extract_content(
         rroot;
         selectors=["div.bn.bh.l"],
         # selectors=["p.pw-post-body-paragraph"],
         verbose=false,
         only_tags=[:div, :p, :span, :a]
-)  # other metadata
+) : ""  # other metadata
 
 # ╔═╡ ed56ba67-5e5a-43e9-9a5f-8e63597725f7
-links = extract_links(
+links = isnothing(full_text) ? extract_links(
         rroot;
         selectors=["a"],
         verbose=false,
         restrict_to=["github", "LinkedIn", "huggingface", "arxiv", "medium", "edu", "llamaindex", "langchain", "wikipedia", "cohere"]
-)
+) : []
 
 # ╔═╡ 0110956d-424d-4c7c-87ef-eda4a2cfc291
-full_text = string(
+if isnothing(full_text)
+        full_text₁ = string(
         "- Title: ",  md_title,
         "\n\n- Author and date: ", md,
         "\n\n- Link: ", URL,
         "\n\nMain:\n", text,
         "\n\n Links:\n", map(s -> string(" - ", s), links) |> links -> join(links, "\n")
-)
+        )
+else
+        full_text₁ = nothing
+end
 
 # ╔═╡ b80c155d-5ec2-4b3e-ac8d-6ee5cb18376b
 # println(full_text)
 
 # ╔═╡ 0df8719c-a91d-4449-8dac-337a832eb065
-save_text(TXT_FILEPATH, full_text)
+if !isfile(MD_FILEPATH)
+        save_text(TXT_FILEPATH, full_text₁)
+end
+
+# ╔═╡ cea8ce05-77bb-452d-b0b5-2610ff38a3c2
+text_for_synthesis = isnothing(full_text₁) ? full_text : full_text₁
+
+# ╔═╡ 7f2b05e0-5058-408d-9a37-45bda8773d32
+ match(r"(?<=Links:\s)(.*)"s, full_text).match
 
 # ╔═╡ 0883ae28-a94f-4bed-abce-39841605d29b
 md"""
@@ -188,19 +225,44 @@ md"""
 synthesis = make_timed_chat_request(
          _SYS_PROMPT,
          INSTRUCT_PROMPT,
-         full_text;
+         text_for_synthesis;
          LLM_PARAMS...
 )
 
 # ╔═╡ 9b661918-23b6-46fb-9af1-53454d750d5f
-synthesis_links = string(
+begin
+        found_links = links
+
+        if length(links) == 0
+                regex = r"(?<=Links:\s)(.*)"s
+                matched = match(regex, full_text)
+                found_links = Vector{Tuple{String, String}}()
+
+                if matched !== nothing
+                        links_section = matched.match
+                link_regex = r"""- \("([^,]+)", "([^,]+)"\)"""  # r"- \[(.*?)\]\((.*?)\)"
+                for m ∈ eachmatch(link_regex, links_section)
+                        # Capture groups: first is link text, second is URL
+                        link_text = m.captures[1]
+                        url = m.captures[2]
+                        push!(found_links, (string(link_text), string(url)))
+                end
+                end
+                println("Found links:", found_links, " | length: ", length(found_links))
+        end
+
+        synthesis_links = length(found_links) > 0 ? string(
         join(synthesis, "\n"),
         "\n#### Links:\n",
         join(
-                map(tupl -> string("""  - [$(length(tupl[2]) > 0 ? tupl[2] : tag_link(tupl))]""", "($(tupl[1]))"), handle_duplicate_tag(links)),
-                "\n"
+            map(
+                                tupl -> string("  - [", length(tupl[2]) > 0 ? tupl[2] : tag_link(tupl), "]", "($(tupl[1]))"),
+                                handle_duplicate_tag(found_links)
+                        ),
+            "\n"
         )
-)
+        ) : join(synthesis, "\n")
+end
 
 # ╔═╡ e4d711be-c885-404b-a51a-fda50c9d43c7
 save_text(
@@ -942,6 +1004,7 @@ version = "0.2.2+0"
 # ╠═68c8922f-0cb2-41d9-9efe-3ed7a00dd76f
 # ╠═2e10b0e3-66ac-4507-ad7b-a19089b85308
 # ╠═077c29e0-f912-44aa-ac3a-633b12318fb0
+# ╠═e4e8ad7f-7ce3-489e-be50-3b04da063c44
 # ╠═96f81b71-da5b-469b-80a6-a9b436491b61
 # ╠═67f54eb2-d985-4a57-a3f4-0d10ae033104
 # ╠═4c25bfae-6f3f-4389-b4bf-adc706e64bc8
@@ -958,6 +1021,8 @@ version = "0.2.2+0"
 # ╠═0110956d-424d-4c7c-87ef-eda4a2cfc291
 # ╠═b80c155d-5ec2-4b3e-ac8d-6ee5cb18376b
 # ╠═0df8719c-a91d-4449-8dac-337a832eb065
+# ╠═cea8ce05-77bb-452d-b0b5-2610ff38a3c2
+# ╠═7f2b05e0-5058-408d-9a37-45bda8773d32
 # ╟─0883ae28-a94f-4bed-abce-39841605d29b
 # ╠═e2ffe835-65dc-4c85-aa9a-d98867da2ff5
 # ╠═9b661918-23b6-46fb-9af1-53454d750d5f

@@ -63,9 +63,13 @@ function tag_link(tupl::Tuple{String, String})::String
     # one word => extend
     string(tag, "+", join(chunks[2:end], " ") |> strip)
 
+  elseif chunks[3] ∈ split(tag, r"\s+")
+    # chunks[3] already present in tag - no need to extend
+    tag
   else
     string(tag, " - ", chunks[3])
   end
+
   (endswith(chunks[end], ".html") || endswith(chunks[end], ".ipynb")) &&
     (tag = string(tag, " - ", replace(chunks[end], ".html" => "")))
 

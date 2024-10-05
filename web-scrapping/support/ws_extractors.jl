@@ -47,7 +47,7 @@ function extract_content(
 
   fulltext = String[]
   sel_vec = _get_selectors(root, selectors)
-  pattern = split(selectors[1], ".")[end]
+  # pattern = split(selectors[1], ".")[end]
 
   for (ix, element) ∈ enumerate(sel_vec)
     verbose && :text ∉ propertynames(element) && println("$(ix) - Element: $(tag(element))")

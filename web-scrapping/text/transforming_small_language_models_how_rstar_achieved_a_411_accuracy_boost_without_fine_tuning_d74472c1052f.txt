@@ -29,7 +29,7 @@ Once the reasoning paths are generated, the next step is verification. Another S
 This dual-process method allows SLMs to mimic a form of peer review, where each model independently verifies the other’s reasoning, leading to more accurate outcomes without the need for fine-tuning or additional data.
 Performance Analysis with Statistical Insights
 The rStar method was put to the test across various reasoning tasks and datasets. The results were nothing short of remarkable:
-The accuracy of a small model jumped from a mere 12.51% to an impressive 63.91%, marking a 411% improvement in problem-solving capabilities.
+The accuracy of a small model jumped from a mere 12.51% to an impressive 63.91%, marking a 411% (or factor 5x) improvement in problem-solving capabilities.
 The Mistral-7B model, another small language model, saw its accuracy soar from 36.46% to 81.88% after applying rStar. This more than doubled its effectiveness in solving complex tasks.
 rStar pushed this model’s accuracy from 74.53% to 91.13%, solidifying its ability to handle diverse reasoning challenges.
 Across multiple models and datasets, rStar consistently demonstrated its ability to significantly enhance the reasoning capabilities of SLMs, making them competitive with larger, more resource-intensive models.
