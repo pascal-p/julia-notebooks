@@ -15,5 +15,6 @@ MLJ_Workshop/{img,orig_jl,meta,data}
 # PythonCall / CondaPkg
 .CondaPkg/
 
-code-synthesis-*.jl    
+code-synthesis-*.jl
 results/code*.el
+text/
