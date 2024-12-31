@@ -1,0 +1,19 @@
+.ipynb_checkpoints/
+*/.ipynb_checkpoints/
+
+*.org
+*.pdf
+*.jlso
+.git.BAK
+.github
+
+0*/
+[A-Z]*/
+
+MLJ_Workshop/{img,orig_jl,meta,data}
+
+# PythonCall / CondaPkg
+.CondaPkg/
+
+code-synthesis-*.jl    
+results/code*.el
